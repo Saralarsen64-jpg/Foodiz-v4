@@ -1,3 +1,6 @@
+import { useState, useEffect } from "react"; // Assure-toi que useEffect est là
+import { supabase } from "../../lib/supabase"; // Ajoute cette ligne
+import { LogOut } from "lucide-react"; // Ajoute LogOut pour le bouton déconnexion
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
