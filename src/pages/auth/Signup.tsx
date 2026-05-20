@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Mail, Lock, User, Phone, Eye, EyeOff, Check } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
-import { upsertProfileFromSignup } from "../../utils/authProfile";
 import toast from "react-hot-toast";
 
 export default function SignupPage() {
@@ -45,15 +44,7 @@ export default function SignupPage() {
       if (error) throw error;
       if (!data.user) throw new Error("Impossible de créer le compte.");
 
-      await upsertProfileFromSignup({
-        userId: data.user.id,
-        role,
-        firstName,
-        lastName,
-        email,
-        phone,
-      });
-
+      // Le profil et les demandes partner/courier sont créés par trigger SQL côté Supabase.
       toast.success("Compte créé. Vérifiez votre boîte mail pour confirmer votre inscription.");
       navigate(`/auth/login?role=${role}`);
     } catch (err: any) {
