@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, CheckCircle2, FileText } from "lucide-react";
-import { loadCourierApplications, saveCourierApplications } from "../../utils/onboardingStore";
+import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
 
 export default function CourierOnboarding() {
   const navigate = useNavigate();
@@ -11,14 +12,23 @@ export default function CourierOnboarding() {
   const [iban, setIban] = useState("");
   const [sent, setSent] = useState(false);
 
-  const submit = () => {
-    const items = loadCourierApplications();
-    saveCourierApplications([
-      { id: `ca-${Date.now()}`, name, city, vehicle, iban, status: "pending", createdAt: new Date().toLocaleString("fr-FR") },
-      ...items,
-    ]);
-    setSent(true);
-    window.setTimeout(() => navigate("/courier/validation-status"), 900);
+  const submit = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Utilisateur non connecté.");
+
+      const { error } = await supabase
+        .from("courier_applications")
+        .update({ city, vehicle_type: vehicle, status: "pending", updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+      if (error) throw error;
+
+      setSent(true);
+      toast.success("Dossier livreur envoyé.");
+      window.setTimeout(() => navigate("/courier/validation-status"), 900);
+    } catch (err: any) {
+      toast.error(err.message || "Impossible d'envoyer le dossier.");
+    }
   };
 
   return (
