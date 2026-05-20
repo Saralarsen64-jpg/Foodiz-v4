@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react"; // Assure-toi que useEffect est là
 import { supabase } from "../../lib/supabase"; // Ajoute cette ligne
 import { LogOut } from "lucide-react"; // Ajoute LogOut pour le bouton déconnexion
 import { useEffect, useMemo, useState } from "react";
@@ -90,6 +89,33 @@ const CHART_DATA: Record<PeriodKey, { label: string; value: number }[]> = {
     { label: "Juin", value: 5900 },
   ],
 };
+export default function PartnerDashboard() {
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [restaurantName, setRestaurantName] = useState("Mon Établissement");
+  const [ownerName, setOwnerName] = useState("Partenaire");
+
+  // Récupérer les vraies infos au chargement
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Récupérer le nom du profil
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
+        if (profile) setOwnerName(profile.full_name || "Partenaire");
+
+        // Récupérer le nom du restaurant (s'il existe déjà)
+        const { data: restaurant } = await supabase.from('restaurants').select('name').eq('owner_id', user.id).single();
+        if (restaurant) setRestaurantName(restaurant.name);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
 export default function PartnerDashboard() {
   const navigate = useNavigate();
@@ -182,9 +208,15 @@ export default function PartnerDashboard() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
         <div className="foodiz-card overflow-hidden p-0 border-foodiz-gold/20 bg-[linear-gradient(135deg,rgba(216,168,79,0.12),rgba(17,17,17,0.96)_28%,rgba(5,5,5,1)_100%)] shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
           <div className="grid lg:grid-cols-[1.25fr_0.75fr] gap-0">
-            <div className="p-6">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-foodiz-gold font-bold mb-2">Espace Partenaire Foodiz</p>
-              <h1 className="foodiz-title text-3xl mb-2">Bonjour, {profile.name}</h1>
+            <<div className="flex justify-between items-center mb-8">
+    <div>
+        <h1 className="foodiz-title text-2xl mb-1">Bonjour, {ownerName}</h1>
+        <p className="text-foodiz-gray text-sm">Tableau de bord de <span className="text-foodiz-gold italic">{restaurantName}</span></p>
+    </div>
+    <button onClick={handleLogout} className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm bg-foodiz-card px-4 py-2 rounded-xl border border-foodiz-gold/10">
+        <LogOut size={16} /> Déconnexion
+    </button>
+</div>
               <p className="text-foodiz-gray text-sm max-w-xl leading-relaxed">
                 Pilotez votre activité, votre carte, vos visuels et vos revenus depuis un cockpit unique pensé pour la performance et l’image premium de votre établissement.
               </p>
