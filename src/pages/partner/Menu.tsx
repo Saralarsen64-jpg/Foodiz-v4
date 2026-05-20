@@ -1,0 +1,146 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ChevronLeft,
+  Plus,
+  GripVertical,
+  Edit2,
+  Eye,
+  Info,
+  ArrowRight,
+  FolderPlus,
+} from "lucide-react";
+import GoldIcon from "../../components/GoldIcon";
+import {
+  addPartnerCategory,
+  getCustomerPrice,
+  loadPartnerProfile,
+  type PartnerProduct,
+} from "../../utils/partnerStore";
+
+export default function PartnerMenu() {
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<PartnerProduct[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+
+  useEffect(() => {
+    const profile = loadPartnerProfile();
+    setProducts(profile.products);
+    setCategories(profile.categories);
+  }, []);
+
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) return;
+    addPartnerCategory(newCategory);
+    const profile = loadPartnerProfile();
+    setCategories(profile.categories);
+    setNewCategory("");
+  };
+
+  return (
+    <div className="min-h-screen bg-foodiz-black pb-24">
+      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <button onClick={() => navigate("/partner")} className="text-foodiz-gold">
+            <ChevronLeft size={24} />
+          </button>
+          <h1 className="foodiz-title text-lg">Gestion du Menu</h1>
+          <div className="w-6" />
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        <div className="foodiz-card p-4 bg-foodiz-gold/5 border-foodiz-gold/20 flex gap-3">
+          <GoldIcon icon={Info} size={20} className="shrink-0" />
+          <p className="text-xs text-foodiz-cream/80 leading-relaxed">
+            <span className="text-foodiz-gold font-bold">Rappel Foodiz :</span> vos prix affichés doivent rester identiques à ceux de votre carte physique. Le supplément Foodiz est ajouté uniquement côté client.
+          </p>
+        </div>
+
+        <div className="foodiz-card p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+          <div className="flex-1">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Nouvelle catégorie</label>
+            <input
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="Ex: Tapas, Spécialités, Signature..."
+              className="w-full mt-2 bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-sm text-foodiz-cream outline-none focus:border-foodiz-gold/30"
+            />
+          </div>
+          <button
+            onClick={handleAddCategory}
+            className="foodiz-btn !py-3 !px-4 text-xs flex items-center justify-center gap-2 shrink-0"
+          >
+            <FolderPlus size={14} /> Ajouter la catégorie
+          </button>
+          <button
+            onClick={() => navigate("/partner/products/new")}
+            className="foodiz-btn-outline !py-3 !px-4 text-xs flex items-center justify-center gap-2 shrink-0"
+          >
+            <Plus size={14} /> Ajouter un plat
+          </button>
+        </div>
+
+        <div className="space-y-8">
+          {categories.map((cat) => (
+            <div key={cat} className="space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-foodiz-gray border-l-2 border-foodiz-gold pl-3">
+                {cat}
+              </h3>
+              <div className="space-y-3">
+                {products.filter((p) => p.category === cat).map((product) => {
+                  const customerPrice = getCustomerPrice(product.partnerPrice);
+                  return (
+                    <div key={product.id} className="foodiz-card p-4 flex items-center gap-4 group">
+                      <GripVertical size={20} className="text-foodiz-gray/20 cursor-grab shrink-0" />
+
+                      <div className="w-16 h-16 rounded-[1rem] overflow-hidden border border-foodiz-gold/10 shrink-0 bg-white/[0.03]">
+                        {product.image ? (
+                          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-foodiz-gray text-xs">Photo</div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-foodiz-cream">{product.name}</h4>
+                        <p className="text-[11px] text-foodiz-gray mt-0.5 line-clamp-1">{product.desc}</p>
+                        <div className="flex items-center gap-4 mt-2 flex-wrap">
+                          <div>
+                            <p className="text-[9px] text-foodiz-gray uppercase font-bold">Prix Partenaire</p>
+                            <p className="text-sm text-foodiz-cream">{product.partnerPrice.toFixed(2)} €</p>
+                          </div>
+                          <ArrowRight size={14} className="text-foodiz-gold/40" />
+                          <div className="bg-foodiz-gold/5 px-2 py-1 rounded-lg border border-foodiz-gold/10">
+                            <p className="text-[9px] text-foodiz-gold uppercase font-bold">Visible Client</p>
+                            <p className="text-sm text-foodiz-gold font-bold">{customerPrice.toFixed(2)} €</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => navigate(`/partner/products/${product.id}/edit`)}
+                          className="p-2 rounded-lg bg-foodiz-card border border-foodiz-gold/10 text-foodiz-gold hover:bg-foodiz-gold/5"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="p-2 rounded-lg bg-foodiz-card border border-foodiz-gold/10 text-foodiz-cream hover:bg-foodiz-card/80">
+                          <Eye size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {products.filter((p) => p.category === cat).length === 0 && (
+                  <div className="foodiz-card p-4 text-xs text-foodiz-gray">Aucun produit dans cette catégorie pour le moment.</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}

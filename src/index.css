@@ -1,0 +1,211 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ===== Tailwind v4 Theme ===== */
+@theme {
+  --color-foodiz-black: #050505;
+  --color-foodiz-dark: #0A0A0A;
+  --color-foodiz-card: #111111;
+  --color-foodiz-gold: #D8A84F;
+  --color-foodiz-gold-light: #E0B45C;
+  --color-foodiz-gold-dark: #C9A45C;
+  --color-foodiz-kraft: #D8B98F;
+  --color-foodiz-kraft-dark: #C6A06A;
+  --color-foodiz-cream: #FFF8EA;
+  --color-foodiz-gray: #B8B8B8;
+  --color-foodiz-green: #3FA76D;
+  --color-foodiz-red: #B84444;
+
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+/* ===== Base Styles ===== */
+body {
+  background-color: #050505;
+  color: #FFF8EA;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #D8A84F;
+  border-radius: 4px;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* ===== Utility Classes ===== */
+.foodiz-card {
+  background-color: #111111;
+  border: 1px solid rgba(216, 168, 79, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+.foodiz-card:hover {
+  border-color: rgba(216, 168, 79, 0.35);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.foodiz-gradient-gold {
+  background: linear-gradient(135deg, rgba(216, 168, 79, 0.1), rgba(216, 168, 79, 0.03));
+}
+
+.foodiz-border-gold {
+  border: 1px solid rgba(216, 168, 79, 0.25);
+}
+
+.foodiz-btn {
+  background: linear-gradient(135deg, #D8A84F, #C9A45C);
+  color: #050505;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 12px 24px;
+  transition: all 0.3s ease;
+}
+.foodiz-btn:hover {
+  background: linear-gradient(135deg, #E0B45C, #D8A84F);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(216, 168, 79, 0.3);
+}
+
+.foodiz-btn-outline {
+  border: 1px solid rgba(216, 168, 79, 0.4);
+  color: #D8A84F;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.foodiz-btn-outline:hover {
+  border-color: #D8A84F;
+  background: rgba(216, 168, 79, 0.05);
+}
+
+/* ===== Typography ===== */
+.foodiz-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  color: #FFF8EA;
+}
+
+.foodiz-logo {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 600;
+  color: #D8A84F;
+  letter-spacing: -0.02em;
+}
+
+/* Gold underline for logo */
+.foodiz-logo-underline {
+  position: relative;
+}
+.foodiz-logo-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #D8A84F, transparent);
+}
+
+/* ===== Hide scrollbar ===== */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== Real Kraft Paper Background ===== */
+.kraft-paper-bg {
+  background-image:
+    radial-gradient(ellipse at top, rgba(216, 168, 79, 0.08), transparent 60%),
+    url('/images/kraft-texture.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.kraft-paper-overlay {
+  position: relative;
+}
+.kraft-paper-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/images/kraft-texture.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Glowing Gold Icon (premium signature) ===== */
+.gold-glow-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(216, 168, 79, 0.25), rgba(216, 168, 79, 0.08));
+  border: 1px solid rgba(216, 168, 79, 0.45);
+  border-radius: 12px;
+  box-shadow:
+    0 0 16px rgba(216, 168, 79, 0.18),
+    inset 0 1px 0 rgba(255, 248, 234, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  position: relative;
+  transition: all 0.3s ease;
+}
+.gold-glow-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 40%);
+  pointer-events: none;
+}
+.gold-glow-icon:hover {
+  box-shadow:
+    0 0 24px rgba(216, 168, 79, 0.35),
+    inset 0 1px 0 rgba(255, 248, 234, 0.18);
+  border-color: rgba(216, 168, 79, 0.7);
+}
+
+.gold-glow-icon svg {
+  color: #E0B45C;
+  filter: drop-shadow(0 0 4px rgba(224, 180, 92, 0.5));
+}
+
+/* Small variant for inline form icons */
+.gold-glow-icon-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+.gold-glow-icon-md {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
