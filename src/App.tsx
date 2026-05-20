@@ -1,4 +1,3 @@
-import UserApprovals from "./pages/admin/UserApprovals";
 import { Routes, Route, Navigate } from "react-router-dom";
 import AdminAuth from "./pages/AdminAuth";
 
@@ -82,8 +81,7 @@ export default function App() {
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
-      <Route path="/admin/approvals" element={<UserApprovals />} />
-     
+
       {/* ─── CLIENT ROUTES ───────────────────────────────────────── */}
       <Route element={<ClientLayout />}>
         <Route path="/client" element={<ClientHome />} />

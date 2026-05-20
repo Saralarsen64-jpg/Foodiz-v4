@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bike, DollarSign, Star, Clock, Bell, ChevronRight, MapPin } from "lucide-react";
+import { Bike, DollarSign, Star, Clock, Bell, ChevronRight, MapPin, LogOut } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import Logo from "../../components/Logo";
+import { supabase } from "../../lib/supabase";
+import { getCurrentUserProfile, getFullName } from "../../utils/authProfile";
 
 export default function CourierDashboard() {
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(false);
   const [rating, setRating] = useState("4,9");
+  const [name, setName] = useState("Livreur");
 
   useEffect(() => {
     const saved = localStorage.getItem("foodiz_reviews_v1");
@@ -16,16 +19,29 @@ export default function CourierDashboard() {
       const courierReviews = reviews.filter((r: any) => r.courierRating > 0);
       if (courierReviews.length > 0) {
         const avg = courierReviews.reduce((sum: number, r: any) => sum + r.courierRating, 0) / courierReviews.length;
-        // Start from base 4.9 for demo and adjust
         const finalRating = ((4.9 * 10 + avg) / 11).toFixed(1).replace(".", ",");
         setRating(finalRating);
       }
     }
   }, []);
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { profile } = await getCurrentUserProfile();
+        if (profile) setName(getFullName(profile));
+      } catch {}
+    };
+    fetchProfile();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   return (
     <div className="min-h-screen bg-foodiz-black">
-      {/* Header */}
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <Logo size="sm" />
@@ -37,7 +53,16 @@ export default function CourierDashboard() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
-        {/* Online Toggle */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="foodiz-title text-xl">Bonjour, {name}</h1>
+            <p className="text-foodiz-gray text-xs">Tableau de bord livreur</p>
+          </div>
+          <button onClick={handleLogout} className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm bg-foodiz-card px-4 py-2 rounded-xl border border-foodiz-gold/10">
+            <LogOut size={16} /> Déconnexion
+          </button>
+        </div>
+
         <div className="foodiz-card p-5 flex items-center justify-between">
           <div>
             <p className="text-sm text-foodiz-cream">Vous êtes</p>
@@ -45,15 +70,11 @@ export default function CourierDashboard() {
               {isOnline ? "En ligne" : "Hors ligne"}
             </p>
           </div>
-          <button
-            onClick={() => setIsOnline(!isOnline)}
-            className={`relative w-14 h-8 rounded-full transition-all ${isOnline ? "bg-foodiz-green" : "bg-foodiz-card border border-foodiz-gold/20"}`}
-          >
+          <button onClick={() => setIsOnline(!isOnline)} className={`relative w-14 h-8 rounded-full transition-all ${isOnline ? "bg-foodiz-green" : "bg-foodiz-card border border-foodiz-gold/20"}`}>
             <div className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-all shadow-lg ${isOnline ? "left-7" : "left-1"}`} />
           </button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: "Gains du jour", value: "48,50 €", icon: DollarSign },
@@ -68,23 +89,19 @@ export default function CourierDashboard() {
           ))}
         </div>
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => navigate("/courier/deliveries/available")}
-            className="foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all">
+          <button onClick={() => navigate("/courier/deliveries/available")} className="foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all">
             <GoldIcon icon={Bike} size={22} />
             <p className="text-sm text-foodiz-cream mt-2 font-medium">Livraisons disponibles</p>
             <p className="text-[10px] text-foodiz-gray mt-0.5">3 courses près de vous</p>
           </button>
-          <button onClick={() => navigate("/courier/deliveries/current")}
-            className="foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all">
+          <button onClick={() => navigate("/courier/deliveries/current")} className="foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all">
             <GoldIcon icon={MapPin} size={22} />
             <p className="text-sm text-foodiz-cream mt-2 font-medium">Livraison en cours</p>
             <p className="text-[10px] text-foodiz-gray mt-0.5">1 course active</p>
           </button>
         </div>
 
-        {/* Recent Activity */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="foodiz-title text-sm">Activité récente</h3>
