@@ -1,114 +1,157 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronLeft, Mail, Lock, User, Phone, Eye, EyeOff, Check } from "lucide-react";
+import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
-import { Mail, Lock, User, Phone } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const role = searchParams.get("role") || "client";
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [params] = useSearchParams();
+  const role = (params.get("role") || "client") as "client" | "partner" | "courier";
+  const [showPwd, setShowPwd] = useState(false);
+  const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!accepted) return;
     setLoading(true);
-    setMessage("");
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role: role,
-          full_name: fullName,
-          phone: phone,
+    try {
+      const redirectTo = `${window.location.origin}/auth/login?role=${role}`;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectTo,
+          data: {
+            role,
+            first_name: firstName,
+            last_name: lastName,
+            phone,
+            referral_code: referralCode || null,
+          },
         },
-      },
-    });
+      });
 
-    setLoading(false);
+      if (error) throw error;
+      if (!data.user) throw new Error("Impossible de créer le compte.");
 
-    if (error) {
-      setMessage(error.message);
-    } else if (data.session) {
-      // Si la confirmation email est désactivée, l'utilisateur est directement connecté
-      setMessage("Compte créé avec succès ! Redirection...");
-      setTimeout(() => {
-        // Redirection selon le rôle
-        if (role === 'partner') navigate("/partner");
-        else if (role === 'courier') navigate("/courier");
-        else if (role === 'admin') navigate("/admin");
-        else navigate("/client");
-      }, 1500);
-    } else {
-      setMessage("Un lien de confirmation a été envoyé à votre adresse email.");
+      // Le profil et les demandes partner/courier sont créés par trigger SQL côté Supabase.
+      toast.success("Compte créé. Vérifiez votre boîte mail pour confirmer votre inscription.");
+      navigate(`/auth/login?role=${role}`);
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de l'inscription.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-foodiz-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md foodiz-card p-8 border border-foodiz-gold/20">
-        <h1 className="foodiz-title text-2xl text-center mb-2 text-foodiz-cream">
-          Créer un compte {role === 'partner' ? 'Partenaire' : role === 'courier' ? 'Livreur' : 'Client'}
-        </h1>
-        <p className="text-center text-foodiz-gray text-sm mb-6">
-          Rejoignez l'aventure Foodiz
-        </p>
+  const roleLabel = role === "partner" ? "Inscription partenaire" : role === "courier" ? "Inscription livreur" : "Créer un compte client";
+  const ctaLabel = role === "partner" ? "Devenir partenaire" : role === "courier" ? "Devenir livreur" : "Créer mon compte";
 
-        {message && (
-          <div className={`p-3 rounded-lg text-sm mb-4 ${message.includes("succès") ? "bg-foodiz-green/10 text-foodiz-green" : "bg-foodiz-red/10 text-foodiz-red"}`}>
-            {message}
-          </div>
-        )}
+  return (
+    <div className="min-h-screen bg-foodiz-black flex flex-col">
+      <div className="relative bg-gradient-to-b from-foodiz-kraft/15 to-transparent pt-6 pb-4 px-6">
+        <button onClick={() => navigate("/auth")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6">
+          <ChevronLeft size={18} /> Retour
+        </button>
+        <div className="flex flex-col items-center">
+          <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="w-48 h-auto" />
+          <p className="text-foodiz-gray text-[10px] mt-3 tracking-widest uppercase">{roleLabel}</p>
+        </div>
+      </div>
+
+      <main className="flex-1 max-w-md mx-auto w-full px-6 py-8">
+        <h1 className="foodiz-title text-2xl text-center mb-2">Inscription</h1>
+        <p className="text-foodiz-gray text-sm text-center mb-8">Rejoignez la communauté Foodiz</p>
 
         <form onSubmit={handleSignup} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs text-foodiz-gray uppercase font-bold">Nom complet</label>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
-              <User size={18} className="text-foodiz-gold" />
-              <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Jean Dupont" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="foodiz-card p-4">
+              <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Prénom</label>
+              <div className="flex items-center gap-2 mt-2">
+                <GoldIcon icon={User} size={14} />
+                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} type="text" placeholder="Jean" required className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40 min-w-0" />
+              </div>
+            </div>
+            <div className="foodiz-card p-4">
+              <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Nom</label>
+              <div className="flex items-center gap-2 mt-2">
+                <GoldIcon icon={User} size={14} />
+                <input value={lastName} onChange={(e) => setLastName(e.target.value)} type="text" placeholder="Dupont" required className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40 min-w-0" />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs text-foodiz-gray uppercase font-bold">Email</label>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
-              <Mail size={18} className="text-foodiz-gold" />
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="jean@exemple.com" />
+          <div className="foodiz-card p-4">
+            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">E-mail</label>
+            <div className="flex items-center gap-3 mt-2">
+              <GoldIcon icon={Mail} size={16} />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="vous@email.com" required className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs text-foodiz-gray uppercase font-bold">Téléphone</label>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
-              <Phone size={18} className="text-foodiz-gold" />
-              <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="06 12 34 56 78" />
+          <div className="foodiz-card p-4">
+            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Téléphone</label>
+            <div className="flex items-center gap-3 mt-2">
+              <GoldIcon icon={Phone} size={16} />
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="+33 6 12 34 56 78" required className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs text-foodiz-gray uppercase font-bold">Mot de passe (min. 6 caractères)</label>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
-              <Lock size={18} className="text-foodiz-gold" />
-              <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="••••••••" />
+          <div className="foodiz-card p-4">
+            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Mot de passe</label>
+            <div className="flex items-center gap-3 mt-2">
+              <GoldIcon icon={Lock} size={16} />
+              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPwd ? "text" : "password"} placeholder="••••••••" required minLength={8} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40" />
+              <button type="button" onClick={() => setShowPwd(!showPwd)} className="text-foodiz-gold/50 hover:text-foodiz-gold">
+                {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full foodiz-btn py-4 mt-4 text-base font-bold">
-            {loading ? "Création en cours..." : "S'inscrire"}
+          {role === "client" && (
+            <div className="foodiz-card p-4 bg-foodiz-gradient-gold border-foodiz-gold/20">
+              <p className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest mb-1">Code parrainage (optionnel)</p>
+              <input value={referralCode} onChange={(e) => setReferralCode(e.target.value)} type="text" placeholder="Ex: ALEX123" className="w-full bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40 mt-1" />
+              <p className="text-[10px] text-foodiz-gold/60 mt-1">+500 points Foodiz à votre parrain</p>
+            </div>
+          )}
+
+          <label className="flex items-start gap-3 cursor-pointer py-2">
+            <button type="button" onClick={() => setAccepted(!accepted)} className={`w-5 h-5 rounded border-2 shrink-0 mt-0.5 flex items-center justify-center transition-all ${accepted ? "bg-foodiz-gold border-foodiz-gold" : "border-foodiz-gold/30"}`}>
+              {accepted && <Check size={12} className="text-foodiz-black" strokeWidth={3} />}
+            </button>
+            <span className="text-[11px] text-foodiz-gray leading-relaxed">
+              J'accepte les <span className="text-foodiz-gold">conditions générales</span> et la <span className="text-foodiz-gold">politique de confidentialité</span> de Foodiz.
+            </span>
+          </label>
+
+          <button type="submit" disabled={!accepted || loading} className={`w-full !py-4 rounded-xl text-sm font-semibold transition-all ${accepted && !loading ? "foodiz-btn" : "bg-foodiz-gold/20 text-foodiz-gold/50 cursor-not-allowed"}`}>
+            {loading ? "Création en cours..." : ctaLabel}
           </button>
         </form>
 
-        <p className="text-center text-sm text-foodiz-gray mt-6">
-          Déjà un compte ? <button onClick={() => navigate("/auth/login")} className="text-foodiz-gold font-bold hover:underline">Se connecter</button>
-        </p>
-      </div>
+        {(role === "partner" || role === "courier") && (
+          <p className="text-center text-[10px] text-foodiz-gray mt-4">
+            Après confirmation email, votre dossier sera soumis à validation admin.
+          </p>
+        )}
+
+        <div className="text-center mt-6">
+          <p className="text-foodiz-gray text-xs">
+            Déjà un compte ? <button onClick={() => navigate(`/auth/login?role=${role}`)} className="text-foodiz-gold font-semibold hover:underline">Se connecter</button>
+          </p>
+        </div>
+      </main>
     </div>
   );
 }
