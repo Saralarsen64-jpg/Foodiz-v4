@@ -2,32 +2,57 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
+import { supabase } from "../../lib/supabase";
+import { resolveRedirectPath } from "../../utils/authProfile";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const role = params.get("role") || "client";
   const [showPwd, setShowPwd] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (role === "partner") navigate("/partner");
-    else if (role === "courier") navigate("/courier");
-    else navigate("/client");
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (error.message.toLowerCase().includes("email not confirmed")) {
+          throw new Error("Votre adresse e-mail n’est pas encore confirmée. Vérifiez votre boîte mail avant de vous connecter.");
+        }
+        throw error;
+      }
+
+      const redirectPath = await resolveRedirectPath();
+      if (redirectPath === "/auth/login") {
+        throw new Error("Votre profil n’est pas encore prêt. Réessayez dans quelques instants ou contactez le support Foodiz.");
+      }
+
+      if (redirectPath === "/partner/validation-status") {
+        toast.success("Connexion réussie. Votre dossier partenaire est en attente de validation admin.");
+      }
+      if (redirectPath === "/courier/validation-status") {
+        toast.success("Connexion réussie. Votre dossier livreur est en attente de validation admin.");
+      }
+
+      navigate(redirectPath);
+    } catch (err: any) {
+      toast.error(err.message || "Connexion impossible.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const roleLabel = role === "partner" ? "Espace partenaire" :
-                    role === "courier" ? "Espace livreur" :
-                    "Espace client";
+  const roleLabel = role === "partner" ? "Espace partenaire" : role === "courier" ? "Espace livreur" : "Espace client";
 
   return (
     <div className="min-h-screen bg-foodiz-black flex flex-col">
-      {/* Kraft top */}
       <div className="relative bg-gradient-to-b from-foodiz-kraft/15 to-transparent pt-6 pb-4 px-6">
-        <button
-          onClick={() => navigate("/auth")}
-          className="flex items-center gap-1 text-foodiz-gold text-sm mb-6"
-        >
+        <button onClick={() => navigate("/auth")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6">
           <ChevronLeft size={18} /> Retour
         </button>
         <div className="flex flex-col items-center">
@@ -38,21 +63,14 @@ export default function LoginPage() {
 
       <main className="flex-1 max-w-md mx-auto w-full px-6 py-8">
         <h1 className="foodiz-title text-2xl text-center mb-2">Connexion</h1>
-        <p className="text-foodiz-gray text-sm text-center mb-8">
-          Heureux de vous revoir
-        </p>
+        <p className="text-foodiz-gray text-sm text-center mb-8">Heureux de vous revoir</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="foodiz-card p-4">
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">E-mail</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={Mail} size={16} />
-              <input
-                type="email"
-                placeholder="vous@email.com"
-                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
-                required
-              />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="vous@email.com" className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40" required />
             </div>
           </div>
 
@@ -60,53 +78,23 @@ export default function LoginPage() {
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Mot de passe</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={Lock} size={16} />
-              <input
-                type={showPwd ? "text" : "password"}
-                placeholder="••••••••"
-                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
-                required
-              />
+              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPwd ? "text" : "password"} placeholder="••••••••" className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40" required />
               <button type="button" onClick={() => setShowPwd(!showPwd)} className="text-foodiz-gold/50 hover:text-foodiz-gold">
                 {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          <button type="button" className="text-foodiz-gold text-xs font-medium block ml-auto">
-            Mot de passe oublié ?
-          </button>
+          <button type="button" className="text-foodiz-gold text-xs font-medium block ml-auto">Mot de passe oublié ?</button>
 
-          <button type="submit" className="w-full foodiz-btn !py-4">
-            Se connecter
+          <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4">
+            {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="flex items-center gap-4 my-8">
-          <div className="flex-1 h-px bg-foodiz-gold/15" />
-          <span className="text-[10px] text-foodiz-gray uppercase tracking-widest">ou</span>
-          <div className="flex-1 h-px bg-foodiz-gold/15" />
-        </div>
-
-        {/* Social */}
-        <div className="space-y-3">
-          <button className="w-full py-3 rounded-xl border border-foodiz-gold/20 text-foodiz-cream text-sm font-medium flex items-center justify-center gap-3 hover:border-foodiz-gold/40 transition-all">
-            <span className="text-foodiz-gold">G</span> Continuer avec Google
-          </button>
-          <button className="w-full py-3 rounded-xl border border-foodiz-gold/20 text-foodiz-cream text-sm font-medium flex items-center justify-center gap-3 hover:border-foodiz-gold/40 transition-all">
-            <span className="text-foodiz-gold"></span> Continuer avec Apple
-          </button>
-        </div>
-
         <div className="text-center mt-8">
           <p className="text-foodiz-gray text-xs">
-            Pas encore de compte ?{" "}
-            <button
-              onClick={() => navigate(`/auth/signup?role=${role}`)}
-              className="text-foodiz-gold font-semibold hover:underline"
-            >
-              S'inscrire
-            </button>
+            Pas encore de compte ? <button onClick={() => navigate(`/auth/signup?role=${role}`)} className="text-foodiz-gold font-semibold hover:underline">S'inscrire</button>
           </p>
         </div>
       </main>

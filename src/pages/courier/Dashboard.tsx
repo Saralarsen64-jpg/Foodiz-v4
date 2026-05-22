@@ -1,25 +1,38 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Navigation, Wallet, LogOut, Menu } from "lucide-react";
-import { supabase } from "../../lib/supabase";
+import { Bike, DollarSign, Star, Clock, Bell, ChevronRight, MapPin, LogOut } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import Logo from "../../components/Logo";
+import { supabase } from "../../lib/supabase";
+import { getCurrentUserProfile, getFullName } from "../../utils/authProfile";
 
 export default function CourierDashboard() {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [courierName, setCourierName] = useState("Livreur");
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const [rating, setRating] = useState("4,9");
+  const [name, setName] = useState("Livreur");
 
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
-        if (profileData) setCourierName(profileData.full_name || "Livreur");
+    const saved = localStorage.getItem("foodiz_reviews_v1");
+    if (saved) {
+      const reviews = JSON.parse(saved);
+      const courierReviews = reviews.filter((r: any) => r.courierRating > 0);
+      if (courierReviews.length > 0) {
+        const avg = courierReviews.reduce((sum: number, r: any) => sum + r.courierRating, 0) / courierReviews.length;
+        const finalRating = ((4.9 * 10 + avg) / 11).toFixed(1).replace(".", ",");
+        setRating(finalRating);
       }
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { profile } = await getCurrentUserProfile();
+        if (profile) setName(getFullName(profile));
+      } catch {}
     };
-    fetchData();
+    fetchProfile();
   }, []);
 
   const handleLogout = async () => {
@@ -27,82 +40,92 @@ export default function CourierDashboard() {
     navigate("/auth");
   };
 
-  const sidebarItems = [
-    { label: "Dashboard", icon: TrendingUp, path: "/courier" },
-    { label: "Courses disponibles", icon: Navigation, path: "/courier/deliveries/available" },
-    { label: "Gains", icon: Wallet, path: "/courier/earnings" },
-  ];
-
   return (
     <div className="min-h-screen bg-foodiz-black">
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-foodiz-gold md:hidden">
-            <Menu size={22} />
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          <Logo size="sm" />
+          <button onClick={() => navigate("/courier/deliveries/history")} className="relative">
+            <Bell size={20} className="text-foodiz-gold" />
+            <span className="absolute -top-1 -right-1 bg-foodiz-gold text-foodiz-black text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">2</span>
           </button>
-          <Logo size="md" />
-          <div className="w-6" />
         </div>
       </header>
 
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 flex">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
-          <div className="relative w-64 bg-foodiz-card border-r border-foodiz-gold/10 p-6">
-            <Logo size="md" className="mb-8" />
-            <nav className="space-y-2">
-              {sidebarItems.map((item) => (
-                <button key={item.label} onClick={() => { navigate(item.path); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-gray hover:text-foodiz-cream hover:bg-foodiz-gold/5 transition-all">
-                  <GoldIcon icon={item.icon} size={18} /> {item.label}
-                </button>
-              ))}
-              <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-red hover:bg-foodiz-red/5 transition-all mt-8">
-                <LogOut size={18} /> Déconnexion
-              </button>
-            </nav>
-          </div>
-        </div>
-      )}
-
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="foodiz-title text-2xl mb-1">Bonjour, {courierName}</h1>
-            <p className="text-foodiz-gray text-sm">Prêt à rouler ?</p>
+            <h1 className="foodiz-title text-xl">Bonjour, {name}</h1>
+            <p className="text-foodiz-gray text-xs">Tableau de bord livreur</p>
           </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm bg-foodiz-card px-3 py-2 rounded-xl border border-foodiz-gold/10">
-            <LogOut size={14} />
+          <button onClick={handleLogout} className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm bg-foodiz-card px-4 py-2 rounded-xl border border-foodiz-gold/10">
+            <LogOut size={16} /> Déconnexion
           </button>
         </div>
 
-        {/* Online Toggle */}
-        <div className="foodiz-card p-6 flex items-center justify-between bg-gradient-to-r from-foodiz-gold/10 to-foodiz-card border-foodiz-gold/20">
+        <div className="foodiz-card p-5 flex items-center justify-between">
           <div>
-            <h3 className="text-foodiz-cream font-bold">Statut : {isOnline ? "En ligne" : "Hors ligne"}</h3>
-            <p className="text-xs text-foodiz-gray mt-1">{isOnline ? "Vous recevez des courses..." : "Reposez-vous bien !"}</p>
+            <p className="text-sm text-foodiz-cream">Vous êtes</p>
+            <p className={`text-lg font-bold font-serif ${isOnline ? "text-foodiz-green" : "text-foodiz-gray"}`}>
+              {isOnline ? "En ligne" : "Hors ligne"}
+            </p>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" checked={isOnline} onChange={(e) => setIsOnline(e.target.checked)} className="sr-only peer" />
-            <div className="w-11 h-6 bg-foodiz-black peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-foodiz-gray after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-foodiz-green"></div>
-          </label>
+          <button onClick={() => setIsOnline(!isOnline)} className={`relative w-14 h-8 rounded-full transition-all ${isOnline ? "bg-foodiz-green" : "bg-foodiz-card border border-foodiz-gold/20"}`}>
+            <div className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-all shadow-lg ${isOnline ? "left-7" : "left-1"}`} />
+          </button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="foodiz-card p-5 bg-[#0A0A0A] border-foodiz-gold/10">
-            <p className="text-[10px] text-foodiz-gray uppercase font-bold">Gains du jour</p>
-            <p className="text-2xl font-serif italic text-foodiz-green mt-1">45.50 €</p>
-          </div>
-          <div className="foodiz-card p-5 bg-[#0A0A0A] border-foodiz-gold/10">
-            <p className="text-[10px] text-foodiz-gray uppercase font-bold">Courses terminées</p>
-            <p className="text-2xl font-serif italic text-foodiz-cream mt-1">8</p>
-          </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Gains du jour", value: "48,50 €", icon: DollarSign },
+            { label: "Livraisons", value: "6", icon: Bike },
+            { label: "Score", value: rating, icon: Star },
+          ].map((s) => (
+            <div key={s.label} className="foodiz-card p-3 text-center">
+              <GoldIcon icon={s.icon} size={16} className="mx-auto mb-1" />
+              <p className="text-lg font-bold font-serif text-foodiz-cream">{s.value}</p>
+              <p className="text-[9px] text-foodiz-gray">{s.label}</p>
+            </div>
+          ))}
         </div>
 
-        {/* Actions */}
-        <button onClick={() => navigate("/courier/deliveries/available")} className="w-full foodiz-btn py-4 text-lg flex items-center justify-center gap-2">
-          <Navigation size={20} /> Voir les courses disponibles
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => navigate("/courier/deliveries/available")} className="foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all">
+            <GoldIcon icon={Bike} size={22} />
+            <p className="text-sm text-foodiz-cream mt-2 font-medium">Livraisons disponibles</p>
+            <p className="text-[10px] text-foodiz-gray mt-0.5">3 courses près de vous</p>
+          </button>
+          <button onClick={() => navigate("/courier/deliveries/current")} className="foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all">
+            <GoldIcon icon={MapPin} size={22} />
+            <p className="text-sm text-foodiz-cream mt-2 font-medium">Livraison en cours</p>
+            <p className="text-[10px] text-foodiz-gray mt-0.5">1 course active</p>
+          </button>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="foodiz-title text-sm">Activité récente</h3>
+            <button onClick={() => navigate("/courier/deliveries/history")} className="text-foodiz-gold text-[10px] flex items-center gap-1">
+              Voir tout <ChevronRight size={10} />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {[
+              { restaurant: "Maison K", gain: "4,50 €", time: "Il y a 15 min" },
+              { restaurant: "Sushi Ko", gain: "5,00 €", time: "Il y a 35 min" },
+              { restaurant: "Marché Bio", gain: "3,50 €", time: "Il y a 1h" },
+            ].map((a, i) => (
+              <div key={i} className="foodiz-card p-3 flex items-center gap-3">
+                <Clock size={14} className="text-foodiz-gold/50 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-foodiz-cream">{a.restaurant}</p>
+                  <p className="text-[10px] text-foodiz-gray">{a.time}</p>
+                </div>
+                <span className="text-foodiz-gold text-xs font-semibold">+{a.gain}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
     </div>
   );
