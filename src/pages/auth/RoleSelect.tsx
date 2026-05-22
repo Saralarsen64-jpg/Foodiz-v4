@@ -287,14 +287,6 @@ export default function AuthPage() {
         <p className="text-[10px] text-foodiz-gray/40 tracking-widest">
           © {new Date().getFullYear()} · FOODIZ
         </p>
-        {/* Hidden Admin Access - Positionné de manière fixe en bas à droite pour être trouvé à tâtons */}
-        <button 
-          onClick={() => navigate('/admin/auth')}
-          className="fixed bottom-2 right-2 w-8 h-8 flex items-center justify-center text-[#050505] hover:text-[#0a0a0a] transition-colors text-[8px] select-none z-[100] cursor-default opacity-0"
-          aria-hidden="true"
-        >
-          -
-        </button>
       </footer>
       </section>
     </div>
