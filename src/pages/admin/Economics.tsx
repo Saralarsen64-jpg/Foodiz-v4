@@ -7,6 +7,17 @@ import Logo from "../../components/Logo";
 
 export default function AdminEconomics() {
   const navigate = useNavigate();
+    // ... imports et début de la fonction
+  useEffect(() => {
+    // VÉRIFICATION DE SÉCURITÉ RENFORCÉE
+    const isVerified = sessionStorage.getItem('foodiz_admin_verified');
+    if (!isVerified) {
+      // Si pas vérifié, on renvoie vers la porte secrète
+      navigate("/fz-admin-portal-secure"); 
+    }
+  }, [navigate]);
+
+  // ... le reste de ton code (fetchStats, etc.)
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRevenue: 0,

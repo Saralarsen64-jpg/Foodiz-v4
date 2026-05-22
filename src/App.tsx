@@ -1,3 +1,7 @@
+import AdminSecureAccess from "./pages/admin/AdminSecureAccess"; // <-- Ajoute l'import en haut
+
+// ... dans tes routes, ajoute celle-ci (de préférence avant la route /admin normale) :
+<Route path="/fz-admin-portal-secure" element={<AdminSecureAccess />} />
 import { Routes, Route, Navigate } from "react-router-dom";
 import AdminAuth from "./pages/AdminAuth";
 
