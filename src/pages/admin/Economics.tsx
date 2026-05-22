@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { TrendingUp, Users, DollarSign, AlertTriangle, ChevronRight, LogOut, ShieldCheck } from "lucide-react";
+import { TrendingUp, Users, DollarSign, AlertTriangle, ChevronRight, LogOut, ShieldCheck, Activity } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import Logo from "../../components/Logo";
 
@@ -19,7 +19,7 @@ export default function AdminEconomics() {
     const fetchStats = async () => {
       setLoading(true);
       try {
-        // 1. CA Global et Marge Foodiz (Commandes livrées)
+        // 1. CA Global et Marge Foodiz (Commandes livrées - en centimes)
         const { data: orders } = await supabase
           .from('orders')
           .select('final_client_total_cents, foodiz_margin_cents')
@@ -28,7 +28,7 @@ export default function AdminEconomics() {
         const revenue = orders ? orders.reduce((sum, o) => sum + (o.final_client_total_cents || 0), 0) / 100 : 0;
         const margin = orders ? orders.reduce((sum, o) => sum + (o.foodiz_margin_cents || 0), 0) / 100 : 0;
 
-        // 2. Utilisateurs en attente de validation
+        // 2. Utilisateurs en attente de validation (Partenaires & Livreurs)
         const { count: pendingCount } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
@@ -69,7 +69,7 @@ export default function AdminEconomics() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Logo size="md" />
           <div className="flex items-center gap-4">
-            <span className="text-xs text-foodiz-gold border border-foodiz-gold/30 px-3 py-1 rounded-full uppercase tracking-widest font-bold">Admin God Mode</span>
+            <span className="text-[10px] text-foodiz-gold border border-foodiz-gold/30 px-3 py-1 rounded-full uppercase tracking-widest font-bold">Admin God Mode</span>
             <button onClick={handleLogout} className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm">
               <LogOut size={16} /> Déconnexion
             </button>
@@ -78,7 +78,7 @@ export default function AdminEconomics() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        <div className="flex justify-between items-end">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="foodiz-title text-3xl mb-2">Tableau de Bord Financier</h1>
             <p className="text-foodiz-gray">Vue d'ensemble de l'écosystème Foodiz en temps réel.</p>
@@ -97,7 +97,7 @@ export default function AdminEconomics() {
                 <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center">
                   <DollarSign size={20} className="text-foodiz-gold" />
                 </div>
-                <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">CA Global (Livé)</h3>
+                <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">CA Global (Livré)</h3>
               </div>
               <p className="text-3xl font-serif italic text-foodiz-cream">{stats.totalRevenue.toFixed(2)} €</p>
               <p className="text-xs text-foodiz-green mt-2 flex items-center gap-1"><TrendingUp size={12} /> Revenus totaux clients</p>
@@ -106,7 +106,7 @@ export default function AdminEconomics() {
             <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-foodiz-green/10 flex items-center justify-center">
-                  <TrendingUp size={20} className="text-foodiz-green" />
+                  <Activity size={20} className="text-foodiz-green" />
                 </div>
                 <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">Marge Nette Foodiz</h3>
               </div>
@@ -114,7 +114,7 @@ export default function AdminEconomics() {
               <p className="text-xs text-foodiz-gray mt-2">Bénéfice plateforme (hors coûts)</p>
             </div>
 
-            <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
+            <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20 cursor-pointer hover:border-foodiz-red/40 transition-all" onClick={() => navigate("/admin/approvals")}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-foodiz-red/10 flex items-center justify-center">
                   <AlertTriangle size={20} className="text-foodiz-red" />
@@ -122,7 +122,7 @@ export default function AdminEconomics() {
                 <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">Validations en attente</h3>
               </div>
               <p className="text-3xl font-serif italic text-foodiz-red">{stats.pendingApprovals}</p>
-              <button onClick={() => navigate("/admin/approvals")} className="text-xs text-foodiz-gold mt-2 hover:underline flex items-center gap-1">Voir la liste <ChevronRight size={12}/></button>
+              <p className="text-xs text-foodiz-gold mt-2 flex items-center gap-1">Voir la liste <ChevronRight size={12}/></p>
             </div>
 
             <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
@@ -146,13 +146,13 @@ export default function AdminEconomics() {
               <h3 className="text-foodiz-cream font-bold group-hover:text-foodiz-gold transition-colors">Gérer les Inscriptions</h3>
               <p className="text-xs text-foodiz-gray mt-1">Valider ou refuser les partenaires et livreurs.</p>
             </button>
-            <button className="p-4 rounded-xl bg-foodiz-black border border-foodiz-gold/10 hover:border-foodiz-gold/40 transition-all text-left group">
+            <button onClick={() => navigate("/admin/payouts")} className="p-4 rounded-xl bg-foodiz-black border border-foodiz-gold/10 hover:border-foodiz-gold/40 transition-all text-left group">
               <h3 className="text-foodiz-cream font-bold group-hover:text-foodiz-gold transition-colors">Dispatch Financier</h3>
               <p className="text-xs text-foodiz-gray mt-1">Voir les virements partenaires et livreurs.</p>
             </button>
-            <button className="p-4 rounded-xl bg-foodiz-black border border-foodiz-gold/10 hover:border-foodiz-gold/40 transition-all text-left group">
-              <h3 className="text-foodiz-cream font-bold group-hover:text-foodiz-gold transition-colors">Logs Anti-Fraude</h3>
-              <p className="text-xs text-foodiz-gray mt-1">Surveiller les comptes suspects.</p>
+            <button onClick={() => navigate("/admin/foodiz-stats")} className="p-4 rounded-xl bg-foodiz-black border border-foodiz-gold/10 hover:border-foodiz-gold/40 transition-all text-left group">
+              <h3 className="text-foodiz-cream font-bold group-hover:text-foodiz-gold transition-colors">Stats Foodiz+</h3>
+              <p className="text-xs text-foodiz-gray mt-1">Revenus des abonnements et campagnes.</p>
             </button>
           </div>
         </div>
