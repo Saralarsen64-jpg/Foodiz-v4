@@ -1,113 +1,59 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
+  Star,
   Clock,
   MapPin,
   ChevronLeft,
   Plus,
   ShoppingBag,
+  BadgeCheck,
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
-import { loadPartnerProfile, type PartnerProduct, type PartnerProfile } from "../../utils/partnerStore";
 
-type TabKey = string;
-
-const STATIC_FALLBACK: Record<string, { profile: PartnerProfile }> = {
-  r2: {
-    profile: {
-      establishmentId: "r2",
-      name: "Le Bistrot Parisien",
-      hours: "Ouvert · 12:00 — 22:30",
-      location: "Paris 11e · 1,2 km",
-      coverImage: "/images/restaurant-bistrot.jpg",
-      categories: ["Plats", "Desserts", "Boissons"],
-      products: [
-        { id: "r2p1", name: "Entrecôte grillée", desc: "Pommes grenailles, jus réduit", partnerPrice: 18.9, category: "Plats", active: true, points: 30, image: "/images/restaurant-bistrot.jpg" },
-        { id: "r2p2", name: "Millefeuille vanille", desc: "Crème légère, feuilletage croustillant", partnerPrice: 7.2, category: "Desserts", active: true, points: 20, image: "/images/auth-restaurant.jpg" },
-      ],
-    },
+const DEFAULT_CATEGORIES = [
+  {
+    id: "cat1",
+    name: "Nos Burgers Signature",
+    items: [
+      { id: "p1", name: "Burger Artisanal", desc: "Bœuf Black Angus, cheddar affiné, sauce maison", price: 16.90, points: 30, image: "/images/restaurant-maison-k.jpg" },
+      { id: "p2", name: "Burger Truffe", desc: "Bœuf wagyu, crème de truffe noire, roquette", price: 22.50, points: 40, image: "/images/restaurant-bistrot.jpg" },
+    ]
   },
-  r3: {
-    profile: {
-      establishmentId: "r3",
-      name: "Sushi Ko",
-      hours: "Ouvert · 11:45 — 23:00",
-      location: "Paris 11e · 1,8 km",
-      coverImage: "/images/restaurant-sushi.jpg",
-      categories: ["Plats", "Desserts", "Boissons"],
-      products: [
-        { id: "r3p1", name: "Plateau sashimi", desc: "Sélection premium du chef", partnerPrice: 19.5, category: "Plats", active: true, points: 30, image: "/images/restaurant-sushi.jpg" },
-        { id: "r3p2", name: "Mochi glacé", desc: "Deux pièces, vanille et matcha", partnerPrice: 6.2, category: "Desserts", active: true, points: 20, image: "/images/auth-restaurant.jpg" },
-      ],
-    },
-  },
-  m1: {
-    profile: {
-      establishmentId: "m1",
-      name: "Marché Bio",
-      hours: "Ouvert · 08:00 — 21:00",
-      location: "Paris 11e · 900 m",
-      coverImage: "/images/market-bio.jpg",
-      categories: ["Fruits", "Épicerie", "Boissons"],
-      products: [
-        { id: "m1p1", name: "Panier fruits frais", desc: "Sélection de saison", partnerPrice: 12.0, category: "Fruits", active: true, points: 30, image: "/images/market-bio.jpg" },
-        { id: "m1p2", name: "Granola maison", desc: "Amandes, miel, graines toastées", partnerPrice: 7.0, category: "Épicerie", active: true, points: 20, image: "/images/market-epicerie.jpg" },
-      ],
-    },
-  },
-};
-
-function getCustomerPrice(partnerPrice: number) {
-  if (partnerPrice <= 3.5) return partnerPrice + 1.2;
-  if (partnerPrice <= 8.49) return partnerPrice + 2.5;
-  return partnerPrice + 3.5;
-}
+  {
+    id: "cat2",
+    name: "Desserts Gourmands",
+    items: [
+      { id: "d1", name: "Tiramisu Maison", desc: "Mascarpone, café, cacao amer", price: 8.50, points: 20, image: "/images/market-bio.jpg" },
+    ]
+  }
+];
 
 export default function EstablishmentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { itemCount, subtotal, establishmentId, addItem, replaceCart } = useCart();
-  const [dynamicProfile, setDynamicProfile] = useState<PartnerProfile | undefined>(() => {
-    if (id === "r1") return loadPartnerProfile();
-    return STATIC_FALLBACK[id || ""]?.profile;
-  });
-  const [activeTab, setActiveTab] = useState<TabKey>("");
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
 
   useEffect(() => {
-    const refresh = () => {
-      if (id === "r1") {
-        setDynamicProfile(loadPartnerProfile());
-      } else {
-        setDynamicProfile(STATIC_FALLBACK[id || ""]?.profile);
-      }
-    };
-
-    refresh();
-    window.addEventListener("focus", refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, [id]);
-
-  const categories = dynamicProfile?.categories || ["Plats"];
-
-  useEffect(() => {
-    if (!activeTab || !categories.includes(activeTab)) {
-      setActiveTab(categories[0] || "Plats");
+    // Load dynamic products added by partner
+    const savedProducts = localStorage.getItem('foodiz_products_r1');
+    if (savedProducts) {
+      const products = JSON.parse(savedProducts);
+      // Group by category (simplified for demo)
+      const dynamicCategories = [
+        { id: "cat_dynamic", name: "Nouveautés du Chef", items: products }
+      ];
+      setCategories([...DEFAULT_CATEGORIES, ...dynamicCategories]);
     }
-  }, [categories, activeTab]);
+  }, []);
 
-  const allProducts = (dynamicProfile?.products || []).filter((p) => p.active !== false);
-  const items = allProducts.filter((item) => item.category === activeTab);
+  const establishmentName = id === "r1" ? "Maison K" : 
+    id === "r2" ? "Le Bistrot Parisien" : 
+    id === "r3" ? "Sushi Ko" : 
+    id === "m1" ? "Marché Bio" : "Restaurant";
 
-  const establishmentName = dynamicProfile?.name || "Restaurant";
-  const establishmentHours = dynamicProfile?.hours || "Ouvert · 11:30 — 23:00";
-  const establishmentLocation = dynamicProfile?.location || "Paris 11e · 1,2 km";
-  const coverImage = dynamicProfile?.coverImage || "/images/restaurant-bistrot.jpg";
-
-  const addToCart = (item: PartnerProduct) => {
+  const addToCart = (item: { id: string; name: string; price: number; points: number; image: string }) => {
     const establishment = { id: id || "unknown", name: establishmentName };
 
     if (establishmentId && establishmentId !== establishment.id) {
@@ -115,90 +61,123 @@ export default function EstablishmentPage() {
         "Votre panier contient déjà des produits d'une autre enseigne. Voulez-vous le vider pour commencer un nouveau panier ?"
       );
       if (!confirmed) return;
-      replaceCart(item as any, establishment);
+      replaceCart(item, establishment);
       return;
     }
 
-    addItem(item as any, establishment);
+    addItem(item, establishment);
   };
 
   return (
-    <div className="animate-fade-in-up pb-4">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-foodiz-gold text-sm mb-4">
-        <ChevronLeft size={18} /> Retour
+    <div className="animate-fade-in-up relative min-h-screen border-x-2 border-foodiz-gold/20">
+      {/* Golden Side Borders */}
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+
+      {/* Back button (Floating) */}
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-4 left-4 z-40 w-10 h-10 rounded-full bg-foodiz-black/60 backdrop-blur-md border border-foodiz-gold/30 flex items-center justify-center text-foodiz-gold hover:bg-foodiz-black/80 transition-all"
+      >
+        <ChevronLeft size={20} />
       </button>
 
-      <div className="relative -mx-4 -mt-4 overflow-hidden rounded-b-[2rem] border-b border-foodiz-gold/15 shadow-[0_18px_60px_rgba(0,0,0,0.45)]">
-        <img src={coverImage} alt={establishmentName} className="w-full h-56 object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-foodiz-black via-foodiz-black/35 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-5 backdrop-blur-[1px]">
-          <h1 className="foodiz-title text-2xl text-white mb-3">{establishmentName}</h1>
-          <div className="flex flex-col gap-2 text-foodiz-gray text-xs">
-            <div className="flex items-center gap-2">
-              <Clock size={12} className="text-foodiz-gold" />
-              <span>{establishmentHours}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin size={12} className="text-foodiz-gold" />
-              <span>{establishmentLocation}</span>
-            </div>
+      {/* Header Image Banner */}
+      <div className="relative h-64 -mx-4 -mt-4 overflow-hidden">
+        <img 
+          src="/images/auth-restaurant.jpg" 
+          alt={establishmentName} 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-foodiz-black via-foodiz-black/60 to-transparent" />
+        
+        {/* Establishment Info */}
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <h1 className="foodiz-title text-3xl text-white italic" style={{ fontFamily: "'Playfair Display', serif" }}>
+              {establishmentName}
+            </h1>
+            <BadgeCheck size={24} className="text-foodiz-gold" />
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-foodiz-cream/90 text-xs font-medium">
+            <span className="flex items-center gap-1.5 bg-foodiz-black/40 backdrop-blur px-3 py-1 rounded-full border border-foodiz-gold/20">
+              <Clock size={12} className="text-foodiz-gold" /> 11:00 - 23:00
+            </span>
+            <span className="flex items-center gap-1.5 bg-foodiz-black/40 backdrop-blur px-3 py-1 rounded-full border border-foodiz-gold/20">
+              <MapPin size={12} className="text-foodiz-gold" /> 15 Rue de la Roquette, 75011 Paris
+            </span>
+            <span className="flex items-center gap-1.5 bg-foodiz-black/40 backdrop-blur px-3 py-1 rounded-full border border-foodiz-gold/20">
+              <Star size={12} className="text-foodiz-gold fill-foodiz-gold" /> 4.8 (240 avis)
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-2 mt-6 overflow-x-auto pb-2 scrollbar-none">
-        {categories.map((tab) => {
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`shrink-0 px-4 py-2.5 text-xs font-medium rounded-full transition-all ${
-                isActive
-                  ? "text-foodiz-black bg-foodiz-gold shadow-[0_10px_20px_rgba(216,168,79,0.2)]"
-                  : "text-foodiz-gray border border-foodiz-gold/15 bg-foodiz-card hover:text-foodiz-cream"
-              }`}
-            >
-              {tab}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-4 space-y-4">
-        {items.map((item) => (
-          <div key={item.id} className="foodiz-card rounded-[1.2rem] border border-foodiz-gold/12 overflow-hidden bg-[#0D0D0D]">
-            <div className="flex gap-0">
-              <div className="w-32 shrink-0 bg-black/20">
-                <img src={item.image || coverImage} alt={item.name} className="w-full h-full object-cover min-h-[118px]" />
-              </div>
-              <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
-                <div>
-                  <h3 className="text-sm font-medium text-foodiz-cream">{item.name}</h3>
-                  <p className="text-xs text-foodiz-gray/70 mt-1 leading-relaxed line-clamp-3">{item.desc}</p>
-                </div>
-                <div className="flex items-end justify-between gap-3 mt-4">
-                  <div>
-                    <p className="text-foodiz-gold font-semibold text-base">{getCustomerPrice(item.partnerPrice).toFixed(2).replace(".", ",")} €</p>
-                    <p className="text-[10px] text-foodiz-gold/55 mt-0.5">+{item.points} pts Foodiz</p>
+      {/* Menu Categories & Black Cards */}
+      <div className="mt-8 space-y-10 pb-32 px-2">
+        {categories.map((category: any) => (
+          <div key={category.id}>
+            <h2 className="foodiz-title text-xl text-foodiz-gold mb-4 px-2 border-l-4 border-foodiz-gold pl-3">
+              {category.name}
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {category.items.map((item: any) => (
+                <div 
+                  key={item.id} 
+                  className="foodiz-card bg-foodiz-card border border-foodiz-gold/10 rounded-xl overflow-hidden flex flex-col sm:flex-row group hover:border-foodiz-gold/30 transition-all"
+                >
+                  {/* Realistic Photo */}
+                  <div className="w-full sm:w-32 h-40 sm:h-32 overflow-hidden relative">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-foodiz-black/50 to-transparent sm:bg-gradient-to-r" />
                   </div>
-                  <button onClick={() => addToCart(item)} className="w-10 h-10 rounded-full bg-foodiz-gold text-foodiz-black flex items-center justify-center hover:bg-foodiz-gold-light transition-colors shadow-[0_10px_20px_rgba(216,168,79,0.18)] shrink-0">
-                    <Plus size={18} strokeWidth={2.5} />
-                  </button>
+                  
+                  {/* Details */}
+                  <div className="flex-1 p-4 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <h3 className="text-lg font-serif italic text-foodiz-cream font-bold">
+                          {item.name}
+                        </h3>
+                        <span className="text-foodiz-gold font-bold font-serif text-lg">
+                          {item.price.toFixed(2).replace(".", ",")} €
+                        </span>
+                      </div>
+                      <p className="text-xs text-foodiz-gray mt-1 line-clamp-2">
+                        {item.desc}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-[10px] text-foodiz-gold/60 flex items-center gap-1 uppercase tracking-wider font-bold">
+                        <Star size={10} fill="currentColor" /> +{item.points} pts Foodiz
+                      </span>
+                      <button
+                        onClick={() => addToCart(item)}
+                        className="w-9 h-9 rounded-full bg-foodiz-gold text-foodiz-black flex items-center justify-center hover:bg-foodiz-gold-light transition-all shadow-lg shadow-foodiz-gold/20 active:scale-95"
+                      >
+                        <Plus size={18} strokeWidth={3} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         ))}
-
-        {items.length === 0 && (
-          <div className="foodiz-card p-6 text-center text-foodiz-gray text-sm">Aucun produit disponible dans cette catégorie pour le moment.</div>
-        )}
       </div>
 
+      {/* Sticky Cart Bar */}
       {itemCount > 0 && establishmentId === (id || "unknown") && (
         <div className="fixed bottom-20 left-0 right-0 z-40 px-4 max-w-lg mx-auto">
-          <button onClick={() => navigate("/client/cart")} className="w-full flex items-center justify-between px-5 py-4 rounded-[1.4rem] shadow-[0_22px_50px_rgba(0,0,0,0.45),0_0_24px_rgba(216,168,79,0.15)] border border-foodiz-gold/20 bg-[linear-gradient(135deg,#E0B45C,#D8A84F,#C9A45C)]">
+          <button
+            onClick={() => navigate("/client/cart")}
+            className="w-full foodiz-btn flex items-center justify-between px-6 py-4 rounded-2xl shadow-2xl"
+          >
             <div className="flex items-center gap-3">
               <div className="relative">
                 <ShoppingBag size={20} className="text-foodiz-black" />
@@ -208,7 +187,9 @@ export default function EstablishmentPage() {
               </div>
               <span className="text-foodiz-black text-sm font-semibold">Voir le panier</span>
             </div>
-            <span className="text-foodiz-black font-bold text-base">{subtotal.toFixed(2).replace(".", ",")} €</span>
+            <span className="text-foodiz-black font-bold">
+              {subtotal.toFixed(2).replace(".", ",")} €
+            </span>
           </button>
         </div>
       )}

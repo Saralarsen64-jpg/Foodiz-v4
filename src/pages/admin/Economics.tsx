@@ -1,171 +1,191 @@
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
-import { TrendingUp, Users, DollarSign, AlertTriangle, ChevronRight, LogOut, ShieldCheck, Activity } from "lucide-react";
-import GoldIcon from "../../components/GoldIcon";
-import Logo from "../../components/Logo";
+import { 
+  ChevronLeft, 
+  BarChart3, 
+  Wallet, 
+  User, 
+  Store, 
+  Bike, 
+  ShieldCheck, 
+  ArrowUpRight,
+  BrainCircuit,
+  History,
+  Info,
+  Server,
+  Truck
+} from "lucide-react";
+
+// Structure des tranches selon le brief initial
+type EconomicSplit = {
+  courier: number;
+  foodizComm: number;
+  loyalty: number;
+  referral: number;
+  internal: number;
+  serviceFee: number;
+  deliveryFee: number;
+};
+
+const calculateEconomicSplit = (partnerPrice: number): EconomicSplit => {
+  // Frais classiques fixes pour la simulation dispatch
+  const serviceFee = 0.99;
+  const deliveryFee = 2.50;
+
+  if (partnerPrice <= 3.50) {
+    return { courier: 0.50, foodizComm: 0.50, loyalty: 0.10, referral: 0, internal: 0.10, serviceFee, deliveryFee };
+  } else if (partnerPrice <= 8.49) {
+    return { courier: 1.00, foodizComm: 1.00, loyalty: 0.20, referral: 0.20, internal: 0.10, serviceFee, deliveryFee };
+  } else {
+    return { courier: 1.20, foodizComm: 1.50, loyalty: 0.30, referral: 0.30, internal: 0.20, serviceFee, deliveryFee };
+  }
+};
+
+const MOCK_ORDERS = [
+  { id: "ORD-9842", restaurant: "Maison K", partnerPrice: 12.50, client: "Alex M.", date: "À l'instant" },
+  { id: "ORD-9841", restaurant: "Sushi Ko", partnerPrice: 7.80, client: "Sarah B.", date: "Il y a 5 min" },
+  { id: "ORD-9840", restaurant: "Marché Bio", partnerPrice: 3.20, client: "Marc D.", date: "Il y a 12 min" },
+];
 
 export default function AdminEconomics() {
   const navigate = useNavigate();
-    // ... imports et début de la fonction
-  useEffect(() => {
-    // VÉRIFICATION DE SÉCURITÉ RENFORCÉE
-    const isVerified = sessionStorage.getItem('foodiz_admin_verified');
-    if (!isVerified) {
-      // Si pas vérifié, on renvoie vers la porte secrète
-      navigate("/fz-admin-portal-secure"); 
-    }
-  }, [navigate]);
 
-  // ... le reste de ton code (fetchStats, etc.)
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    foodizMargin: 0,
-    pendingApprovals: 0,
-    totalUsers: 0
-  });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        // 1. CA Global et Marge Foodiz (Commandes livrées - en centimes)
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('final_client_total_cents, foodiz_margin_cents')
-          .eq('status', 'delivered');
-
-        const revenue = orders ? orders.reduce((sum, o) => sum + (o.final_client_total_cents || 0), 0) / 100 : 0;
-        const margin = orders ? orders.reduce((sum, o) => sum + (o.foodiz_margin_cents || 0), 0) / 100 : 0;
-
-        // 2. Utilisateurs en attente de validation (Partenaires & Livreurs)
-        const { count: pendingCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_approved', false)
-          .neq('role', 'client');
-
-        // 3. Total utilisateurs
-        const { count: userCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
-
-        setStats({
-          totalRevenue: revenue,
-          foodizMargin: margin,
-          pendingApprovals: pendingCount || 0,
-          totalUsers: userCount || 0
-        });
-      } catch (error) {
-        console.error("Erreur chargement stats admin:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
+  const totalEconomy = useMemo(() => {
+    return MOCK_ORDERS.reduce((acc, order) => {
+      const split = calculateEconomicSplit(order.partnerPrice);
+      return {
+        totalPartner: acc.totalPartner + order.partnerPrice,
+        totalCourier: acc.totalCourier + split.courier + split.deliveryFee, // Part course + frais livraison client
+        totalFoodiz: acc.totalFoodiz + split.foodizComm,
+        totalInternal: acc.totalInternal + split.internal + split.serviceFee, // Part interne + frais service client
+        totalLoyalty: acc.totalLoyalty + split.loyalty,
+        totalReferral: acc.totalReferral + split.referral,
+      };
+    }, { totalPartner: 0, totalCourier: 0, totalFoodiz: 0, totalInternal: 0, totalLoyalty: 0, totalReferral: 0 });
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
+  const subAccounts = [
+    { label: "Sous-compte Partenaires", value: totalEconomy.totalPartner, icon: Store, color: "text-[#FFF8EA]", desc: "Dû aux restaurateurs" },
+    { label: "Commission Foodiz", value: totalEconomy.totalFoodiz, icon: BarChart3, color: "text-foodiz-gold", desc: "Marge brute plateforme" },
+    { label: "Sous-compte Livreurs", value: totalEconomy.totalCourier, icon: Bike, color: "text-[#3FA76D]", desc: "Part fixe + Frais livraison" },
+    { label: "Frais Internes & Service", value: totalEconomy.totalInternal, icon: Server, color: "text-blue-400", desc: "Coûts structure + Frais service" },
+    { label: "Réserve Fidélité", value: totalEconomy.totalLoyalty, icon: Wallet, color: "text-amber-300", desc: "Provision points générés" },
+    { label: "Réserve Parrainage", value: totalEconomy.totalReferral, icon: User, color: "text-purple-400", desc: "Provision bonus invitations" },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#FFF8EA] relative border-x-2 border-foodiz-gold/20">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      
+    <div className="min-h-screen bg-[#050505] text-[#FFF8EA]">
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-6 py-4 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Logo size="md" />
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] text-foodiz-gold border border-foodiz-gold/30 px-3 py-1 rounded-full uppercase tracking-widest font-bold">Admin God Mode</span>
-            <button onClick={handleLogout} className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm">
-              <LogOut size={16} /> Déconnexion
-            </button>
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <button onClick={() => navigate("/admin")} className="text-foodiz-gold">
+            <ChevronLeft size={24} />
+          </button>
+          <div className="flex items-center gap-3">
+            <BrainCircuit size={20} className="text-foodiz-gold" />
+            <h1 className="foodiz-title text-lg uppercase tracking-widest">Dispatch IA avec Frais Annexes</h1>
           </div>
+          <div className="w-6" />
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-          <div>
-            <h1 className="foodiz-title text-3xl mb-2">Tableau de Bord Financier</h1>
-            <p className="text-foodiz-gray">Vue d'ensemble de l'écosystème Foodiz en temps réel.</p>
+      <main className="max-w-6xl mx-auto p-6 space-y-8">
+        {/* IA Status Banner */}
+        <div className="foodiz-card p-4 bg-foodiz-gold/5 border-foodiz-gold/20 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-foodiz-gold/10 flex items-center justify-center border border-foodiz-gold/20">
+            <div className="w-2 h-2 bg-foodiz-gold rounded-full animate-ping" />
           </div>
-          <button onClick={() => navigate("/admin/approvals")} className="foodiz-btn flex items-center gap-2">
-            <ShieldCheck size={18} /> Gérer les validations ({stats.pendingApprovals})
-          </button>
+          <div>
+            <p className="text-sm font-medium text-foodiz-gold">Agent IA Connecté à Stripe Connect</p>
+            <p className="text-[10px] text-foodiz-gray uppercase tracking-widest">Redispach auto : Prix + Livraison + Service</p>
+          </div>
+          <div className="ml-auto flex gap-2">
+             <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] text-foodiz-gray uppercase font-bold flex items-center gap-2">
+               <Truck size={12} className="text-foodiz-gold" /> Livraison incluse
+             </div>
+             <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] text-foodiz-gray uppercase font-bold flex items-center gap-2">
+               <Server size={12} className="text-foodiz-gold" /> Service inclus
+             </div>
+          </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-20 text-foodiz-gray animate-pulse">Chargement des données financières...</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center">
-                  <DollarSign size={20} className="text-foodiz-gold" />
+        {/* Sub-Accounts Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {subAccounts.map((acc, i) => (
+            <div key={i} className="foodiz-card p-6 bg-[#0A0A0A] group hover:border-foodiz-gold/40 transition-all duration-500">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <acc.icon size={24} className={acc.color} />
                 </div>
-                <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">CA Global (Livré)</h3>
+                <ArrowUpRight size={16} className="text-foodiz-gray/30" />
               </div>
-              <p className="text-3xl font-serif italic text-foodiz-cream">{stats.totalRevenue.toFixed(2)} €</p>
-              <p className="text-xs text-foodiz-green mt-2 flex items-center gap-1"><TrendingUp size={12} /> Revenus totaux clients</p>
+              <p className="text-[10px] text-foodiz-gray uppercase font-bold tracking-[0.2em] mb-1">{acc.label}</p>
+              <p className="text-3xl font-serif italic text-foodiz-cream">{acc.value.toFixed(2)} €</p>
+              <p className="text-[9px] text-foodiz-gray/60 mt-2 italic">{acc.desc}</p>
             </div>
+          ))}
+        </div>
 
-            <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-foodiz-green/10 flex items-center justify-center">
-                  <Activity size={20} className="text-foodiz-green" />
-                </div>
-                <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">Marge Nette Foodiz</h3>
-              </div>
-              <p className="text-3xl font-serif italic text-foodiz-green">{stats.foodizMargin.toFixed(2)} €</p>
-              <p className="text-xs text-foodiz-gray mt-2">Bénéfice plateforme (hors coûts)</p>
-            </div>
-
-            <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20 cursor-pointer hover:border-foodiz-red/40 transition-all" onClick={() => navigate("/admin/approvals")}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-foodiz-red/10 flex items-center justify-center">
-                  <AlertTriangle size={20} className="text-foodiz-red" />
-                </div>
-                <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">Validations en attente</h3>
-              </div>
-              <p className="text-3xl font-serif italic text-foodiz-red">{stats.pendingApprovals}</p>
-              <p className="text-xs text-foodiz-gold mt-2 flex items-center gap-1">Voir la liste <ChevronRight size={12}/></p>
-            </div>
-
-            <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center">
-                  <Users size={20} className="text-foodiz-gold" />
-                </div>
-                <h3 className="text-xs font-bold text-foodiz-gray uppercase tracking-wider">Utilisateurs Totaux</h3>
-              </div>
-              <p className="text-3xl font-serif italic text-foodiz-cream">{stats.totalUsers}</p>
-              <p className="text-xs text-foodiz-gray mt-2">Clients, Partenaires & Livreurs</p>
+        {/* Live Transaction Ledger */}
+        <div className="foodiz-card overflow-hidden">
+          <div className="p-6 border-b border-foodiz-gold/10 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History size={18} className="text-foodiz-gold" />
+              <h2 className="foodiz-title text-sm">Journal de Ventilation IA Complète</h2>
             </div>
           </div>
-        )}
-
-        {/* Section Actions Rapides Admin */}
-        <div className="foodiz-card p-8 bg-gradient-to-br from-foodiz-gold/5 to-foodiz-card border-foodiz-gold/20">
-          <h2 className="foodiz-title text-xl mb-6">Outils d'Administration</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button onClick={() => navigate("/admin/approvals")} className="p-4 rounded-xl bg-foodiz-black border border-foodiz-gold/10 hover:border-foodiz-gold/40 transition-all text-left group">
-              <h3 className="text-foodiz-cream font-bold group-hover:text-foodiz-gold transition-colors">Gérer les Inscriptions</h3>
-              <p className="text-xs text-foodiz-gray mt-1">Valider ou refuser les partenaires et livreurs.</p>
-            </button>
-            <button onClick={() => navigate("/admin/payouts")} className="p-4 rounded-xl bg-foodiz-black border border-foodiz-gold/10 hover:border-foodiz-gold/40 transition-all text-left group">
-              <h3 className="text-foodiz-cream font-bold group-hover:text-foodiz-gold transition-colors">Dispatch Financier</h3>
-              <p className="text-xs text-foodiz-gray mt-1">Voir les virements partenaires et livreurs.</p>
-            </button>
-            <button onClick={() => navigate("/admin/foodiz-stats")} className="p-4 rounded-xl bg-foodiz-black border border-foodiz-gold/10 hover:border-foodiz-gold/40 transition-all text-left group">
-              <h3 className="text-foodiz-cream font-bold group-hover:text-foodiz-gold transition-colors">Stats Foodiz+</h3>
-              <p className="text-xs text-foodiz-gray mt-1">Revenus des abonnements et campagnes.</p>
-            </button>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-white/[0.02] text-[10px] uppercase tracking-widest text-foodiz-gray font-bold">
+                <tr>
+                  <th className="px-6 py-4">Commande</th>
+                  <th className="px-6 py-4">Ventilation Resto</th>
+                  <th className="px-6 py-4 text-center">Dispatch Livreur</th>
+                  <th className="px-6 py-4 text-center">Dispatch Interne</th>
+                  <th className="px-6 py-4 text-center text-foodiz-gold">Foodiz Net</th>
+                  <th className="px-6 py-4 text-center">Reserves</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm divide-y divide-white/[0.05]">
+                {MOCK_ORDERS.map((order) => {
+                  const split = calculateEconomicSplit(order.partnerPrice);
+                  return (
+                    <tr key={order.id} className="hover:bg-white/[0.01] transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="font-bold text-foodiz-cream">{order.id}</p>
+                        <p className="text-[9px] text-foodiz-gray uppercase">{order.date}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-xs font-bold text-foodiz-cream">{order.partnerPrice.toFixed(2)} €</p>
+                        <p className="text-[9px] text-foodiz-gray uppercase">Prix article</p>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <p className="font-medium">{(split.courier + split.deliveryFee).toFixed(2)} €</p>
+                        <p className="text-[9px] text-foodiz-gray uppercase">Fixe + Livr.</p>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <p className="font-medium">{(split.internal + split.serviceFee).toFixed(2)} €</p>
+                        <p className="text-[9px] text-foodiz-gray uppercase">Interne + Serv.</p>
+                      </td>
+                      <td className="px-6 py-4 text-center font-bold text-foodiz-gold">{split.foodizComm.toFixed(2)} €</td>
+                      <td className="px-6 py-4 text-center">
+                        <p className="text-[10px] font-bold text-amber-300">{(split.loyalty + split.referral).toFixed(2)} €</p>
+                        <p className="text-[9px] text-foodiz-gray uppercase tracking-tighter">Fid + Parr</p>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+        </div>
+
+        <div className="foodiz-card p-4 bg-white/[0.01] flex gap-3 border-foodiz-gold/10">
+           <Info size={16} className="text-foodiz-gold shrink-0 mt-0.5" />
+           <p className="text-[10px] text-foodiz-gray leading-relaxed">
+             Le moteur IA applique ici une ventilation multi-couches. 
+             Contrairement aux plateformes classiques, **Foodiz ne prélève rien sur le prix restaurant**. 
+             Les revenus Foodiz proviennent exclusivement du supplément client, tandis que les frais de service et livraison sont 100% alloués à la structure technique et aux livreurs.
+           </p>
         </div>
       </main>
     </div>
