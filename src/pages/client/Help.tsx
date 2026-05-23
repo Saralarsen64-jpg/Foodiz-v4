@@ -1,50 +1,30 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, HelpCircle, MessageCircle, ChevronRight, Mail } from "lucide-react";
-import GoldIcon from "../../components/GoldIcon";
+import { ChevronLeft, MessageCircle, ChevronRight } from "lucide-react";
 
 export default function HelpPage() {
   const navigate = useNavigate();
-
   return (
     <div className="animate-fade-in-up">
-      <button onClick={() => navigate("/client/account")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6">
-        <ChevronLeft size={18} /> Retour
+      <button onClick={() => navigate("/client/account")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6"><ChevronLeft size={18} /> Compte</button>
+      <h1 className="foodiz-title text-2xl mb-6">Aide & Support</h1>
+      <button onClick={() => navigate("/client/help-center")} className="w-full foodiz-card p-5 flex items-center justify-between mb-6 border-foodiz-gold/30">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-foodiz-gold/10 flex items-center justify-center"><MessageCircle size={20} className="text-foodiz-gold" /></div>
+          <div className="text-left">
+            <h3 className="text-sm font-medium text-foodiz-cream">Contacter le support</h3>
+            <p className="text-xs text-foodiz-gray mt-1">Notre IA et nos équipes sont là pour vous.</p>
+          </div>
+        </div>
+        <ChevronRight size={18} className="text-foodiz-gold" />
       </button>
-
-      <h1 className="foodiz-title text-2xl mb-6">Nous contacter</h1>
-
-      <div className="foodiz-card p-5 mb-4">
-        <p className="text-sm text-foodiz-cream mb-2">Une question ? Un problème ?</p>
-        <p className="text-xs text-foodiz-gray">Notre équipe vous répond sous 24h ouvrées.</p>
-      </div>
-
-      <div className="space-y-3">
-        <button onClick={() => navigate("/client/help-center")} className="w-full foodiz-card p-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all">
-          <GoldIcon icon={MessageCircle} size={18} />
-          <div className="flex-1">
-            <p className="text-sm text-foodiz-cream">Contacter le support</p>
-            <p className="text-[10px] text-foodiz-gray mt-0.5">Passer par l’assistant intelligent</p>
+      <div className="space-y-2">
+        <h2 className="foodiz-title text-sm mb-3">Questions fréquentes</h2>
+        {["Comment suivre ma commande ?", "Comment utiliser mes points ?", "Problème de paiement"].map((q, i) => (
+          <div key={i} className="foodiz-card p-4 flex justify-between items-center">
+            <span className="text-sm text-foodiz-cream">{q}</span>
+            <ChevronRight size={16} className="text-foodiz-gold/50" />
           </div>
-          <ChevronRight size={14} className="text-foodiz-gold/30" />
-        </button>
-
-        <a href="mailto:support@foodiz.fr" className="w-full foodiz-card p-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all block">
-          <GoldIcon icon={Mail} size={18} />
-          <div className="flex-1">
-            <p className="text-sm text-foodiz-cream">Écrire par e-mail</p>
-            <p className="text-[10px] text-foodiz-gray mt-0.5">support@foodiz.fr</p>
-          </div>
-          <ChevronRight size={14} className="text-foodiz-gold/30" />
-        </a>
-
-        <button onClick={() => navigate("/client/help-center")} className="w-full foodiz-card p-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all">
-          <GoldIcon icon={HelpCircle} size={18} />
-          <div className="flex-1">
-            <p className="text-sm text-foodiz-cream">Centre d'aide</p>
-            <p className="text-[10px] text-foodiz-gray mt-0.5">Consultez notre FAQ</p>
-          </div>
-          <ChevronRight size={14} className="text-foodiz-gold/30" />
-        </button>
+        ))}
       </div>
     </div>
   );

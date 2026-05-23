@@ -1,273 +1,160 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ChevronLeft,
-  CreditCard,
-  MapPin,
-  Clock3,
-  ShieldCheck,
-  CheckCircle2,
-} from "lucide-react";
+import { ChevronLeft, CreditCard, MapPin, Gift, CheckCircle } from "lucide-react";
 import { useCart } from "../../context/CartContext";
-import {
-  buildSavedAdvantage,
-  CART_SELECTED_ADVANTAGE_KEY,
-  computeAdvantageDiscount,
-  DEFAULT_ADVANTAGES,
-} from "../../utils/cartPricing";
-
-const ADDRESSES = [
-  { id: "addr1", label: "Domicile", value: "24 rue Oberkampf, Paris 11e" },
-  { id: "addr2", label: "Bureau", value: "12 avenue de la République, Paris 11e" },
-];
-
-const PAYMENTS = [
-  { id: "pm1", label: "Visa •••• 4242" },
-  { id: "pm2", label: "Apple Pay" },
-];
+import { useOrders } from "../../context/OrderContext";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, subtotal, totalPoints, establishmentName, clearCart } = useCart();
-  const [selectedAddress, setSelectedAddress] = useState(ADDRESSES[0].id);
-  const [selectedPayment, setSelectedPayment] = useState(PAYMENTS[0].id);
-  const [notes, setNotes] = useState("");
-  const [placed, setPlaced] = useState(false);
+  const { items, subtotal, establishmentId, establishmentName, clearCart } = useCart();
+  const { createOrder } = useOrders();
+  
+  const [usePoints, setUsePoints] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [step, setStep] = useState<'review' | 'success'>('review');
 
-  const savedAdvantage = buildSavedAdvantage();
-  const availableAdvantages = savedAdvantage
-    ? [savedAdvantage, ...DEFAULT_ADVANTAGES.filter((adv) => adv.name !== savedAdvantage.name)]
-    : DEFAULT_ADVANTAGES;
-  const [selectedAdvantageId, setSelectedAdvantageId] = useState<string | null>(() => localStorage.getItem(CART_SELECTED_ADVANTAGE_KEY));
+  // Mock constants
+  const deliveryFee = 2.50;
+  const serviceFee = 0.99;
+  const discount = 0; // Could be calculated from advantages
+  const totalBeforePoints = subtotal + deliveryFee + serviceFee - discount;
+  
+  // Mock user points
+  const userPoints = 1250;
+  const pointsValue = 12.50; // 100 pts = 1€
+  const finalTotal = usePoints ? Math.max(0, totalBeforePoints - pointsValue) : totalBeforePoints;
 
-  useEffect(() => {
-    const syncSelectedAdvantage = () => {
-      setSelectedAdvantageId(localStorage.getItem(CART_SELECTED_ADVANTAGE_KEY));
-    };
-
-    syncSelectedAdvantage();
-    window.addEventListener("focus", syncSelectedAdvantage);
-    window.addEventListener("storage", syncSelectedAdvantage);
-
-    return () => {
-      window.removeEventListener("focus", syncSelectedAdvantage);
-      window.removeEventListener("storage", syncSelectedAdvantage);
-    };
-  }, []);
-
-  const activeAdvantage = availableAdvantages.find((a) => a.id === selectedAdvantageId) || null;
-  const userPointsBalance = 1240;
-
-  const serviceFee = items.length === 0 ? 0 : items.length === 1 ? 1.99 : items.length === 2 ? 1.49 : items.length === 3 ? 1.19 : 0.99;
-  const deliveryFee = items.length === 0 ? 0 : 2.5;
-  const discount = computeAdvantageDiscount(activeAdvantage, subtotal, deliveryFee, serviceFee, items);
-  const total = Math.max(0, subtotal + serviceFee + deliveryFee - discount);
-  const remainingPoints = Math.max(0, userPointsBalance - (activeAdvantage?.points ?? 0));
-
-  const selectedAddressValue = useMemo(
-    () => ADDRESSES.find((addr) => addr.id === selectedAddress)?.value ?? ADDRESSES[0].value,
-    [selectedAddress]
-  );
-
-  const handlePlaceOrder = () => {
-    setPlaced(true);
-    const orderId = `ORD-${Date.now()}`;
-    const newOrder = {
-      id: orderId,
-      restaurant: establishmentName || "Restaurant",
-      date: new Date().toLocaleDateString("fr-FR"),
-      time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-      status: "in_progress",
-      total,
-      items: items.length,
-      loyaltyPoints: totalPoints,
-      image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=400",
-      restaurantCoords: [48.8566, 2.3522],
-      clientCoords: [48.8606, 2.3376],
-      courier: { name: "Karim", phone: "+33 6 12 34 56 78" },
-      deliveryCode: Math.floor(100000 + Math.random() * 900000).toString(),
-    };
-
-    const existing = JSON.parse(localStorage.getItem("foodiz_client_orders_v1") || "[]");
-    localStorage.setItem("foodiz_client_orders_v1", JSON.stringify([newOrder, ...existing]));
-
-    window.setTimeout(() => {
-      clearCart();
-      localStorage.removeItem(CART_SELECTED_ADVANTAGE_KEY);
-      navigate(`/client/orders/${orderId}`);
-    }, 1200);
+  const handlePayment = () => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      if (establishmentId && establishmentName) {
+        createOrder(
+          establishmentId,
+          establishmentName,
+          items,
+          finalTotal,
+          "24 rue Oberkampf, 75011 Paris", // Mock address
+          "Alexandre Martin" // Mock user
+        );
+        if (usePoints) {
+          localStorage.setItem('foodiz_client_points', (userPoints - 1250).toString());
+        }
+        clearCart();
+        setStep('success');
+      }
+      setIsProcessing(false);
+    }, 2000);
   };
 
-  if (items.length === 0) {
+  if (step === 'success') {
     return (
-      <div className="animate-fade-in-up pb-24">
-        <button onClick={() => navigate("/client/cart")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6">
-          <ChevronLeft size={18} /> Retour au panier
-        </button>
-        <div className="foodiz-card p-8 text-center">
-          <h1 className="foodiz-title text-2xl mb-2">Aucune commande à finaliser</h1>
-          <p className="text-foodiz-gray text-sm mb-6">Votre panier est vide pour le moment.</p>
-          <button onClick={() => navigate("/client/restaurants")} className="foodiz-btn px-6 py-3">
-            Retourner aux établissements
-          </button>
+      <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center p-6 text-center animate-fade-in-up">
+        <div className="w-24 h-24 rounded-full bg-foodiz-green/10 flex items-center justify-center mb-6 border border-foodiz-green/30">
+          <CheckCircle size={48} className="text-foodiz-green" />
         </div>
+        <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Commande Confirmée !</h1>
+        <p className="text-foodiz-gray mb-8">Le restaurant prépare votre commande. Vous serez notifié dès qu'un livreur sera en route.</p>
+        <button onClick={() => navigate("/client/orders")} className="foodiz-btn w-full max-w-sm py-4">Suivre ma commande</button>
       </div>
     );
   }
 
   return (
-    <div className="animate-fade-in-up pb-32">
-      <button onClick={() => navigate("/client/cart")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6">
-        <ChevronLeft size={18} /> Retour au panier
-      </button>
+    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      
+      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <button onClick={() => navigate(-1)} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
+          <h1 className="foodiz-title text-lg">Paiement</h1>
+          <div className="w-6" />
+        </div>
+      </header>
 
-      <div className="mb-6">
-        <h1 className="foodiz-title text-2xl mb-2">Finaliser la commande</h1>
-        <p className="text-foodiz-gray text-xs">{establishmentName}</p>
-      </div>
-
-      <div className="space-y-5">
-        <div className="foodiz-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <MapPin size={16} className="text-foodiz-gold" />
-            <h2 className="foodiz-title text-sm">Adresse de livraison</h2>
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        {/* Address */}
+        <div className="foodiz-card p-4 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center shrink-0">
+            <MapPin size={18} className="text-foodiz-gold" />
           </div>
-          <div className="space-y-2">
-            {ADDRESSES.map((address) => (
-              <button
-                key={address.id}
-                onClick={() => setSelectedAddress(address.id)}
-                className={`w-full rounded-2xl border p-4 text-left transition-all ${
-                  selectedAddress === address.id
-                    ? "border-foodiz-gold/45 bg-foodiz-gold/5"
-                    : "border-foodiz-gold/10 bg-white/[0.02]"
-                }`}
-              >
-                <div className="text-foodiz-cream text-sm font-medium">{address.label}</div>
-                <div className="text-foodiz-gray text-xs mt-1">{address.value}</div>
-              </button>
-            ))}
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-foodiz-cream">Livraison à domicile</h3>
+            <p className="text-xs text-foodiz-gray mt-1">24 rue Oberkampf, 75011 Paris</p>
+            <button className="text-[10px] text-foodiz-gold mt-2 underline">Changer d'adresse</button>
           </div>
         </div>
 
-        <div className="foodiz-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <CreditCard size={16} className="text-foodiz-gold" />
-            <h2 className="foodiz-title text-sm">Moyen de paiement</h2>
+        {/* Points Loyalty */}
+        <div className={`foodiz-card p-4 flex items-center justify-between border ${usePoints ? 'border-foodiz-gold bg-foodiz-gold/5' : 'border-foodiz-gold/10'}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center">
+              <Gift size={18} className="text-foodiz-gold" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-foodiz-cream">Utiliser mes points Foodiz</h3>
+              <p className="text-xs text-foodiz-gray">Solde: {userPoints} pts (-{pointsValue.toFixed(2)} €)</p>
+            </div>
           </div>
-          <div className="space-y-2">
-            {PAYMENTS.map((payment) => (
-              <button
-                key={payment.id}
-                onClick={() => setSelectedPayment(payment.id)}
-                className={`w-full rounded-2xl border p-4 text-left transition-all ${
-                  selectedPayment === payment.id
-                    ? "border-foodiz-gold/45 bg-foodiz-gold/5"
-                    : "border-foodiz-gold/10 bg-white/[0.02]"
-                }`}
-              >
-                <div className="text-foodiz-cream text-sm font-medium">{payment.label}</div>
-              </button>
-            ))}
-          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="sr-only peer" />
+            <div className="w-11 h-6 bg-foodiz-card peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-foodiz-gray after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-foodiz-gold"></div>
+          </label>
         </div>
 
-        <div className="foodiz-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock3 size={16} className="text-foodiz-gold" />
-            <h2 className="foodiz-title text-sm">Instructions</h2>
+        {/* Payment Method */}
+        <div className="foodiz-card p-4 flex items-center gap-4 border-foodiz-gold/30">
+          <div className="w-12 h-8 bg-foodiz-cream rounded flex items-center justify-center">
+            <CreditCard size={16} className="text-foodiz-black" />
           </div>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Code d'entrée, étage, détails utiles pour la livraison..."
-            className="w-full min-h-[96px] rounded-2xl bg-white/[0.02] border border-foodiz-gold/10 p-4 text-sm text-foodiz-cream placeholder-foodiz-gray/40 outline-none focus:border-foodiz-gold/30 resize-none"
-          />
-          <p className="text-foodiz-gray text-[11px] mt-2">Livraison à : {selectedAddressValue}</p>
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-foodiz-cream">Visa se terminant par 4242</h3>
+            <p className="text-xs text-foodiz-gray mt-1">Expire le 12/25</p>
+          </div>
+          <span className="text-[10px] text-foodiz-gold border border-foodiz-gold/30 px-2 py-1 rounded">Par défaut</span>
         </div>
 
-        <div className="foodiz-card p-5">
-          <h2 className="foodiz-title text-sm mb-4">Récapitulatif du paiement</h2>
-          <div className="space-y-3 mb-4">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3 text-sm">
-                <div className="text-foodiz-cream">
-                  {item.quantity}× {item.name}
-                </div>
-                <div className="text-foodiz-cream">{(item.price * item.quantity).toFixed(2).replace(".", ",")} €</div>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2 border-t border-foodiz-gold/10 pt-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-foodiz-gray">Sous-total</span>
-              <span className="text-foodiz-cream">{subtotal.toFixed(2).replace(".", ",")} €</span>
+        {/* Total Recap */}
+        <div className="foodiz-card p-6 bg-[#FDFBF7] text-[#1a1a1a]">
+          <h3 className="font-serif text-xl text-center italic mb-6 tracking-widest uppercase">Votre Addition</h3>
+          <div className="space-y-3 font-mono text-sm text-[#5C4033] mb-6">
+            <div className="flex justify-between">
+              <span>Sous-total</span>
+              <span className="font-bold">{subtotal.toFixed(2).replace(".", ",")} €</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-foodiz-gray">Frais de livraison</span>
-              <span className="text-foodiz-cream">{deliveryFee.toFixed(2).replace(".", ",")} €</span>
+            <div className="flex justify-between">
+              <span>Livraison & Service</span>
+              <span className="font-bold">{(deliveryFee + serviceFee).toFixed(2).replace(".", ",")} €</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-foodiz-gray">Frais de service</span>
-              <span className="text-foodiz-cream">{serviceFee.toFixed(2).replace(".", ",")} €</span>
-            </div>
-            {activeAdvantage && discount > 0 && (
-              <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-foodiz-green">Avantage appliqué</span>
-                  <span className="text-foodiz-green">-{discount.toFixed(2).replace(".", ",")} €</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-foodiz-gray">Total après avantage</span>
-                  <span className="text-foodiz-gold">{total.toFixed(2).replace(".", ",")} €</span>
-                </div>
-              </>
-            )}
-            {activeAdvantage?.discountType === "dessert_cheapest" && (
-              <div className="flex justify-between text-[11px] text-foodiz-gray">
-                <span>Dessert offert</span>
-                <span>Moins cher du panier · max 8€</span>
+            {discount > 0 && (
+              <div className="flex justify-between text-[#8B5A2B]">
+                <span>Avantage Foodiz</span>
+                <span className="font-bold">-{discount.toFixed(2).replace(".", ",")} €</span>
               </div>
             )}
-            {activeAdvantage && discount === 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-foodiz-gray">Avantage sélectionné</span>
-                <span className="text-foodiz-gold">{activeAdvantage.name}</span>
+            {usePoints && (
+              <div className="flex justify-between text-foodiz-green font-bold">
+                <span>Points Foodiz</span>
+                <span>-{pointsValue.toFixed(2).replace(".", ",")} €</span>
               </div>
             )}
-            <div className="flex justify-between text-sm">
-              <span className="text-foodiz-gray">Points utilisés</span>
-              <span className="text-foodiz-gold">-{activeAdvantage?.points ?? 0}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-foodiz-gray">Points restants</span>
-              <span className="text-foodiz-gold">{remainingPoints}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-foodiz-gray">Points gagnés</span>
-              <span className="text-foodiz-gold">+{totalPoints}</span>
-            </div>
-            <div className="border-t border-foodiz-gold/10 pt-3 flex justify-between items-center">
-              <span className="text-foodiz-cream font-semibold">Total à payer</span>
-              <span className="text-foodiz-gold font-bold text-xl">{total.toFixed(2).replace(".", ",")} €</span>
-            </div>
+          </div>
+          <div className="mt-6 pt-4 border-t-2 border-[#1a1a1a] flex justify-between items-end">
+            <span className="font-serif text-lg italic font-bold">TOTAL À PAYER</span>
+            <span className="font-serif text-3xl text-[#8B5A2B] italic font-bold">
+              {finalTotal.toFixed(2).replace(".", ",")} €
+            </span>
           </div>
         </div>
 
-        <div className="foodiz-card p-4 bg-foodiz-gradient-gold border-foodiz-gold/20 flex items-center gap-3">
-          <ShieldCheck size={18} className="text-foodiz-gold" />
-          <p className="text-xs text-foodiz-cream">Paiement sécurisé Foodiz · chiffrement et validation de commande inclus</p>
-        </div>
-      </div>
-
-      <button
-        onClick={handlePlaceOrder}
-        disabled={placed}
-        className="w-full foodiz-btn py-4 text-base flex items-center justify-center gap-3 mt-6"
-      >
-        {placed ? <CheckCircle2 size={20} /> : <CreditCard size={20} />}
-        {placed ? "Commande confirmée" : `Payer ${total.toFixed(2).replace(".", ",")} €`}
-      </button>
+        <button 
+          onClick={handlePayment} 
+          disabled={isProcessing || items.length === 0}
+          className="w-full foodiz-btn py-4 text-lg flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {isProcessing ? 'Traitement en cours...' : `Payer ${finalTotal.toFixed(2).replace(".", ",")} €`}
+        </button>
+      </main>
     </div>
   );
 }
