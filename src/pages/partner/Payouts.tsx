@@ -1,34 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  ChevronLeft, 
-  CreditCard, 
-  Calendar, 
-  Clock, 
-  ArrowUpRight, 
-  CheckCircle2, 
-  Wallet,
-  AlertCircle
-} from "lucide-react";
-import GoldIcon from "../../components/GoldIcon";
+import { ChevronLeft, Calendar, Clock, ArrowUpRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function PartnerPayouts() {
   const navigate = useNavigate();
-  const [frequency, setRating] = useState<"daily" | "weekly">("weekly");
+  const [frequency, setFrequency] = useState<"daily" | "weekly">("weekly");
   const [isUpdating, setIsUpdating] = useState(false);
 
   const stats = {
-    balance: 845.20,
-    nextPayout: "Lun. 22 Janv.",
-    lastPayout: 1240.00,
+    balance: 845.2,
+    nextPayout: frequency === "daily" ? "Demain matin" : "Lun. 22 Janv.",
+    lastPayout: 1240.0,
   };
 
   const handleUpdateFrequency = (newFreq: "daily" | "weekly") => {
     setIsUpdating(true);
     setTimeout(() => {
-      setRating(newFreq);
+      setFrequency(newFreq);
       setIsUpdating(false);
-    }, 1000);
+    }, 500);
   };
 
   return (
@@ -44,34 +34,27 @@ export default function PartnerPayouts() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Solde Card */}
         <div className="foodiz-card p-8 bg-foodiz-gradient-gold border-foodiz-gold/30 text-center relative overflow-hidden">
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
           <p className="text-[10px] text-foodiz-black font-bold uppercase tracking-[0.2em] mb-2 opacity-60">Solde disponible</p>
           <p className="text-5xl font-serif italic text-foodiz-black font-bold">{stats.balance.toFixed(2)} €</p>
           <div className="mt-6 flex justify-center gap-4">
-             <div className="bg-foodiz-black/10 px-4 py-2 rounded-full flex items-center gap-2">
-                <Clock size={14} className="text-foodiz-black" />
-                <span className="text-[10px] text-foodiz-black font-bold uppercase">Prochain : {stats.nextPayout}</span>
-             </div>
+            <div className="bg-foodiz-black/10 px-4 py-2 rounded-full flex items-center gap-2">
+              <Clock size={14} className="text-foodiz-black" />
+              <span className="text-[10px] text-foodiz-black font-bold uppercase">Prochain : {stats.nextPayout}</span>
+            </div>
           </div>
         </div>
 
-        {/* Choix Fréquence */}
         <div className="foodiz-card p-6 space-y-4">
           <div className="flex items-center gap-3 mb-2">
             <Calendar size={20} className="text-foodiz-gold" />
             <h2 className="foodiz-title text-sm">Fréquence des virements</h2>
           </div>
-          <p className="text-xs text-foodiz-gray leading-relaxed">
-            Choisissez quand vous souhaitez recevoir vos fonds sur votre compte bancaire.
-          </p>
-          
+          <p className="text-xs text-foodiz-gray leading-relaxed">Choisissez quand vous souhaitez recevoir vos fonds sur votre compte bancaire.</p>
+
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <button 
-              onClick={() => handleUpdateFrequency("daily")}
-              className={`p-4 rounded-2xl border transition-all text-left ${frequency === "daily" ? "bg-foodiz-gold/10 border-foodiz-gold" : "bg-foodiz-card border-foodiz-gold/10"}`}
-            >
+            <button onClick={() => handleUpdateFrequency("daily")} className={`p-4 rounded-2xl border transition-all text-left ${frequency === "daily" ? "bg-foodiz-gold/10 border-foodiz-gold" : "bg-foodiz-card border-foodiz-gold/10"}`}>
               <div className="flex justify-between items-start mb-2">
                 <span className={`p-2 rounded-lg ${frequency === "daily" ? "bg-foodiz-gold text-foodiz-black" : "bg-white/5 text-foodiz-gray"}`}>
                   <Clock size={16} />
@@ -82,10 +65,7 @@ export default function PartnerPayouts() {
               <p className="text-[10px] text-foodiz-gray mt-1">Virement chaque matin (J+1)</p>
             </button>
 
-            <button 
-              onClick={() => handleUpdateFrequency("weekly")}
-              className={`p-4 rounded-2xl border transition-all text-left ${frequency === "weekly" ? "bg-foodiz-gold/10 border-foodiz-gold" : "bg-foodiz-card border-foodiz-gold/10"}`}
-            >
+            <button onClick={() => handleUpdateFrequency("weekly")} className={`p-4 rounded-2xl border transition-all text-left ${frequency === "weekly" ? "bg-foodiz-gold/10 border-foodiz-gold" : "bg-foodiz-card border-foodiz-gold/10"}`}>
               <div className="flex justify-between items-start mb-2">
                 <span className={`p-2 rounded-lg ${frequency === "weekly" ? "bg-foodiz-gold text-foodiz-black" : "bg-white/5 text-foodiz-gray"}`}>
                   <Calendar size={16} />
@@ -99,26 +79,25 @@ export default function PartnerPayouts() {
           {isUpdating && <p className="text-[10px] text-foodiz-gold animate-pulse text-center">Mise à jour de vos préférences...</p>}
         </div>
 
-        {/* Historique */}
         <div className="space-y-3">
-           <h3 className="foodiz-title text-sm px-2">Derniers virements</h3>
-           {[
-             { date: "15 Janv. 2024", amount: 1240.00, status: "Terminé" },
-             { date: "08 Janv. 2024", amount: 980.50, status: "Terminé" },
-           ].map((p, i) => (
-             <div key={i} className="foodiz-card p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                    <ArrowUpRight size={18} className="text-foodiz-gray" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foodiz-cream">{p.amount.toFixed(2)} €</p>
-                    <p className="text-[10px] text-foodiz-gray">{p.date}</p>
-                  </div>
+          <h3 className="foodiz-title text-sm px-2">Derniers virements</h3>
+          {[
+            { date: "15 Janv. 2024", amount: 1240.0, status: "Terminé" },
+            { date: "08 Janv. 2024", amount: 980.5, status: "Terminé" },
+          ].map((p, i) => (
+            <button key={i} className="w-full foodiz-card p-4 flex items-center justify-between text-left">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                  <ArrowUpRight size={18} className="text-foodiz-gray" />
                 </div>
-                <span className="text-[10px] font-bold text-foodiz-green bg-foodiz-green/10 px-3 py-1 rounded-full">{p.status}</span>
-             </div>
-           ))}
+                <div>
+                  <p className="text-sm font-medium text-foodiz-cream">{p.amount.toFixed(2)} €</p>
+                  <p className="text-[10px] text-foodiz-gray">{p.date}</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-foodiz-green bg-foodiz-green/10 px-3 py-1 rounded-full">{p.status}</span>
+            </button>
+          ))}
         </div>
 
         <div className="foodiz-card p-4 bg-white/[0.02] border-foodiz-gold/10 flex gap-3">
