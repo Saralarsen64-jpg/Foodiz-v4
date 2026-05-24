@@ -179,64 +179,35 @@ export default function CartPage() {
         )}
       </div>
 
-      {/* Premium Receipt / Ticket de Caisse de Luxe */}
-      <div 
-        className="rounded-sm p-6 mb-8 relative overflow-hidden shadow-2xl"
-        style={{ 
-          backgroundColor: '#FDFBF7', 
-          backgroundImage: 'linear-gradient(#E8E4D9 1px, transparent 1px)', 
-          backgroundSize: '100% 24px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-        }}
-      >
-        {/* Dashed Borders */}
-        <div className="absolute inset-x-0 top-0 h-px border-t-2 border-dashed border-[#D2B48C]" />
-        <div className="absolute inset-x-0 bottom-0 h-px border-b-2 border-dashed border-[#D2B48C]" />
-        
-        <h3 className="font-serif text-xl text-[#1a1a1a] text-center italic mb-6 tracking-widest uppercase">
-          Votre Addition
-        </h3>
-        
-        <div className="space-y-3 font-mono text-sm text-[#5C4033]">
-          <div className="flex justify-between">
-            <span>Sous-total</span>
-            <span className="text-[#1a1a1a] font-bold">{subtotal.toFixed(2).replace(".", ",")} €</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Frais de livraison</span>
-            <span className="text-[#1a1a1a] font-bold">{deliveryFee.toFixed(2).replace(".", ",")} €</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Frais de service</span>
-            <span className="text-[#1a1a1a] font-bold">{serviceFee.toFixed(2).replace(".", ",")} €</span>
-          </div>
-          
-          {discount > 0 && (
-            <div className="flex justify-between text-[#8B5A2B]">
-              <span>Avantage Foodiz</span>
-              <span className="font-bold">-{discount.toFixed(2).replace(".", ",")} €</span>
-            </div>
-          )}
-          
-          {activeAdvantage?.discountType === "dessert_cheapest" && (
-            <div className="flex justify-between text-[10px] text-[#8B5A2B]/70 italic font-sans">
-              <span>Dessert offert (le moins cher)</span>
-              <span>max 8€</span>
-            </div>
-          )}
+      <div className="foodiz-card p-5 space-y-3 mb-6">
+        <h3 className="foodiz-title text-sm mb-3">Récapitulatif</h3>
+        <div className="flex justify-between text-sm">
+          <span className="text-foodiz-gray">Sous-total</span>
+          <span className="text-foodiz-cream">{subtotal.toFixed(2).replace(".", ",")} €</span>
         </div>
-
-        <div className="mt-6 pt-4 border-t-2 border-[#1a1a1a] flex justify-between items-end">
-          <span className="font-serif text-lg text-[#1a1a1a] italic font-bold">TOTAL À PAYER</span>
-          <span className="font-serif text-3xl text-[#8B5A2B] italic font-bold">
-            {total.toFixed(2).replace(".", ",")} €
-          </span>
+        <div className="flex justify-between text-sm">
+          <span className="text-foodiz-gray">Frais de livraison</span>
+          <span className="text-foodiz-cream">{deliveryFee.toFixed(2).replace(".", ",")} €</span>
         </div>
-        
-        <div className="mt-4 text-center">
-          <p className="text-[9px] text-[#8B5A2B]/60 uppercase tracking-[0.2em] font-bold">
-            Merci de votre confiance · Foodiz
-          </p>
+        <div className="flex justify-between text-sm">
+          <span className="text-foodiz-gray">Frais de service</span>
+          <span className="text-foodiz-cream">{serviceFee.toFixed(2).replace(".", ",")} €</span>
+        </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-foodiz-green">Avantage appliqué</span>
+            <span className="text-foodiz-green">-{discount.toFixed(2).replace(".", ",")} €</span>
+          </div>
+        )}
+        {activeAdvantage?.discountType === "dessert_cheapest" && (
+          <div className="flex justify-between text-[11px] text-foodiz-gray">
+            <span>Dessert offert</span>
+            <span>Déduction sur le dessert le moins cher · max 8€</span>
+          </div>
+        )}
+        <div className="border-t border-foodiz-gold/10 pt-3 flex justify-between">
+          <span className="text-foodiz-cream font-semibold">Total</span>
+          <span className="text-foodiz-gold font-bold text-lg">{total.toFixed(2).replace(".", ",")} €</span>
         </div>
       </div>
 

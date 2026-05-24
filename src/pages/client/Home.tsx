@@ -14,9 +14,9 @@ import {
   Pizza,
   Cookie,
   Wine,
-  Salad,
   ShoppingCart,
-  Hamburger,
+  Sandwich,
+  Salad,
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 
@@ -26,7 +26,7 @@ const CATEGORIES = [
   { label: "Market", icon: ShoppingCart, path: "/client/market" },
   { label: "Restaurants", icon: Flame, path: "/client/restaurants" },
   { label: "Halal", icon: Beef, path: "/client/restaurants?category=halal" },
-  { label: "Burgers", icon: Hamburger, path: "/client/restaurants?category=burgers" },
+  { label: "Burgers", icon: Sandwich, path: "/client/restaurants?category=burgers" },
   { label: "Pizzas", icon: Pizza, path: "/client/restaurants?category=pizzas" },
   { label: "Asiatique", icon: Salad, path: "/client/restaurants?category=asian" },
   { label: "Gastronomique", icon: Wine, path: "/client/restaurants?category=gastronomic" },
@@ -105,14 +105,38 @@ const RECENT_ORDERS = [
 export default function ClientHome() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [locationEnabled, setLocationEnabled] = useState(false);
+
+  const enableLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(() => {
+      setLocationEnabled(true);
+    });
+  };
 
   return (
-    <div className="relative min-h-screen animate-fade-in-up border-x-2 border-foodiz-gold/20">
-      {/* Golden Side Borders for Premium Relief */}
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent" />
-      
-      <div className="space-y-6 px-2">
+    <div className="space-y-6 animate-fade-in-up relative">
+      {/* Side gold relief */}
+      <div className="pointer-events-none absolute top-36 bottom-24 left-0 w-[2px] bg-gradient-to-b from-transparent via-foodiz-gold/50 to-transparent shadow-[0_0_14px_rgba(216,168,79,0.35)]" />
+      <div className="pointer-events-none absolute top-36 bottom-24 right-0 w-[2px] bg-gradient-to-b from-transparent via-foodiz-gold/50 to-transparent shadow-[0_0_14px_rgba(216,168,79,0.35)]" />
+
+      {/* Kraft Hero Logo */}
+      <div className="relative -mx-4 overflow-hidden rounded-b-[2rem] border-b border-foodiz-gold/15 shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
+        <img
+          src="https://i.imgur.com/gtCArFr.png"
+          alt="Foodiz"
+          className="w-full h-auto block"
+        />
+        <button
+          onClick={enableLocation}
+          className="absolute bottom-3 left-4 rounded-full border border-foodiz-gold/20 bg-black/45 backdrop-blur-sm px-3 py-1.5 text-[10px] font-medium text-foodiz-cream hover:border-foodiz-gold/40 transition-all"
+        >
+          {locationEnabled ? "Localisation activée" : "Activer ma localisation"}
+        </button>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-foodiz-black/25 to-foodiz-black" />
+      </div>
+
+      <section className="relative -mt-8 rounded-[2rem] border border-foodiz-gold/20 bg-[radial-gradient(circle_at_top,rgba(216,168,79,0.08),transparent_35%),rgba(10,10,10,0.98)] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.45),0_0_28px_rgba(216,168,79,0.06)]">
       {/* Location */}
       <div className="flex items-center gap-2 text-foodiz-cream/80">
         <GoldIcon icon={MapPin} size={16} />
@@ -361,7 +385,7 @@ export default function ClientHome() {
           ))}
         </div>
       )}
-      </div>
+      </section>
     </div>
   );
 }
