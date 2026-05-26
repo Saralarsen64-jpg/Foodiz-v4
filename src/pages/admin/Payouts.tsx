@@ -1,163 +1,176 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ChevronLeft,
-  Wallet,
-  Store,
-  Bike,
-  Clock,
-  Calendar,
-  CheckCircle2,
-  AlertCircle,
-  BrainCircuit,
-  Search,
-  Filter,
-} from "lucide-react";
-
-type PayoutRequest = {
-  id: string;
-  entityName: string;
-  type: "partner" | "courier";
-  amount: number;
-  frequency: "daily" | "weekly";
-  status: "pending" | "processing" | "paid" | "flagged";
-  lastPayout: string;
-};
-
-const INITIAL_REQUESTS: PayoutRequest[] = [
-  { id: "PAY-001", entityName: "Maison K", type: "partner", amount: 845.2, frequency: "weekly", status: "pending", lastPayout: "15 Janv." },
-  { id: "PAY-002", entityName: "Karim (Livreur)", type: "courier", amount: 124.5, frequency: "daily", status: "pending", lastPayout: "Hier" },
-  { id: "PAY-003", entityName: "Sushi Ko", type: "partner", amount: 530.0, frequency: "daily", status: "pending", lastPayout: "Hier" },
-  { id: "PAY-004", entityName: "Julie (Livreur)", type: "courier", amount: 89.2, frequency: "weekly", status: "pending", lastPayout: "08 Janv." },
-];
+import { supabase } from "../../lib/supabase";
+import { CreditCard, CheckCircle, AlertCircle, ArrowLeft, Menu, X, LogOut, Activity, UserCheck, Megaphone, Euro } from "lucide-react";
+import Logo from "../../components/Logo";
 
 export default function AdminPayouts() {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<"all" | "daily" | "weekly">("all");
-  const [requests, setRequests] = useState(INITIAL_REQUESTS);
-  const [query, setQuery] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingPayouts, setPendingPayouts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredRequests = requests.filter((r) => {
-    const matchesFilter = filter === "all" || r.frequency === filter;
-    const matchesQuery = r.entityName.toLowerCase().includes(query.toLowerCase()) || r.id.toLowerCase().includes(query.toLowerCase());
-    return matchesFilter && matchesQuery;
-  });
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.user.email !== 'adminfoodiz@gmail.com') navigate("/admin-auth");
+      else fetchPayouts();
+    };
+    checkAuth();
+  }, [navigate]);
 
-  const totals = useMemo(
-    () => ({
-      pending: requests.filter((r) => r.status === "pending").reduce((sum, r) => sum + r.amount, 0),
-      count: requests.filter((r) => r.status === "pending").length,
-    }),
-    [requests]
-  );
+  const fetchPayouts = async () => {
+    setLoading(true);
+    // 1. Récupérer tous les partenaires et livreurs approuvés
+    const { data: users } = await supabase.from('profiles').select('id, full_name, email, role').eq('is_approved', true).in('role', ['partner', 'courier']);
+    
+    if (users) {
+      const payoutsData = await Promise.all(users.map(async (user) => {
+        // Calculer les gains totaux (Commandes livrées)
+        let totalEarnedCents = 0;
+        if (user.role === 'courier') {
+          // Exemple : 4.50€ par course livrée (450 centimes)
+          const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('courier_id', user.id).eq('status', 'delivered');
+          totalEarnedCents = (count || 0) * 450; 
+        } else {
+          // Pour les partenaires, on prend le total des commandes (à affiner avec le moteur économique plus tard)
+          const { data: orders } = await supabase.from('orders').select('final_client_total_cents').eq('restaurant_id', user.id).eq('status', 'delivered'); // Note: il faut lier restaurant_id au user_id via la table restaurants en prod, ici simplifié
+          // Pour l'instant, on met 0 pour éviter les erreurs de jointure complexes sans la table restaurants liée
+        }
 
-  const approveOne = (id: string) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "paid" } : r)));
+        // Récupérer ce qui a DÉJÀ été payé
+        const { data: paidData } = await supabase.from('payouts').select('amount_cents').eq('user_id', user.id);
+        const totalPaidCents = paidData ? paidData.reduce((sum, p) => sum + p.amount_cents, 0) : 0;
+
+        // Récupérer l'IBAN
+        const { data: bank } = await supabase.from('bank_accounts').select('*').eq('user_id', user.id).single();
+
+        const remainingCents = totalEarnedCents - totalPaidCents;
+
+        return {
+          ...user,
+          balance: remainingCents / 100,
+          iban: bank?.iban || 'Non renseigné',
+          bic: bank?.bic || '-',
+          holder: bank?.holder_name || '-'
+        };
+      }));
+
+      // Filtrer pour ne montrer que ceux qui ont de l'argent à recevoir
+      setPendingPayouts(payoutsData.filter((u: any) => u.balance > 0));
+    }
+    setLoading(false);
   };
 
-  const flagOne = (id: string) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "flagged" } : r)));
+  const handlePay = async (userId: string, amount: number) => {
+    if (!window.confirm(`Confirmer le virement de ${amount.toFixed(2)} € ?`)) return;
+    
+    // Enregistrer le virement dans l'historique
+    await supabase.from('payouts').insert({
+      user_id: userId,
+      amount_cents: Math.round(amount * 100),
+      status: 'paid'
+    });
+    
+    fetchPayouts(); // Rafraîchir la liste
   };
 
-  const approveAll = () => {
-    setRequests((prev) => prev.map((r) => (r.status === "pending" ? { ...r, status: "paid" } : r)));
-  };
+  const menuItems = [
+    { label: "Dashboard", icon: Activity, path: "/admin" },
+    { label: "Validations", icon: UserCheck, path: "/admin/approvals" },
+    { label: "Finances", icon: CreditCard, path: "/admin/payouts" },
+    { label: "Foodiz+", icon: Megaphone, path: "/admin/foodiz-stats" },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#FFF8EA]">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-6 py-4 sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate("/admin")} className="text-foodiz-gold">
-            <ChevronLeft size={24} />
-          </button>
-          <div className="flex items-center gap-3">
-            <Wallet size={20} className="text-foodiz-gold" />
-            <h1 className="foodiz-title text-lg uppercase tracking-widest">Gestion des Virements</h1>
-          </div>
-          <div className="w-6" />
+    <div className="min-h-screen bg-[#050505] text-[#FFF8EA] flex overflow-hidden">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0A0A0A] border-r border-foodiz-gold/10 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 flex items-center justify-between">
+          <Logo size="md" />
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden text-foodiz-gray"><X size={24} /></button>
         </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto p-6 space-y-8">
-        <div className="foodiz-card p-6 bg-gradient-to-r from-foodiz-gold/10 to-transparent border-foodiz-gold/20 flex flex-col md:flex-row items-center gap-6">
-          <div className="w-16 h-16 rounded-full bg-foodiz-gold/20 flex items-center justify-center border border-foodiz-gold/30">
-            <BrainCircuit size={32} className="text-foodiz-gold animate-pulse" />
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h2 className="text-xl font-serif italic text-foodiz-cream">Prêt pour le dispatch groupé</h2>
-            <p className="text-xs text-foodiz-gray mt-1 uppercase tracking-widest">{totals.count} virements Stripe Connect en attente</p>
-          </div>
-          <div className="text-center md:text-right">
-            <p className="text-[10px] text-foodiz-gray uppercase font-bold">Total à décaisser</p>
-            <p className="text-3xl font-serif italic text-foodiz-gold font-bold">{totals.pending.toFixed(2)} €</p>
-          </div>
-          <button onClick={approveAll} className="w-full md:w-auto px-8 py-4 rounded-full bg-foodiz-gold text-foodiz-black font-bold shadow-[0_0_30px_rgba(216,168,79,0.3)] hover:scale-105 transition-transform">
-            VALIDER TOUS LES VIREMENTS
-          </button>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex bg-white/5 p-1 rounded-full border border-white/10 w-full md:w-auto">
-            {[
-              { id: "all", label: "Tous", icon: Filter },
-              { id: "daily", label: "Quotidien", icon: Clock },
-              { id: "weekly", label: "Hebdomadaire", icon: Calendar },
-            ].map((btn) => (
-              <button
-                key={btn.id}
-                onClick={() => setFilter(btn.id as any)}
-                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-full text-[10px] font-bold uppercase transition-all ${filter === btn.id ? "bg-foodiz-gold text-foodiz-black" : "text-foodiz-gray hover:text-foodiz-cream"}`}
-              >
-                <btn.icon size={12} /> {btn.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative w-full md:w-64">
-            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-foodiz-gray" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} type="text" placeholder="Rechercher..." className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-xs outline-none focus:border-foodiz-gold/30" />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {filteredRequests.map((req) => (
-            <div key={req.id} className="foodiz-card p-5 bg-[#0A0A0A] hover:border-foodiz-gold/30 transition-all group">
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${req.type === "partner" ? "bg-foodiz-gold/10 text-foodiz-gold" : "bg-[#3FA76D]/10 text-[#3FA76D]"}`}>
-                  {req.type === "partner" ? <Store size={24} /> : <Bike size={24} />}
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-2">
-                    <h3 className="font-bold text-foodiz-cream">{req.entityName}</h3>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 text-foodiz-gray uppercase tracking-tighter">{req.id}</span>
-                  </div>
-                  <div className="flex items-center justify-center md:justify-start gap-4 mt-2">
-                    <div className="flex items-center gap-1 text-[10px] text-foodiz-gray">
-                      <Calendar size={12} className="text-foodiz-gold/50" /> Dernier : {req.lastPayout}
-                    </div>
-                    <div className={`flex items-center gap-1 text-[10px] uppercase font-bold ${req.frequency === "daily" ? "text-amber-400" : "text-blue-400"}`}>
-                      {req.frequency === "daily" ? <Clock size={12} /> : <Calendar size={12} />} Virement {req.frequency === "daily" ? "Quotidien" : "Hebdo"}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center md:text-right px-6 border-x border-white/5">
-                  <p className="text-[10px] text-foodiz-gray uppercase font-bold">Montant net</p>
-                  <p className="text-2xl font-serif italic text-foodiz-cream">{req.amount.toFixed(2)} €</p>
-                  <p className={`text-[10px] mt-1 uppercase ${req.status === "paid" ? "text-foodiz-green" : req.status === "flagged" ? "text-red-400" : "text-foodiz-gold"}`}>{req.status}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => approveOne(req.id)} className="p-3 rounded-xl bg-foodiz-gold text-foodiz-black hover:scale-105 transition-all shadow-lg shadow-foodiz-gold/10">
-                    <CheckCircle2 size={20} />
-                  </button>
-                  <button onClick={() => flagOne(req.id)} className="p-3 rounded-xl bg-white/5 text-foodiz-gray hover:text-red-400 border border-white/10 transition-all">
-                    <AlertCircle size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
+        <nav className="px-4 space-y-2 mt-4">
+          {menuItems.map((item) => (
+            <button key={item.label} onClick={() => navigate(item.path)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-gray hover:text-foodiz-cream hover:bg-foodiz-gold/5 transition-all">
+              <item.icon size={18} className="text-foodiz-gold" /> {item.label}
+            </button>
           ))}
+        </nav>
+        <div className="absolute bottom-0 w-full p-4 border-t border-foodiz-gold/10">
+          <button onClick={() => { supabase.auth.signOut(); navigate("/admin-auth"); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-red hover:bg-foodiz-red/5 transition-all">
+            <LogOut size={18} /> Déconnexion
+          </button>
         </div>
-      </main>
+      </aside>
+
+      <div className="flex-1 flex flex-col h-screen overflow-y-auto">
+        <header className="bg-[#0A0A0A]/80 backdrop-blur-md border-b border-foodiz-gold/10 px-6 py-4 sticky top-0 z-30 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden text-foodiz-gold"><Menu size={24} /></button>
+            <button onClick={() => navigate("/admin")} className="hidden md:flex items-center gap-2 text-foodiz-gray hover:text-foodiz-cream transition-colors"><ArrowLeft size={18} /> Retour</button>
+            <h1 className="foodiz-title text-xl text-foodiz-cream">Dispatch Financier</h1>
+          </div>
+        </header>
+
+        <main className="p-6 max-w-6xl mx-auto w-full">
+          {loading ? <div className="text-center py-20 text-foodiz-gray animate-pulse">Calcul des virements en cours...</div> : (
+            <div className="foodiz-card bg-[#0A0A0A] border-foodiz-gold/10 overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-foodiz-black/50 text-[10px] uppercase text-foodiz-gray tracking-wider border-b border-foodiz-gold/10">
+                  <tr>
+                    <th className="p-4">Bénéficiaire</th>
+                    <th className="p-4">Rôle</th>
+                    <th className="p-4">Coordonnées Bancaires (IBAN)</th>
+                    <th className="p-4 text-right">Solde à Payer</th>
+                    <th className="p-4 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-foodiz-gold/5">
+                  {pendingPayouts.length === 0 ? (
+                    <tr><td colSpan={5} className="p-8 text-center text-foodiz-gray">Aucun virement en attente. Tout est à jour !</td></tr>
+                  ) : (
+                    pendingPayouts.map((user) => (
+                      <tr key={user.id} className="hover:bg-foodiz-gold/5 transition-colors">
+                        <td className="p-4">
+                          <p className="text-foodiz-cream font-medium">{user.full_name}</p>
+                          <p className="text-xs text-foodiz-gray">{user.email}</p>
+                        </td>
+                        <td className="p-4">
+                          <span className={`text-[10px] px-2 py-1 rounded-full border ${user.role === 'partner' ? 'bg-foodiz-gold/10 text-foodiz-gold border-foodiz-gold/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                            {user.role === 'partner' ? 'PARTENAIRE' : 'LIVREUR'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {user.iban !== 'Non renseigné' ? (
+                            <div>
+                              <p className="text-foodiz-cream text-sm font-mono">{user.iban}</p>
+                              <p className="text-[10px] text-foodiz-gray">{user.holder} ({user.bic})</p>
+                            </div>
+                          ) : (
+                            <span className="text-foodiz-red text-xs flex items-center gap-1"><AlertCircle size={12} /> IBAN manquant</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-right">
+                          <span className="text-xl font-serif italic text-foodiz-green">{user.balance.toFixed(2)} €</span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button 
+                            onClick={() => handlePay(user.id, user.balance)}
+                            disabled={user.iban === 'Non renseigné'}
+                            className="px-4 py-2 rounded-xl bg-foodiz-green/10 text-foodiz-green border border-foodiz-green/20 hover:bg-foodiz-green/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-xs font-bold mx-auto"
+                          >
+                            <CheckCircle size={14} /> Payer
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
