@@ -1,151 +1,160 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Clock, Calendar, Truck, Image as ImageIcon, MapPin } from "lucide-react";
-import GoldIcon from "../../components/GoldIcon";
-import { fileToBase64, loadPartnerProfile, updatePartnerProfile } from "../../utils/partnerStore";
+import { supabase } from "../../lib/supabase";
+import { CreditCard, Save, AlertCircle, CheckCircle, Menu, X, LogOut, Activity, UserCheck, Megaphone } from "lucide-react";
+import Logo from "../../components/Logo";
 
 export default function PartnerSettings() {
   const navigate = useNavigate();
-  const profile = useMemo(() => loadPartnerProfile(), []);
-  const [open24h, setOpen24h] = useState(false);
-  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
-  const [pickupEnabled, setPickupEnabled] = useState(true);
-  const [hours, setHours] = useState(profile.hours);
-  const [location, setLocation] = useState(profile.location);
-  const [coverImage, setCoverImage] = useState(profile.coverImage);
-  const [closures, setClosures] = useState<string[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  
+  const [bankDetails, setBankDetails] = useState({
+    iban: "",
+    bic: "",
+    holder_name: ""
+  });
 
-  const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('bank_accounts').select('*').eq('user_id', user.id).single();
+        if (data) setBankDetails({ iban: data.iban, bic: data.bic, holder_name: data.holder_name });
+      }
+    };
+    fetchData();
+  }, []);
 
-  const handleImageUpload = async (file?: File | null) => {
-    if (!file) return;
-    const base64 = await fileToBase64(file);
-    setCoverImage(base64);
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from('bank_accounts').upsert({
+      user_id: user.id,
+      ...bankDetails
+    });
+
+    if (error) {
+      setMessage({ type: 'error', text: "Erreur lors de la sauvegarde." });
+    } else {
+      setMessage({ type: 'success', text: "Coordonnées bancaires enregistrées avec succès !" });
+    }
+    setLoading(false);
   };
 
-  const handleSave = () => {
-    updatePartnerProfile({ hours, location, coverImage });
-  };
+  const menuItems = [
+    { label: "Dashboard", icon: Activity, path: "/partner" },
+    { label: "Commandes", icon: UserCheck, path: "/partner/orders/current" },
+    { label: "Finances", icon: CreditCard, path: "/partner/payouts" },
+    { label: "Foodiz+", icon: Megaphone, path: "/partner/marketing" },
+  ];
 
   return (
-    <div className="min-h-screen bg-foodiz-black">
+    <div className="min-h-screen bg-foodiz-black pb-24 relative border-x-2 border-foodiz-gold/20">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/partner")} className="text-foodiz-gold"><ChevronLeft size={20} /></button>
-          <h1 className="foodiz-title text-lg">Paramètres</h1>
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-foodiz-gold md:hidden"><Menu size={22} /></button>
+          <Logo size="md" />
+          <div className="w-6" />
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-        {/* Cover image */}
-        <label className="foodiz-card h-48 overflow-hidden flex flex-col items-center justify-center border-dashed border-2 border-foodiz-gold/20 hover:border-foodiz-gold/35 transition-all cursor-pointer">
-          {coverImage ? (
-            <img src={coverImage} alt="Couverture établissement" className="w-full h-full object-cover" />
-          ) : (
-            <>
-              <ImageIcon size={32} className="text-foodiz-gold/40 mb-2" />
-              <p className="text-xs text-foodiz-gray">Ajouter la photo de couverture de la fiche établissement</p>
-            </>
-          )}
-          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e.target.files?.[0])} />
-        </label>
-
-        <div className="foodiz-card p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <GoldIcon icon={MapPin} size={18} />
-            <h3 className="foodiz-title text-sm">Géolocalisation & adresse affichée</h3>
-          </div>
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-sm text-foodiz-cream outline-none focus:border-foodiz-gold/30"
-          />
-        </div>
-
-        <div className="foodiz-card p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <GoldIcon icon={Clock} size={18} />
-            <h3 className="foodiz-title text-sm">Horaires d'ouverture</h3>
-          </div>
-
-          <label className="flex items-center gap-3 mb-4 cursor-pointer">
-            <input type="checkbox" checked={open24h} onChange={(e) => setOpen24h(e.target.checked)}
-              className="w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-card accent-foodiz-gold"
-            />
-            <span className="text-sm text-foodiz-cream">Ouvert 24h/24</span>
-          </label>
-
-          {!open24h && (
-            <>
-              <input
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                className="w-full bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-sm text-foodiz-cream outline-none focus:border-foodiz-gold/30 mb-4"
-              />
-              <div className="space-y-2">
-                {DAYS.map((day) => (
-                  <div key={day} className="flex items-center justify-between py-2 border-b border-foodiz-gold/5 last:border-0">
-                    <span className="text-sm text-foodiz-cream">{day}</span>
-                    <div className="flex items-center gap-2">
-                      <select className="bg-foodiz-card text-foodiz-cream text-xs rounded-lg border border-foodiz-gold/15 px-2 py-1 outline-none">
-                        <option>11:00</option><option>12:00</option>
-                      </select>
-                      <span className="text-foodiz-gray text-[10px]">à</span>
-                      <select className="bg-foodiz-card text-foodiz-cream text-xs rounded-lg border border-foodiz-gold/15 px-2 py-1 outline-none">
-                        <option>22:00</option><option>23:00</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="foodiz-card p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <GoldIcon icon={Calendar} size={18} />
-            <h3 className="foodiz-title text-sm">Fermeture exceptionnelle</h3>
-          </div>
-          <button
-            onClick={() => setClosures((prev) => [...prev, `Fermeture exceptionnelle ajoutée le ${new Date().toLocaleDateString("fr-FR")}`])}
-            className="foodiz-btn-outline !py-2 text-xs"
-          >
-            Ajouter une fermeture
-          </button>
-          {closures.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {closures.map((closure, index) => (
-                <div key={`${closure}-${index}`} className="text-[10px] text-foodiz-gray bg-white/[0.03] border border-foodiz-gold/10 rounded-xl px-3 py-2">
-                  {closure}
-                </div>
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 flex">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
+          <div className="relative w-72 bg-foodiz-card border-r border-foodiz-gold/10 p-6 overflow-y-auto">
+            <Logo size="md" className="mb-8" />
+            <nav className="space-y-2">
+              {menuItems.map((item) => (
+                <button key={item.label} onClick={() => { navigate(item.path); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-gray hover:text-foodiz-cream hover:bg-foodiz-gold/5 transition-all">
+                  <item.icon size={18} className="text-foodiz-gold" /> {item.label}
+                </button>
               ))}
+              <button onClick={() => { supabase.auth.signOut(); navigate("/auth"); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-red hover:bg-foodiz-red/5 transition-all mt-8">
+                <LogOut size={18} /> Déconnexion
+              </button>
+            </nav>
+          </div>
+        </div>
+      )}
+
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <h1 className="foodiz-title text-2xl text-foodiz-cream mb-2">Paramètres de l'établissement</h1>
+        <p className="text-foodiz-gray text-sm mb-8">Gérez vos informations bancaires pour recevoir vos virements Foodiz.</p>
+
+        <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-foodiz-gold/10">
+            <div className="p-3 rounded-xl bg-foodiz-gold/10 border border-foodiz-gold/20">
+              <CreditCard size={24} className="text-foodiz-gold" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foodiz-cream">Coordonnées Bancaires</h2>
+              <p className="text-xs text-foodiz-gray">Ces informations sont cryptées et uniquement visibles par l'administrateur Foodiz pour les virements.</p>
+            </div>
+          </div>
+
+          {message && (
+            <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 border ${message.type === 'success' ? 'bg-foodiz-green/10 text-foodiz-green border-foodiz-green/20' : 'bg-foodiz-red/10 text-foodiz-red border-foodiz-red/20'}`}>
+              {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+              {message.text}
             </div>
           )}
-        </div>
 
-        <div className="foodiz-card p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <GoldIcon icon={Truck} size={18} />
-            <h3 className="foodiz-title text-sm">Services</h3>
-          </div>
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={deliveryEnabled} onChange={(e) => setDeliveryEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-card accent-foodiz-gold"
+          <form onSubmit={handleSave} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Titulaire du compte</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={bankDetails.holder_name} 
+                  onChange={(e) => setBankDetails({...bankDetails, holder_name: e.target.value})}
+                  className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors"
+                  placeholder="Nom de l'entreprise ou du titulaire"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Code BIC / SWIFT</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={bankDetails.bic} 
+                  onChange={(e) => setBankDetails({...bankDetails, bic: e.target.value.toUpperCase()})}
+                  className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors font-mono uppercase"
+                  placeholder="EX: BNPAFRPP"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Numéro IBAN</label>
+              <input 
+                type="text" 
+                required 
+                value={bankDetails.iban} 
+                onChange={(e) => setBankDetails({...bankDetails, iban: e.target.value.toUpperCase()})}
+                className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors font-mono uppercase tracking-widest"
+                placeholder="EX: FR76 3000 4000 5000 6000 7000 800"
               />
-              <span className="text-sm text-foodiz-cream">Livraison</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={pickupEnabled} onChange={(e) => setPickupEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-card accent-foodiz-gold"
-              />
-              <span className="text-sm text-foodiz-cream">Retrait sur place</span>
-            </label>
-          </div>
-        </div>
+              <p className="text-[10px] text-foodiz-gray/50">Assurez-vous que l'IBAN correspond bien au titulaire du compte.</p>
+            </div>
 
-        <button onClick={handleSave} className="w-full foodiz-btn mt-4">Enregistrer les paramètres</button>
+            <div className="pt-4 flex justify-end">
+              <button type="submit" disabled={loading} className="foodiz-btn flex items-center gap-2 px-8 py-3 disabled:opacity-50">
+                {loading ? "Enregistrement..." : <><Save size={18} /> Enregistrer les coordonnées</>}
+              </button>
+            </div>
+          </form>
+        </div>
       </main>
     </div>
   );
