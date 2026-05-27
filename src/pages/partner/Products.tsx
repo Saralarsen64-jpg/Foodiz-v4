@@ -1,26 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Plus, Edit, Trash2, Menu, X, LogOut, Activity, UserCheck, CreditCard, Megaphone } from "lucide-react";
+import { Plus, Edit, Trash2, Menu, LogOut, Activity, UserCheck, CreditCard, Megaphone } from "lucide-react";
 import Logo from "../../components/Logo";
-import GoldIcon from "../../components/GoldIcon";
 
 export default function PartnerProducts() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
-  const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Récupérer l'ID du restaurant lié à ce partenaire
+        // Récupérer l'ID du restaurant lié à ce partenaire et ses produits
         const { data: restaurant } = await supabase.from('restaurants').select('id').eq('owner_id', user.id).single();
         if (restaurant) {
-          setRestaurantId(restaurant.id);
-          // Récupérer les produits de ce restaurant
           const { data: prods } = await supabase.from('products').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false });
           if (prods) setProducts(prods);
         }
