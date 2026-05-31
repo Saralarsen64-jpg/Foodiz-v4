@@ -1,146 +1,87 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  User,
-  Gift,
-  Star,
-  MapPin,
-  CreditCard,
-  Heart,
-  HelpCircle,
-  LogOut,
-  ChevronRight,
-  Users,
-  MessageCircle,
-  Trash2,
-} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { User, Mail, MapPin, Phone, ChevronRight, LogOut, Gift, CreditCard, Settings, Clock } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
-
-const MENU_ITEMS = [
-  { label: "Informations personnelles", icon: User, path: "/client/account/personal-info" },
-  { label: "Mes adresses", icon: MapPin, path: "/client/account/addresses" },
-  { label: "Moyens de paiement", icon: CreditCard, path: "/client/account/payments" },
-  { label: "Mes favoris", icon: Heart, path: "/client/account/favorites" },
-];
-
-const LOYALTY_ITEMS = [
-  { label: "Mes avantages", icon: Gift, path: "/client/advantages", badge: "1 240 pts" },
-  { label: "Parrainage", icon: Users, path: "/client/account/referral", desc: "Gagnez 500 pts par ami invité" },
-  { label: "Historique des avantages", icon: Star, path: "/client/advantages/history" },
-];
-
-const SUPPORT_ITEMS = [
-  { label: "Centre d'aide", icon: HelpCircle, path: "/client/help-center" },
-  { label: "Nous contacter", icon: MessageCircle, path: "/client/account/help" },
-];
 
 export default function AccountPage() {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Récupération des VRAIES infos
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setProfile({ ...user, ...data });
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  if (!profile) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gold animate-pulse">Chargement du profil...</div>;
+
+  const menuItems = [
+    { label: "Mes informations personnelles", icon: User, path: "/client/account/personal-info" },
+    { label: "Mes adresses de livraison", icon: MapPin, path: "/client/account/addresses" },
+    { label: "Mes moyens de paiement", icon: CreditCard, path: "/client/account/payments" },
+    { label: "Mes favoris", icon: Gift, path: "/client/account/favorites" },
+    { label: "Mes avantages Foodiz", icon: Gift, path: "/client/advantages" },
+    { label: "Centre d'aide", icon: Settings, path: "/client/help-center" },
+  ];
 
   return (
-    <div className="animate-fade-in-up space-y-6">
-      {/* Profile Card */}
-      <div className="foodiz-card p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-foodiz-gradient-gold border-2 border-foodiz-gold/30 flex items-center justify-center">
-          <span className="text-foodiz-gold font-serif font-bold text-xl">A</span>
-        </div>
-        <div className="flex-1">
-          <h2 className="foodiz-title text-lg">Alexandre</h2>
-          <p className="text-foodiz-gray text-xs">alexandre@email.com</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            <GoldIcon icon={Star} size={12} />
-            <span className="text-foodiz-gold text-xs font-semibold">1 240 points Foodiz</span>
+    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      
+      {/* Header Profil avec VRAIES infos */}
+      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-8">
+        <div className="max-w-lg mx-auto text-center">
+          <div className="w-20 h-20 rounded-full bg-foodiz-gradient-gold mx-auto flex items-center justify-center mb-3 shadow-lg shadow-foodiz-gold/20">
+            <User size={32} className="text-foodiz-black" />
           </div>
+          {/* Affichage du VRAI nom et email */}
+          <h1 className="foodiz-title text-xl text-foodiz-cream">{profile.full_name || "Utilisateur"}</h1>
+          <p className="text-foodiz-gray text-xs mt-1 flex items-center justify-center gap-1">
+            <Mail size={12} /> {profile.email}
+          </p>
         </div>
+      </header>
+
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-2">
+        {menuItems.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => navigate(item.path)}
+            className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-gold/20 flex items-center justify-center text-foodiz-gold group-hover:bg-foodiz-gold group-hover:text-foodiz-black transition-colors">
+                <item.icon size={18} />
+              </div>
+              <span className="text-sm font-medium text-foodiz-cream">{item.label}</span>
+            </div>
+            <ChevronRight size={16} className="text-foodiz-gray/50" />
+          </button>
+        ))}
+
         <button
-          onClick={() => navigate("/client/account/personal-info")}
-          className="text-foodiz-gold text-xs"
+          onClick={handleLogout}
+          className="w-full foodiz-card p-4 flex items-center gap-4 mt-8 border-foodiz-red/20 hover:bg-foodiz-red/5 transition-all group"
         >
-          Modifier
+          <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-red/20 flex items-center justify-center text-foodiz-red group-hover:bg-foodiz-red group-hover:text-white transition-colors">
+            <LogOut size={18} />
+          </div>
+          <span className="text-sm font-medium text-foodiz-red">Se déconnecter</span>
         </button>
-      </div>
-
-      {/* Loyalty Section */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest mb-3">
-          Fidélité & Avantages
-        </h3>
-        {LOYALTY_ITEMS.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => navigate(item.path)}
-            className="w-full foodiz-card p-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"
-          >
-            <GoldIcon icon={item.icon} size={18} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-foodiz-cream">{item.label}</p>
-              {item.desc && (
-                <p className="text-[10px] text-foodiz-gray mt-0.5">{item.desc}</p>
-              )}
-            </div>
-            {item.badge && (
-              <span className="text-[10px] text-foodiz-gold bg-foodiz-gold/10 px-2 py-1 rounded-full font-semibold">
-                {item.badge}
-              </span>
-            )}
-            <ChevronRight size={14} className="text-foodiz-gold/30" />
-          </button>
-        ))}
-      </div>
-
-      {/* Account Section */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest mb-3">
-          Compte
-        </h3>
-        {MENU_ITEMS.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => navigate(item.path)}
-            className="w-full foodiz-card p-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"
-          >
-            <GoldIcon icon={item.icon} size={18} />
-            <div className="flex-1">
-              <p className="text-sm text-foodiz-cream">{item.label}</p>
-            </div>
-            <ChevronRight size={14} className="text-foodiz-gold/30" />
-          </button>
-        ))}
-      </div>
-
-      {/* Support Section */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest mb-3">
-          Assistance
-        </h3>
-        {SUPPORT_ITEMS.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => navigate(item.path)}
-            className="w-full foodiz-card p-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"
-          >
-            <GoldIcon icon={item.icon} size={18} />
-            <div className="flex-1">
-              <p className="text-sm text-foodiz-cream">{item.label}</p>
-            </div>
-            <ChevronRight size={14} className="text-foodiz-gold/30" />
-          </button>
-        ))}
-      </div>
-
-      {/* Danger Zone */}
-      <button
-        onClick={() => navigate("/client/account/delete")}
-        className="w-full foodiz-card p-4 flex items-center gap-3 border-foodiz-red/20 hover:border-foodiz-red/40 transition-all"
-      >
-        <Trash2 size={18} className="text-foodiz-red" />
-        <span className="text-sm text-foodiz-red">Supprimer mon compte</span>
-      </button>
-
-      {/* Logout */}
-      <button onClick={() => navigate("/auth")} className="w-full flex items-center justify-center gap-2 py-3 text-foodiz-gray hover:text-foodiz-cream transition-colors text-sm">
-        <LogOut size={16} />
-        Se déconnecter
-      </button>
+      </main>
     </div>
   );
 }
