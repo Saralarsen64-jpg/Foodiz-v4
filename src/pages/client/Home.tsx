@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 import {
   Search,
   MapPin,
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 
-// ─── Data ───────────────────────────────────────────────────────────────────
+// ─── Data (Categories & Markets restent statiques pour la navigation) ───────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   { label: "Market", icon: ShoppingCart, path: "/client/market" },
@@ -33,72 +34,30 @@ const CATEGORIES = [
   { label: "Gourmandises", icon: Cookie, path: "/client/restaurants?category=gourmandises" },
 ];
 
-const RESTAURANTS = [
-  {
-    id: "r1",
-    name: "Maison K",
-    note: 4.9,
-    temps: "20-30 min",
-    frais: 2.50,
-    image: "/images/restaurant-maison-k.jpg",
-    emoji: "🍔",
-  },
-  {
-    id: "r2",
-    name: "Le Bistrot Parisien",
-    note: 4.8,
-    temps: "25-35 min",
-    frais: 2.00,
-    image: "/images/restaurant-bistrot.jpg",
-    emoji: "🥖",
-  },
-  {
-    id: "r3",
-    name: "Sushi Ko",
-    note: 4.7,
-    temps: "20-30 min",
-    frais: 3.00,
-    image: "/images/restaurant-sushi.jpg",
-    emoji: "🍣",
-  },
-  {
-    id: "r4",
-    name: "Bella Napoli",
-    note: 4.6,
-    temps: "25-40 min",
-    frais: 2.50,
-    image: "/images/restaurant-pizza.jpg",
-    emoji: "🍕",
-  },
-];
-
 const MARKETS = [
-  {
-    id: "m1",
-    name: "Marché Bio",
-    note: 4.8,
-    temps: "20-30 min",
-    image: "/images/market-bio.jpg",
-  },
-  {
-    id: "m2",
-    name: "Épicerie Fine",
-    note: 4.7,
-    temps: "25-35 min",
-    image: "/images/market-epicerie.jpg",
-  },
-  {
-    id: "m3",
-    name: "Primeur du Coin",
-    note: 4.5,
-    temps: "15-25 min",
-    image: "/images/market-bio.jpg",
-  },
+  { id: "m1", name: "Marché Bio", note: 4.8, temps: "20-30 min", image: "/images/market-bio.jpg" },
+  { id: "m2", name: "Épicerie Fine", note: 4.7, temps: "25-35 min", image: "/images/market-epicerie.jpg" },
+  { id: "m3", name: "Primeur du Coin", note: 4.5, temps: "15-25 min", image: "/images/market-bio.jpg" },
 ];
 
-const RECENT_ORDERS = [
-  { id: "o1", name: "Maison K", date: "Hier", status: "Livrée" },
-];
+// ─── Fonctions utilitaires pour calculer la distance (10km max) ──────────────
+
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  var R = 6371; // Rayon de la terre en km
+  var dLat = deg2rad(lat2 - lat1);
+  var dLon = deg2rad(lon2 - lon1);
+  var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c; // Distance en km
+  return d;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180)
+}
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -106,11 +65,57 @@ export default function ClientHome() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [locationEnabled, setLocationEnabled] = useState(false);
+  
+  // États pour les données RÉELLES
+  const [points, setPoints] = useState(0);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [loadingRestos, setLoadingRestos] = useState(false);
 
-  const enableLocation = () => {
+  const enableLocation = async () => {
     if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(() => {
+    
+    setLoadingRestos(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
       setLocationEnabled(true);
+
+      // 1. Récupérer les VRAIS points
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: wallet } = await supabase.from('client_wallets').select('points_balance').eq('user_id', user.id).single();
+        if (wallet) setPoints(wallet.points_balance || 0);
+      }
+
+      // 2. Récupérer les VRAIS restaurants et filtrer par 10km
+      const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
+
+      if (restos) {
+        const filteredRestos = restos.filter((r: any) => {
+          // Si le restaurant a des coordonnées GPS dans Supabase, on calcule la distance
+          if (r.latitude && r.longitude) {
+            const dist = getDistanceFromLatLonInKm(userLat, userLng, r.latitude, r.longitude);
+            return dist <= 10; // Affiche seulement si < 10km
+          }
+          return true; // Si pas de coordonnées en BDD, on affiche tout par sécurité pour la démo
+        });
+
+        // Formatage pour le design
+        const formattedRestos = filteredRestos.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          note: 4.8,
+          temps: "20-30 min",
+          frais: 2.50,
+          image: r.cover_image || "/images/restaurant-maison-k.jpg",
+          emoji: "🍽️"
+        }));
+        setRestaurants(formattedRestos);
+      }
+      setLoadingRestos(false);
+    }, (error) => {
+      console.error("Erreur géolocalisation:", error);
+      setLoadingRestos(false);
     });
   };
 
@@ -131,7 +136,7 @@ export default function ClientHome() {
           onClick={enableLocation}
           className="absolute bottom-3 left-4 rounded-full border border-foodiz-gold/20 bg-black/45 backdrop-blur-sm px-3 py-1.5 text-[10px] font-medium text-foodiz-cream hover:border-foodiz-gold/40 transition-all"
         >
-          {locationEnabled ? "Localisation activée" : "Activer ma localisation"}
+          {locationEnabled ? (loadingRestos ? "Recherche des restos à -10km..." : "Localisation activée (-10km)") : "Activer ma localisation"}
         </button>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-foodiz-black/25 to-foodiz-black" />
       </div>
@@ -140,7 +145,7 @@ export default function ClientHome() {
       {/* Location */}
       <div className="flex items-center gap-2 text-foodiz-cream/80">
         <GoldIcon icon={MapPin} size={16} />
-        <span className="text-sm font-medium">Paris 11e — Livré en 20-35 min</span>
+        <span className="text-sm font-medium">{locationEnabled ? "Autour de vous (10km max)" : "Paris 11e — Livré en 20-35 min"}</span>
       </div>
 
       {/* Search Bar */}
@@ -235,7 +240,7 @@ export default function ClientHome() {
         </div>
       </div>
 
-      {/* Foodiz Club Banner */}
+      {/* Foodiz Club Banner (Points RÉELS) */}
       <button
         onClick={() => navigate("/client/advantages")}
         className="foodiz-card p-5 bg-gradient-to-r from-foodiz-gold/10 to-foodiz-card border-foodiz-gold/20 w-full text-left"
@@ -254,16 +259,16 @@ export default function ClientHome() {
             </span>
           </div>
           <div className="text-right">
-            <div className="text-foodiz-gold text-2xl font-bold font-serif">1 240</div>
+            <div className="text-foodiz-gold text-2xl font-bold font-serif">{points.toLocaleString('fr-FR')}</div>
             <div className="text-foodiz-gray text-[10px]">points</div>
           </div>
         </div>
       </button>
 
-      {/* Restaurants Section */}
+      {/* Restaurants Section (Filtrés à 10km max) */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="foodiz-title text-lg">Restaurants</h2>
+          <h2 className="foodiz-title text-lg">Restaurants à proximité</h2>
           <button
             onClick={() => navigate("/client/restaurants")}
             className="text-foodiz-gold text-xs font-semibold flex items-center gap-1"
@@ -271,44 +276,57 @@ export default function ClientHome() {
             Voir tout <ChevronRight size={12} />
           </button>
         </div>
-        <div className="space-y-3">
-          {RESTAURANTS.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => navigate(`/client/establishments/${r.id}`)}
-              className="w-full foodiz-card p-2 pr-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"
-            >
-              {/* Image */}
-              <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-foodiz-card">
-                <img
-                  src={r.image}
-                  alt={r.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                    (e.target as HTMLImageElement).parentElement!.innerHTML =
-                      `<span style="font-size:28px">${r.emoji}</span>`;
-                  }}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="foodiz-title text-sm">{r.name}</h3>
-                <div className="flex items-center gap-3 mt-1 text-foodiz-gray text-xs flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <GoldIcon icon={Star} size={11} /> {r.note}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <GoldIcon icon={Clock} size={11} /> {r.temps}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <GoldIcon icon={Truck} size={11} /> {r.frais.toFixed(2).replace(".", ",")} €
-                  </span>
+        
+        {!locationEnabled ? (
+          <div className="foodiz-card p-6 text-center border-foodiz-gold/10">
+            <p className="text-foodiz-gray text-sm mb-2">Activez votre localisation pour voir les restaurants autour de vous.</p>
+          </div>
+        ) : loadingRestos ? (
+          <div className="text-center py-6 text-foodiz-gray text-sm animate-pulse">Recherche des restaurants à -10km...</div>
+        ) : restaurants.length === 0 ? (
+          <div className="foodiz-card p-6 text-center border-foodiz-gold/10">
+            <p className="text-foodiz-gray text-sm">Aucun restaurant disponible dans un rayon de 10km pour le moment.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {restaurants.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => navigate(`/client/establishments/${r.id}`)}
+                className="w-full foodiz-card p-2 pr-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"
+              >
+                {/* Image */}
+                <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-foodiz-card">
+                  <img
+                    src={r.image}
+                    alt={r.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                      (e.target as HTMLImageElement).parentElement!.innerHTML =
+                        `<span style="font-size:28px">${r.emoji}</span>`;
+                    }}
+                  />
                 </div>
-              </div>
-              <ChevronRight size={16} className="text-foodiz-gold/50 shrink-0" />
-            </button>
-          ))}
-        </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="foodiz-title text-sm">{r.name}</h3>
+                  <div className="flex items-center gap-3 mt-1 text-foodiz-gray text-xs flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <GoldIcon icon={Star} size={11} /> {r.note}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <GoldIcon icon={Clock} size={11} /> {r.temps}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <GoldIcon icon={Truck} size={11} /> {r.frais.toFixed(2).replace(".", ",")} €
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-foodiz-gold/50 shrink-0" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Market Section */}
@@ -354,8 +372,7 @@ export default function ClientHome() {
       </div>
 
       {/* Recent Orders */}
-      {RECENT_ORDERS.length > 0 && (
-        <div>
+      <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="foodiz-title text-lg">Dernières commandes</h2>
             <button
@@ -365,26 +382,11 @@ export default function ClientHome() {
               Voir tout <ChevronRight size={12} />
             </button>
           </div>
-          {RECENT_ORDERS.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => navigate(`/client/orders/${o.id}`)}
-              className="w-full foodiz-card p-4 flex items-center gap-4 text-left"
-            >
-              <div className="w-12 h-12 rounded-xl bg-foodiz-gradient-gold flex-shrink-0 flex items-center justify-center">
-                <GoldIcon icon={RotateCcw} size={18} />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-foodiz-cream">{o.name}</h3>
-                <p className="text-foodiz-gray text-xs">{o.date} · {o.status}</p>
-              </div>
-              <span className="foodiz-btn-outline !py-1.5 !px-3 !text-[10px]">
-                Recommander
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+          <div className="foodiz-card p-6 text-center border-foodiz-gold/10">
+             <p className="text-foodiz-gray text-sm">Connectez-vous pour voir vos commandes en temps réel.</p>
+          </div>
+      </div>
+
       </section>
     </div>
   );
