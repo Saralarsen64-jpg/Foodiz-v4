@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // J'ai ajouté useEffect ici
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import {
@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 
-// ─── Data (Categories & Markets restent statiques pour la navigation) ───────────────────────────────────────────────────────────────────
+// ─── Data (Categories & Markets restent statiques pour la navigation visuelle) ───────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   { label: "Market", icon: ShoppingCart, path: "/client/market" },
@@ -43,15 +43,12 @@ const MARKETS = [
 // ─── Fonctions utilitaires pour calculer la distance (10km max) ──────────────
 
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  var R = 6371; // Rayon de la terre en km
+  var R = 6371; 
   var dLat = deg2rad(lat2 - lat1);
   var dLon = deg2rad(lon2 - lon1);
-  var a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  var d = R * c; // Distance en km
+  var d = R * c; 
   return d;
 }
 
@@ -66,10 +63,23 @@ export default function ClientHome() {
   const [search, setSearch] = useState("");
   const [locationEnabled, setLocationEnabled] = useState(false);
   
-  // États pour les données RÉELLES
+  // États pour les données RÉELLES (Initialisés à 0 ou vide, JAMAIS de fausses données)
   const [points, setPoints] = useState(0);
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [loadingRestos, setLoadingRestos] = useState(false);
+
+  // NOUVEAU : useEffect pour charger les VRAIES données dès l'ouverture de la page
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // 1. Récupérer les VRAIS points du client connecté
+        const { data: wallet } = await supabase.from('client_wallets').select('points_balance').eq('user_id', user.id).single();
+        if (wallet) setPoints(wallet.points_balance || 0);
+      }
+    };
+    fetchInitialData();
+  }, []);
 
   const enableLocation = async () => {
     if (!navigator.geolocation) return;
@@ -80,27 +90,18 @@ export default function ClientHome() {
       const userLng = position.coords.longitude;
       setLocationEnabled(true);
 
-      // 1. Récupérer les VRAIS points
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: wallet } = await supabase.from('client_wallets').select('points_balance').eq('user_id', user.id).single();
-        if (wallet) setPoints(wallet.points_balance || 0);
-      }
-
       // 2. Récupérer les VRAIS restaurants et filtrer par 10km
       const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
 
       if (restos) {
         const filteredRestos = restos.filter((r: any) => {
-          // Si le restaurant a des coordonnées GPS dans Supabase, on calcule la distance
           if (r.latitude && r.longitude) {
             const dist = getDistanceFromLatLonInKm(userLat, userLng, r.latitude, r.longitude);
-            return dist <= 10; // Affiche seulement si < 10km
+            return dist <= 10; 
           }
-          return true; // Si pas de coordonnées en BDD, on affiche tout par sécurité pour la démo
+          return true; 
         });
 
-        // Formatage pour le design
         const formattedRestos = filteredRestos.map((r: any) => ({
           id: r.id,
           name: r.name,
@@ -240,7 +241,7 @@ export default function ClientHome() {
         </div>
       </div>
 
-      {/* Foodiz Club Banner (Points RÉELS) */}
+      {/* Foodiz Club Banner (Points RÉELS récupérés par le useEffect) */}
       <button
         onClick={() => navigate("/client/advantages")}
         className="foodiz-card p-5 bg-gradient-to-r from-foodiz-gold/10 to-foodiz-card border-foodiz-gold/20 w-full text-left"
@@ -259,6 +260,7 @@ export default function ClientHome() {
             </span>
           </div>
           <div className="text-right">
+            {/* Affiche 0 si pas de points, ou le vrai solde Supabase */}
             <div className="text-foodiz-gold text-2xl font-bold font-serif">{points.toLocaleString('fr-FR')}</div>
             <div className="text-foodiz-gray text-[10px]">points</div>
           </div>

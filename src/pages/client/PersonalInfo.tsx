@@ -9,6 +9,7 @@ export default function PersonalInfoPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   
+  // Initialisation avec des chaînes vides (JAMAIS de faux noms ici)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -20,12 +21,12 @@ export default function PersonalInfoPage() {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Récupérer les infos de la table profiles
+        // Récupération des VRAIES infos depuis la base de données
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         if (profile) {
           setFormData({
             fullName: profile.full_name || "",
-            email: user.email || "", // L'email vient de auth.users
+            email: user.email || "",
             phone: profile.phone || "",
             address: profile.address || ""
           });
@@ -43,10 +44,7 @@ export default function PersonalInfoPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 1. Mettre à jour l'email dans Supabase Auth (nécessite parfois une reconfirmation par email selon les settings Supabase)
-    const { error: authError } = await supabase.auth.updateUser({ email: formData.email });
-    
-    // 2. Mettre à jour le téléphone et l'adresse dans la table profiles
+    // Mise à jour de la table profiles avec les VRAIES infos modifiées
     const { error: dbError } = await supabase
       .from('profiles')
       .update({ 
@@ -56,8 +54,11 @@ export default function PersonalInfoPage() {
       })
       .eq('id', user.id);
 
+    // Mise à jour de l'email dans l'authentification
+    const { error: authError } = await supabase.auth.updateUser({ email: formData.email });
+
     if (authError || dbError) {
-      setMessage({ type: 'error', text: "Erreur lors de la sauvegarde. Vérifiez votre email." });
+      setMessage({ type: 'error', text: "Erreur lors de la sauvegarde." });
     } else {
       setMessage({ type: 'success', text: "Informations mises à jour avec succès !" });
     }
@@ -90,13 +91,7 @@ export default function PersonalInfoPage() {
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Nom complet</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={User} size={16} />
-              <input
-                type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
-                required
-              />
+              <input type="text" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" required />
             </div>
           </div>
 
@@ -104,13 +99,7 @@ export default function PersonalInfoPage() {
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Adresse email</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={Mail} size={16} />
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
-                required
-              />
+              <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" required />
             </div>
           </div>
 
@@ -118,13 +107,7 @@ export default function PersonalInfoPage() {
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Téléphone</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={Phone} size={16} />
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
-                required
-              />
+              <input type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" required />
             </div>
           </div>
 
@@ -132,14 +115,7 @@ export default function PersonalInfoPage() {
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Adresse de livraison</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={MapPin} size={16} />
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
-                placeholder="Ex: 12 rue de la Paix, Paris"
-                required
-              />
+              <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" placeholder="Ex: 12 rue de la Paix, Paris" required />
             </div>
           </div>
 
