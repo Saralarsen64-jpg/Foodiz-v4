@@ -1,31 +1,153 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Save } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { ChevronLeft, Save, User, Mail, Phone, MapPin, CheckCircle, AlertCircle } from "lucide-react";
+import GoldIcon from "../../components/GoldIcon";
 
 export default function PersonalInfoPage() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    address: ""
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Récupérer les infos de la table profiles
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (profile) {
+          setFormData({
+            fullName: profile.full_name || "",
+            email: user.email || "", // L'email vient de auth.users
+            phone: profile.phone || "",
+            address: profile.address || ""
+          });
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Mettre à jour l'email dans Supabase Auth (nécessite parfois une reconfirmation par email selon les settings Supabase)
+    const { error: authError } = await supabase.auth.updateUser({ email: formData.email });
+    
+    // 2. Mettre à jour le téléphone et l'adresse dans la table profiles
+    const { error: dbError } = await supabase
+      .from('profiles')
+      .update({ 
+        full_name: formData.fullName, 
+        phone: formData.phone, 
+        address: formData.address 
+      })
+      .eq('id', user.id);
+
+    if (authError || dbError) {
+      setMessage({ type: 'error', text: "Erreur lors de la sauvegarde. Vérifiez votre email." });
+    } else {
+      setMessage({ type: 'success', text: "Informations mises à jour avec succès !" });
+    }
+    setLoading(false);
+  };
+
   return (
-    <div className="animate-fade-in-up">
-      <button onClick={() => navigate("/client/account")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6"><ChevronLeft size={18} /> Compte</button>
-      <h1 className="foodiz-title text-2xl mb-6">Informations personnelles</h1>
-      <div className="space-y-4">
-        <div className="foodiz-card p-4">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gray">Prénom</label>
-          <input type="text" defaultValue="Alexandre" className="w-full bg-transparent border-none text-foodiz-cream outline-none mt-1 text-sm" />
+    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      
+      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
+          <h1 className="foodiz-title text-lg">Mes informations</h1>
+          <div className="w-6" />
         </div>
-        <div className="foodiz-card p-4">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gray">Nom</label>
-          <input type="text" defaultValue="Martin" className="w-full bg-transparent border-none text-foodiz-cream outline-none mt-1 text-sm" />
-        </div>
-        <div className="foodiz-card p-4">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gray">Email</label>
-          <input type="email" defaultValue="alex.martin@email.com" className="w-full bg-transparent border-none text-foodiz-cream outline-none mt-1 text-sm" />
-        </div>
-        <div className="foodiz-card p-4">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gray">Téléphone</label>
-          <input type="tel" defaultValue="+33 6 12 34 56 78" className="w-full bg-transparent border-none text-foodiz-cream outline-none mt-1 text-sm" />
-        </div>
-      </div>
-      <button className="w-full foodiz-btn py-4 mt-6 flex items-center justify-center gap-2"><Save size={18} /> Enregistrer les modifications</button>
+      </header>
+
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        {message && (
+          <div className={`p-4 rounded-xl flex items-center gap-3 border ${message.type === 'success' ? 'bg-foodiz-green/10 text-foodiz-green border-foodiz-green/20' : 'bg-foodiz-red/10 text-foodiz-red border-foodiz-red/20'}`}>
+            {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            <span className="text-sm">{message.text}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="foodiz-card p-4">
+            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Nom complet</label>
+            <div className="flex items-center gap-3 mt-2">
+              <GoldIcon icon={User} size={16} />
+              <input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="foodiz-card p-4">
+            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Adresse email</label>
+            <div className="flex items-center gap-3 mt-2">
+              <GoldIcon icon={Mail} size={16} />
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="foodiz-card p-4">
+            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Téléphone</label>
+            <div className="flex items-center gap-3 mt-2">
+              <GoldIcon icon={Phone} size={16} />
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="foodiz-card p-4">
+            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Adresse de livraison</label>
+            <div className="flex items-center gap-3 mt-2">
+              <GoldIcon icon={MapPin} size={16} />
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40"
+                placeholder="Ex: 12 rue de la Paix, Paris"
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4 flex items-center justify-center gap-2 disabled:opacity-50 mt-6">
+            <Save size={18} /> {loading ? "Enregistrement..." : "Enregistrer les modifications"}
+          </button>
+        </form>
+      </main>
     </div>
   );
 }
