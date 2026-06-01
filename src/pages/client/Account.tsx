@@ -11,25 +11,38 @@ export default function AccountPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      // 1. On force la lecture de la session ACTIVE (plus de bug admin)
-      const { data: { session } } = await supabase.auth.getSession();
-      
+    // 1. Écouter les changements d'authentification en temps réel
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        setUserEmail(session.user.email || ""); // Affiche l'email réel connecté
-        
-        // 2. On récupère les infos profil avec l'ID de cette session
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        setProfile({
-          full_name: data?.full_name || "Utilisateur Foodiz",
-          avatar_url: data?.avatar_url,
-          referral_count: data?.referral_count || 0,
-          ...data
-        });
+        setUserEmail(session.user.email || "");
+        fetchProfileData(session.user.id);
       }
+    });
+
+    // 2. Vérifier la session actuelle au chargement de la page
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUserEmail(session.user.email || "");
+        fetchProfileData(session.user.id);
+      }
+    });
+
+    // Nettoyage de l'écouteur quand on quitte la page
+    return () => {
+      authListener.subscription.unsubscribe();
     };
-    fetchProfile();
-  }, []);
+  }, [navigate]);
+
+  const fetchProfileData = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (data) {
+      setProfile({
+        full_name: data.full_name || "Utilisateur Foodiz",
+        avatar_url: data.avatar_url,
+        referral_count: data.referral_count || 0,
+      });
+    }
+  };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -39,24 +52,19 @@ export default function AccountPage() {
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      // Le fichier sera nommé "uuid-user.png"
       const filePath = `${session.user.id}.${fileExt}`;
 
-      // Upload vers le bucket 'avatars'
       const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      // Récupérer l'URL publique
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
-      // Mettre à jour le profil
       const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', session.user.id);
       if (updateError) throw updateError;
 
       setProfile({ ...profile, avatar_url: publicUrl });
     } catch (error) {
       console.error("Erreur upload avatar:", error);
-      alert("Erreur lors de l'upload. Vérifiez que le bucket 'avatars' est bien créé et public dans Supabase.");
+      alert("Erreur lors de l'upload.");
     } finally {
       setUploading(false);
     }

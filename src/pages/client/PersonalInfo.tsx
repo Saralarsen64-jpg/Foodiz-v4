@@ -8,6 +8,7 @@ export default function PersonalInfoPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -18,14 +19,14 @@ export default function PersonalInfoPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      // Lecture de la session active réelle
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        setUserId(session.user.id);
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profile) {
           setFormData({
             fullName: profile.full_name || "",
-            email: session.user.email || "", // Email réel de la session
+            email: session.user.email || "",
             phone: profile.phone || "",
             address: profile.address || ""
           });
@@ -37,20 +38,14 @@ export default function PersonalInfoPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId) return;
     setLoading(true);
     setMessage(null);
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
     const { error: dbError } = await supabase
       .from('profiles')
-      .update({ 
-        full_name: formData.fullName, 
-        phone: formData.phone, 
-        address: formData.address 
-      })
-      .eq('id', session.user.id);
+      .update({ full_name: formData.fullName, phone: formData.phone, address: formData.address })
+      .eq('id', userId);
 
     const { error: authError } = await supabase.auth.updateUser({ email: formData.email });
 
@@ -91,7 +86,6 @@ export default function PersonalInfoPage() {
               <input type="text" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" required />
             </div>
           </div>
-
           <div className="foodiz-card p-4">
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Adresse email</label>
             <div className="flex items-center gap-3 mt-2">
@@ -99,7 +93,6 @@ export default function PersonalInfoPage() {
               <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" required />
             </div>
           </div>
-
           <div className="foodiz-card p-4">
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Téléphone</label>
             <div className="flex items-center gap-3 mt-2">
@@ -107,7 +100,6 @@ export default function PersonalInfoPage() {
               <input type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" required />
             </div>
           </div>
-
           <div className="foodiz-card p-4">
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Adresse de livraison</label>
             <div className="flex items-center gap-3 mt-2">
@@ -115,7 +107,6 @@ export default function PersonalInfoPage() {
               <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none" placeholder="Ex: 12 rue de la Paix, Paris" required />
             </div>
           </div>
-
           <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4 flex items-center justify-center gap-2 disabled:opacity-50 mt-6">
             <Save size={18} /> {loading ? "Enregistrement..." : "Enregistrer les modifications"}
           </button>
