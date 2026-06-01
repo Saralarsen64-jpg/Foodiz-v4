@@ -1,163 +1,91 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ChevronRight,
-  RotateCcw,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Package,
-  Star,
-} from "lucide-react";
-type Tab = "en_cours" | "passées" | "annulées";
-
-const ORDERS = [
-  {
-    id: "o1",
-    restaurant: "Maison K",
-    date: "Hier, 19:30",
-    status: "delivered",
-    statusLabel: "Livrée",
-    total: 38.40,
-    points: 70,
-    items: ["Burger Artisanal x2", "Limonade Maison x1"],
-  },
-  {
-    id: "o2",
-    restaurant: "Sushi Ko",
-    date: "Avant-hier, 20:15",
-    status: "delivered",
-    statusLabel: "Livrée",
-    total: 42.50,
-    points: 80,
-    items: ["Menu Découverte x1", "Maki Saumon x2"],
-  },
-  {
-    id: "o3",
-    restaurant: "Marché Bio",
-    date: "Il y a 3 jours, 10:00",
-    status: "cancelled",
-    statusLabel: "Annulée",
-    total: 22.00,
-    points: 0,
-    items: ["Panier Fruits x1"],
-  },
-];
+import { supabase } from "../../lib/supabase";
+import { ChevronLeft, Clock, ShoppingBag, ChevronRight } from "lucide-react";
 
 export default function OrdersPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("en_cours");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const statusIcons: Record<string, typeof CheckCircle> = {
-    delivered: CheckCircle,
-    cancelled: XCircle,
-    pending: Clock,
-    preparing: Package,
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Récupération des VRAIES commandes du client
+        const { data } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('client_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (data) setOrders(data);
+      }
+      setLoading(false);
+    };
+    fetchOrders();
+  }, []);
+
+  const getStatusColor = (status: string) => {
+    if (status === 'delivered') return 'text-foodiz-green';
+    if (status === 'pending' || status === 'preparing') return 'text-foodiz-gold';
+    return 'text-foodiz-gray';
   };
 
-  const filteredOrders = ORDERS.filter((o) => {
-    if (tab === "en_cours") return o.status === "pending" || o.status === "preparing";
-    if (tab === "passées") return o.status === "delivered";
-    return o.status === "cancelled";
-  });
+  const getStatusLabel = (status: string) => {
+    if (status === 'delivered') return 'Livrée';
+    if (status === 'pending') return 'En attente';
+    if (status === 'preparing') return 'En préparation';
+    return status;
+  };
 
   return (
-    <div className="animate-fade-in-up">
-      <h1 className="foodiz-title text-2xl mb-6">Mes commandes</h1>
+    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      
+      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
+          <h1 className="foodiz-title text-lg">Mes Commandes</h1>
+          <div className="w-6" />
+        </div>
+      </header>
 
-      {/* Tabs */}
-      <div className="flex gap-0 border-b border-foodiz-gold/10 mb-6">
-        {[
-          { key: "en_cours" as Tab, label: "En cours" },
-          { key: "passées" as Tab, label: "Passées" },
-          { key: "annulées" as Tab, label: "Annulées" },
-        ].map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex-1 pb-3 text-xs font-medium text-center border-b-2 transition-all ${
-              tab === t.key
-                ? "text-foodiz-gold border-foodiz-gold"
-                : "text-foodiz-gray border-transparent"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Order List */}
-      <div className="space-y-3">
-        {filteredOrders.map((order) => {
-          const StatusIcon = statusIcons[order.status] || Clock;
-          return (
-            <button
-              key={order.id}
-              onClick={() => navigate(`/client/orders/${order.id}`)}
-              className="w-full foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all"
-            >
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  order.status === "delivered" ? "bg-foodiz-green/10" :
-                  order.status === "cancelled" ? "bg-foodiz-red/10" : "bg-foodiz-gradient-gold"
-                }`}>
-                  <StatusIcon size={18} className={
-                    order.status === "delivered" ? "text-foodiz-green" :
-                    order.status === "cancelled" ? "text-foodiz-red" : "text-foodiz-gold"
-                  } />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-foodiz-cream">{order.restaurant}</h3>
-                    <span className={`text-[10px] font-medium ${
-                      order.status === "delivered" ? "text-foodiz-green" :
-                      order.status === "cancelled" ? "text-foodiz-red" : "text-foodiz-gold"
-                    }`}>
-                      {order.statusLabel}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-foodiz-gray mt-1">{order.date}</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-foodiz-gold text-sm font-semibold">
-                      {order.total.toFixed(2).replace(".", ",")} €
-                    </span>
-                    {order.points > 0 && (
-                      <span className="text-[10px] text-foodiz-gold/60 flex items-center gap-1">
-                        <Star size={10} /> +{order.points} pts
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-foodiz-gold/30 self-center" />
-              </div>
-
-              {order.status === "delivered" && (
-                <div className="mt-3 pt-3 border-t border-foodiz-gold/10 flex gap-2">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); navigate(`/client/orders/${order.id}/review`); }}
-                    className="flex-1 text-center text-[10px] py-2 rounded-lg border border-foodiz-gold/20 text-foodiz-gold hover:bg-foodiz-gold/5 transition-all"
-                  >
-                    Noter
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); }}
-                    className="flex-1 text-center text-[10px] py-2 rounded-lg bg-foodiz-gold text-foodiz-black font-medium hover:bg-foodiz-gold-light transition-all flex items-center justify-center gap-1"
-                  >
-                    <RotateCcw size={12} /> Recommander
-                  </button>
-                </div>
-              )}
-            </button>
-          );
-        })}
-
-        {filteredOrders.length === 0 && (
-          <div className="text-center py-12">
-            <Package size={40} className="mx-auto text-foodiz-gold/30 mb-3" />
-            <p className="text-foodiz-gray text-sm">Aucune commande dans cette catégorie</p>
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
+        {loading ? (
+          <div className="text-center py-10 text-foodiz-gray animate-pulse">Chargement de l'historique...</div>
+        ) : orders.length === 0 ? (
+          <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
+            <ShoppingBag size={48} className="mx-auto text-foodiz-gray/20 mb-4" />
+            <h3 className="text-foodiz-cream text-lg font-medium mb-2">Aucune commande</h3>
+            <p className="text-foodiz-gray text-sm mb-6">Vous n'avez pas encore commandé sur Foodiz.</p>
+            <button onClick={() => navigate("/client/restaurants")} className="foodiz-btn px-6 py-3 text-sm">Découvrir les restaurants</button>
           </div>
+        ) : (
+          orders.map((order) => (
+            <button 
+              key={order.id} 
+              onClick={() => navigate(`/client/orders/${order.id}`)}
+              className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group bg-[#0A0A0A]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-foodiz-black border border-foodiz-gold/20 flex items-center justify-center text-foodiz-gold">
+                  <Clock size={20} />
+                </div>
+                <div className="text-left">
+                  <p className="text-foodiz-cream font-bold text-sm">Commande #{order.id.slice(0, 8)}</p>
+                  <p className="text-foodiz-gray text-xs">{new Date(order.created_at).toLocaleDateString('fr-FR')} · {(order.final_client_total_cents / 100).toFixed(2)} €</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={`text-xs font-bold uppercase ${getStatusColor(order.status)}`}>{getStatusLabel(order.status)}</p>
+                <ChevronRight size={16} className="text-foodiz-gray/50 ml-auto mt-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
+          ))
         )}
-      </div>
+      </main>
     </div>
   );
 }
