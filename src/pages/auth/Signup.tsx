@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Mail, Lock, User, Phone, AlertCircle, CheckCircle } from "lucide-react";
+import { Mail, Lock, User, Phone, MapPin, Briefcase, CheckSquare, AlertCircle, CheckCircle } from "lucide-react";
 import Logo from "../../components/Logo";
 
 export default function SignupPage() {
@@ -13,26 +13,33 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [workAddress, setWorkAddress] = useState("");
+  const [cguAccepted, setCguAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!cguAccepted) {
+      setStatus({ type: 'error', msg: "Vous devez accepter les conditions générales d'utilisation." });
+      return;
+    }
     setLoading(true);
     setStatus(null);
 
-    // Génération d'un code parrainage unique pour ce nouvel utilisateur
-    const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-
+    // Envoi de TOUTES les infos au Trigger Supabase
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           role: role,
-          full_name: fullName, // Envoie le VRAI nom (ex: Sara Larsen)
-          phone: phone,        // Envoie le VRAI téléphone
-          referral_code: `FDZ-${randomCode}`, // Génère un vrai code parrainage
+          full_name: fullName,
+          phone: phone,
+          address: address,
+          work_address: workAddress,
+          cgu_accepted: cguAccepted,
         },
       },
     });
@@ -71,10 +78,10 @@ export default function SignupPage() {
           </div>
         )}
 
-        <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
             <User size={18} className="text-foodiz-gold" />
-            <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Nom complet (ex: Sara Larsen)" />
+            <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Nom et Prénom" />
           </div>
 
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
@@ -88,11 +95,28 @@ export default function SignupPage() {
           </div>
 
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
+            <MapPin size={18} className="text-foodiz-gold" />
+            <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Adresse personnelle (Livraison)" />
+          </div>
+
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
+            <Briefcase size={18} className="text-foodiz-gold" />
+            <input type="text" value={workAddress} onChange={(e) => setWorkAddress(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Adresse du travail (Optionnel)" />
+          </div>
+
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
             <Lock size={18} className="text-foodiz-gold" />
             <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Mot de passe (min. 6 caractères)" />
           </div>
 
-          <button type="submit" disabled={loading} className="w-full foodiz-btn py-4 mt-4 text-base font-bold disabled:opacity-50">
+          <div className="flex items-start gap-3 px-2">
+            <input type="checkbox" required checked={cguAccepted} onChange={(e) => setCguAccepted(e.target.checked)} className="mt-1 w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold" />
+            <p className="text-[10px] text-foodiz-gray leading-relaxed">
+              J'accepte les <span className="text-foodiz-gold underline">Conditions Générales d'Utilisation</span> et je certifie l'exactitude des informations fournies.
+            </p>
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full foodiz-btn py-4 mt-2 text-base font-bold disabled:opacity-50">
             {loading ? "Création en cours..." : "Créer mon compte"}
           </button>
         </form>

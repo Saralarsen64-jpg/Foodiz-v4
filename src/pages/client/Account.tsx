@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { User, Mail, MapPin, Phone, ChevronRight, LogOut, Gift, CreditCard, Settings, Clock } from "lucide-react";
-import GoldIcon from "../../components/GoldIcon";
+import { User, Mail, MapPin, Phone, ChevronRight, LogOut, Gift, CreditCard, Settings } from "lucide-react";
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -12,7 +11,7 @@ export default function AccountPage() {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Récupération des VRAIES infos
+        // Récupération des VRAIES infos depuis la base de données
         const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         setProfile({ ...user, ...data });
       }

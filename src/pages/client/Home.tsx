@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import {
-  Search, MapPin, Gift, Star, Clock, Truck, ChevronRight, RotateCcw,
-  Flame, Beef, Pizza, Cookie, Wine, ShoppingCart, Sandwich, Salad, X, CheckCircle
-} from "lucide-react";
+import { Search, MapPin, Gift, Star, Clock, Truck, ChevronRight, Flame, Beef, Pizza, Cookie, Wine, ShoppingCart, Sandwich, Salad } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 
 const CATEGORIES = [
@@ -38,54 +35,17 @@ export default function ClientHome() {
   const [points, setPoints] = useState(0);
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [loadingRestos, setLoadingRestos] = useState(false);
-  
-  // États pour le Popup de Première Connexion (Onboarding)
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingData, setOnboardingData] = useState({ fullName: "", email: "", address: "", workAddress: "", cgu: false });
 
   useEffect(() => {
     const fetchInitialData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         const { data: wallet } = await supabase.from('client_wallets').select('points_balance').eq('user_id', user.id).single();
-        
         if (wallet) setPoints(wallet.points_balance || 0);
-        
-        // Si l'utilisateur n'a pas accepté les CGU, on affiche le popup
-        if (profile && !profile.cgu_accepted) {
-          setOnboardingData({
-            fullName: profile.full_name || "",
-            email: user.email || "",
-            address: profile.address || "",
-            workAddress: profile.work_address || "",
-            cgu: false
-          });
-          setShowOnboarding(true);
-        }
       }
     };
     fetchInitialData();
   }, []);
-
-  const handleOnboardingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && onboardingData.cgu) {
-      await supabase.from('profiles').update({
-        full_name: onboardingData.fullName,
-        email: onboardingData.email, // Note: update email via auth.updateUser est mieux, mais ici pour simplifier
-        address: onboardingData.address,
-        work_address: onboardingData.workAddress,
-        cgu_accepted: true
-      }).eq('id', user.id);
-      
-      // Mise à jour email auth si nécessaire
-      await supabase.auth.updateUser({ email: onboardingData.email });
-      
-      setShowOnboarding(false);
-    }
-  };
 
   const enableLocation = async () => {
     if (!navigator.geolocation) return;
@@ -107,55 +67,9 @@ export default function ClientHome() {
 
   return (
     <div className="space-y-6 animate-fade-in-up relative min-h-screen bg-foodiz-black pb-20">
-      
-      {/* POPUP PREMIÈRE CONNEXION (ONBOARDING) */}
-      {showOnboarding && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#111111] border border-foodiz-gold/30 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <div className="text-center mb-6">
-              <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="h-8 mx-auto mb-4" />
-              <h2 className="foodiz-title text-2xl text-foodiz-cream">Bienvenue sur Foodiz !</h2>
-              <p className="text-foodiz-gray text-sm mt-2">Finalisez votre profil pour commencer à commander.</p>
-            </div>
-            
-            <form onSubmit={handleOnboardingSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] text-foodiz-gold uppercase font-bold">Nom et Prénom</label>
-                <input required type="text" value={onboardingData.fullName} onChange={e => setOnboardingData({...onboardingData, fullName: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-foodiz-gold uppercase font-bold">Adresse Email</label>
-                <input required type="email" value={onboardingData.email} onChange={e => setOnboardingData({...onboardingData, email: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-foodiz-gold uppercase font-bold">Adresse Personnelle (Livraison)</label>
-                <input required type="text" value={onboardingData.address} onChange={e => setOnboardingData({...onboardingData, address: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold" placeholder="Ex: 12 rue de la Paix, Paris" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-foodiz-gold uppercase font-bold">Adresse du Travail (Optionnel)</label>
-                <input type="text" value={onboardingData.workAddress} onChange={e => setOnboardingData({...onboardingData, workAddress: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold" placeholder="Ex: 5 avenue des Champs, Paris" />
-              </div>
-              
-              <div className="flex items-start gap-3 pt-2">
-                <input required type="checkbox" checked={onboardingData.cgu} onChange={e => setOnboardingData({...onboardingData, cgu: e.target.checked})} className="mt-1 w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold" />
-                <p className="text-[10px] text-foodiz-gray leading-relaxed">
-                  Je certifie que les informations ci-dessus sont exactes et j'accepte les <span className="text-foodiz-gold underline">Conditions Générales d'Utilisation</span> de Foodiz.
-                </p>
-              </div>
-
-              <button type="submit" disabled={!onboardingData.cgu} className="w-full foodiz-btn py-4 mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                <CheckCircle size={18} /> Valider et accéder à Foodiz
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Side gold relief */}
       <div className="pointer-events-none absolute top-36 bottom-24 left-0 w-[2px] bg-gradient-to-b from-transparent via-foodiz-gold/50 to-transparent shadow-[0_0_14px_rgba(216,168,79,0.35)]" />
       <div className="pointer-events-none absolute top-36 bottom-24 right-0 w-[2px] bg-gradient-to-b from-transparent via-foodiz-gold/50 to-transparent shadow-[0_0_14px_rgba(216,168,79,0.35)]" />
 
-      {/* Kraft Hero Logo */}
       <div className="relative -mx-4 overflow-hidden rounded-b-[2rem] border-b border-foodiz-gold/15 shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
         <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="w-full h-auto block" />
         <button onClick={enableLocation} className="absolute bottom-3 left-4 rounded-full border border-foodiz-gold/20 bg-black/45 backdrop-blur-sm px-3 py-1.5 text-[10px] font-medium text-foodiz-cream hover:border-foodiz-gold/40 transition-all">
@@ -238,11 +152,6 @@ export default function ClientHome() {
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="mt-6">
-          <div className="flex items-center justify-between mb-4"><h2 className="foodiz-title text-lg">Dernières commandes</h2><button onClick={() => navigate("/client/orders")} className="text-foodiz-gold text-xs font-semibold flex items-center gap-1">Voir tout <ChevronRight size={12} /></button></div>
-          <div className="foodiz-card p-6 text-center border-foodiz-gold/10"><p className="text-foodiz-gray text-sm">Connectez-vous pour voir vos commandes en temps réel.</p></div>
       </div>
       </section>
     </div>
