@@ -1,184 +1,115 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  ChevronLeft, 
-  Send, 
-  Bot, 
-  User, 
-  MessageSquare, 
-  CheckCircle2, 
-  Info,
-  HelpCircle,
-  AlertCircle
-} from "lucide-react";
-import GoldIcon from "../../components/GoldIcon";
+import { supabase } from "../../lib/supabase";
+import { ChevronLeft, MessageSquare, Send, CheckCircle, HelpCircle, CreditCard, MapPin, Clock } from "lucide-react";
 
-type Message = {
-  id: string;
-  type: "bot" | "user";
-  text: string;
-  options?: string[];
-  resolved?: boolean;
-};
-
-export default function HelpCenter() {
+export default function HelpCenterPage() {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "bot",
-      text: "Bonjour, je suis l'assistant intelligent Foodiz. Comment puis-je sublimer votre expérience aujourd'hui ?",
-      options: ["Problème avec une commande", "Question sur mes points", "Devenir partenaire", "Autre chose"]
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+
+  const faq = [
+    { q: "Comment fonctionne le Foodiz Club ?", a: "À chaque commande, vous cumulez des points (1 centime généré = 1 point). Vous pouvez les échanger contre des avantages exclusifs.", icon: <HelpCircle size={16} /> },
+    { q: "Quand suis-je livré ?", a: "Nos livreurs Foodiz sont optimisés par IA pour vous livrer en 20 à 35 minutes en moyenne.", icon: <Clock size={16} /> },
+    { q: "Mes paiements sont-ils sécurisés ?", a: "Absolument. Nous utilisons un cryptage de niveau bancaire. Nous ne stockons jamais votre numéro de carte complet.", icon: <CreditCard size={16} /> },
+    { q: "Comment modifier mon adresse ?", a: "Rendez-vous dans 'Mon Compte' > 'Mes adresses' pour ajouter ou supprimer vos lieux de livraison.", icon: <MapPin size={16} /> },
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('loading');
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user && subject && message) {
+      // Envoi d'un VRAI ticket vers la base de données (visible sur le Dashboard Admin)
+      const { error } = await supabase.from('support_tickets').insert({
+        user_id: user.id,
+        user_email: user.email,
+        subject,
+        message,
+        status: 'open'
+      });
+
+      if (!error) {
+        setStatus('success');
+        setSubject("");
+        setMessage("");
+      }
     }
-  ]);
-  const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsBotTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isTyping]);
-
-  const handleSend = (text: string) => {
-    if (!text.trim()) return;
-
-    const userMsg: Message = { id: Date.now().toString(), type: "user", text };
-    setMessages(prev => [...prev, userMsg]);
-    setInputValue("");
-    setIsBotTyping(true);
-
-    // Simulation de l'IA intelligente (Arbre de décision pour filtrage)
-    setTimeout(() => {
-      let botResponse: Message = { id: (Date.now() + 1).toString(), type: "bot", text: "" };
-      
-      const lowerText = text.toLowerCase();
-
-      if (lowerText.includes("commande") || lowerText.includes("problème")) {
-        botResponse.text = "Je comprends. S'agit-il d'un retard de livraison ou d'un article manquant dans votre colis ?";
-        botResponse.options = ["Retard de livraison", "Article manquant / incorrect", "Qualité du plat"];
-      } 
-      else if (lowerText.includes("retard")) {
-        botResponse.text = "Nos livreurs font leur maximum. Avez-vous vérifié le suivi GPS live dans l'onglet 'Commandes' ? Souvent, le livreur est à moins de 2 minutes.";
-        botResponse.options = ["Oui, j'ai vu", "Non, je veux parler à un agent"];
-      }
-      else if (lowerText.includes("manquant") || lowerText.includes("incorrect")) {
-        botResponse.text = "Nous en sommes navrés. Pour traiter votre demande, merci de prendre une photo du ticket de caisse et des plats reçus. Pouvez-vous confirmer que vous avez ces photos ?";
-        botResponse.options = ["J'ai les photos", "Non"];
-      }
-      else if (lowerText.includes("points") || lowerText.includes("avantages")) {
-        botResponse.text = "Vos points sont crédités dès que le code de livraison à 6 chiffres est validé par le livreur. Est-ce une commande passée il y a plus de 24h ?";
-        botResponse.options = ["Oui", "C'est récent"];
-      }
-      else if (lowerText.includes("agent") || lowerText.includes("oui, j'ai vu")) {
-        botResponse.text = "Toutes les informations sont dans votre application. Si le problème persiste après 15 minutes, un bouton 'Contacter le Support' apparaîtra automatiquement pour éviter les doublons.";
-        botResponse.resolved = true;
-      }
-      else {
-        botResponse.text = "Je n'ai pas bien saisi. Pourriez-vous préciser votre demande ou consulter notre FAQ premium ci-dessous ?";
-        botResponse.options = ["Consulter la FAQ", "Recommencer"];
-      }
-
-      setMessages(prev => [...prev, botResponse]);
-      setIsBotTyping(false);
-    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-foodiz-black flex flex-col">
+    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="text-foodiz-gold">
-            <ChevronLeft size={24} />
-          </button>
-          <h1 className="foodiz-title text-lg">Centre d'aide</h1>
+          <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
+          <h1 className="foodiz-title text-lg">Centre d'Aide</h1>
           <div className="w-6" />
         </div>
       </header>
 
-      <main className="flex-1 max-w-lg mx-auto w-full flex flex-col overflow-hidden">
-        {/* Chat Area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] space-y-2`}>
-                <div className={`p-4 rounded-2xl text-sm ${
-                  msg.type === "user" 
-                  ? "bg-foodiz-gold text-foodiz-black font-medium" 
-                  : "bg-foodiz-card border border-foodiz-gold/20 text-foodiz-cream"
-                }`}>
-                  {msg.type === "bot" && <Bot size={14} className="mb-2 text-foodiz-gold" />}
-                  {msg.text}
-                </div>
-                
-                {msg.options && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {msg.options.map(opt => (
-                      <button 
-                        key={opt}
-                        onClick={() => handleSend(opt)}
-                        className="text-[10px] px-3 py-1.5 rounded-full border border-foodiz-gold/30 text-foodiz-gold bg-foodiz-gold/5 hover:bg-foodiz-gold/10 transition-all"
-                      >
-                        {opt}
-                      </button>
-                    ))}
+      <main className="max-w-lg mx-auto px-4 py-8 space-y-8">
+        
+        {/* FAQ */}
+        <div>
+          <h2 className="foodiz-title text-lg mb-4">Questions Fréquentes</h2>
+          <div className="space-y-3">
+            {faq.map((item, idx) => (
+              <div key={idx} className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/10">
+                <div className="flex items-start gap-3">
+                  <div className="text-foodiz-gold mt-0.5">{item.icon}</div>
+                  <div>
+                    <p className="text-foodiz-cream text-sm font-bold mb-1">{item.q}</p>
+                    <p className="text-foodiz-gray text-xs leading-relaxed">{item.a}</p>
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="bg-foodiz-card border border-foodiz-gold/10 p-4 rounded-2xl">
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-foodiz-gold rounded-full animate-bounce" />
-                  <div className="w-1.5 h-1.5 bg-foodiz-gold rounded-full animate-bounce [animation-delay:0.2s]" />
-                  <div className="w-1.5 h-1.5 bg-foodiz-gold rounded-full animate-bounce [animation-delay:0.4s]" />
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Formulaire de Contact Réel */}
+        <div className="foodiz-card p-6 bg-gradient-to-br from-foodiz-gold/5 to-foodiz-card border border-foodiz-gold/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center text-foodiz-gold">
+              <MessageSquare size={20} />
             </div>
+            <div>
+              <h2 className="foodiz-title text-base">Contacter le Support</h2>
+              <p className="text-[10px] text-foodiz-gray">Une réponse sous 24h garantie.</p>
+            </div>
+          </div>
+
+          {status === 'success' ? (
+            <div className="p-4 rounded-xl bg-foodiz-green/10 text-foodiz-green border border-foodiz-green/20 flex items-center gap-3 text-sm">
+              <CheckCircle size={18} /> Message envoyé ! Nous vous répondrons bientôt.
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input 
+                type="text" 
+                placeholder="Sujet de votre demande..." 
+                required 
+                value={subject} 
+                onChange={e => setSubject(e.target.value)} 
+                className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold" 
+              />
+              <textarea 
+                placeholder="Décrivez votre problème en détail..." 
+                required 
+                value={message} 
+                onChange={e => setMessage(e.target.value)} 
+                className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold h-24 resize-none" 
+              />
+              <button type="submit" disabled={status === 'loading'} className="w-full foodiz-btn py-3 flex items-center justify-center gap-2 disabled:opacity-50">
+                {status === 'loading' ? 'Envoi en cours...' : <><Send size={16} /> Envoyer le message</>}
+              </button>
+            </form>
           )}
-        </div>
-
-        {/* FAQ Section (to filter before chat) */}
-        <div className="px-4 pb-4">
-           <div className="foodiz-card p-4 bg-white/[0.02] border-foodiz-gold/10">
-              <div className="flex items-center gap-2 mb-3">
-                <HelpCircle size={16} className="text-foodiz-gold" />
-                <h3 className="foodiz-title text-xs uppercase tracking-widest">Solutions rapides</h3>
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <button className="text-left text-[11px] text-foodiz-gray p-2 rounded-lg hover:bg-white/5 transition-all flex items-center justify-between">
-                  Où est ma commande ? <ChevronLeft size={12} className="rotate-180" />
-                </button>
-                <button className="text-left text-[11px] text-foodiz-gray p-2 rounded-lg hover:bg-white/5 transition-all flex items-center justify-between">
-                  Comment utiliser mes points ? <ChevronLeft size={12} className="rotate-180" />
-                </button>
-              </div>
-           </div>
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 bg-foodiz-card border-t border-foodiz-gold/10">
-          <form 
-            onSubmit={(e) => { e.preventDefault(); handleSend(inputValue); }}
-            className="relative"
-          >
-            <input 
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Décrivez votre situation..."
-              className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-full py-3 pl-5 pr-12 text-sm text-foodiz-cream outline-none focus:border-foodiz-gold/50"
-            />
-            <button 
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-foodiz-gold flex items-center justify-center text-foodiz-black"
-            >
-              <Send size={16} />
-            </button>
-          </form>
         </div>
       </main>
     </div>
