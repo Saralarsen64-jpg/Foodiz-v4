@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, MessageSquare, Send, CheckCircle, HelpCircle, CreditCard, MapPin, Clock } from "lucide-react";
+import { ChevronLeft, MessageSquare, Send, CheckCircle, HelpCircle, CreditCard, MapPin, Clock, AlertCircle } from "lucide-react";
 
 export default function HelpCenterPage() {
   const navigate = useNavigate();
+  const [userEmail, setUserEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserEmail(user.email || "");
+    };
+    getUser();
+  }, []);
 
   const faq = [
-    { q: "Comment fonctionne le Foodiz Club ?", a: "À chaque commande, vous cumulez des points (1 centime généré = 1 point). Vous pouvez les échanger contre des avantages exclusifs.", icon: <HelpCircle size={16} /> },
+    { q: "Comment fonctionne le Foodiz Club ?", a: "À chaque commande, vous cumulez des points. Vous pouvez les échanger contre des avantages exclusifs qui se renouvellent toutes les 48h.", icon: <HelpCircle size={16} /> },
     { q: "Quand suis-je livré ?", a: "Nos livreurs Foodiz sont optimisés par IA pour vous livrer en 20 à 35 minutes en moyenne.", icon: <Clock size={16} /> },
     { q: "Mes paiements sont-ils sécurisés ?", a: "Absolument. Nous utilisons un cryptage de niveau bancaire. Nous ne stockons jamais votre numéro de carte complet.", icon: <CreditCard size={16} /> },
     { q: "Comment modifier mon adresse ?", a: "Rendez-vous dans 'Mon Compte' > 'Mes adresses' pour ajouter ou supprimer vos lieux de livraison.", icon: <MapPin size={16} /> },
@@ -19,23 +29,34 @@ export default function HelpCenterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
+    setErrorMsg("");
+    
     const { data: { user } } = await supabase.auth.getUser();
     
-    if (user && subject && message) {
-      // Envoi d'un VRAI ticket vers la base de données (visible sur le Dashboard Admin)
-      const { error } = await supabase.from('support_tickets').insert({
-        user_id: user.id,
-        user_email: user.email,
-        subject,
-        message,
-        status: 'open'
-      });
+    if (!user) {
+      setStatus('error');
+      setErrorMsg("Vous devez être connecté pour envoyer un message.");
+      return;
+    }
 
-      if (!error) {
-        setStatus('success');
-        setSubject("");
-        setMessage("");
-      }
+    // Envoi RÉEL vers la base de données
+    const { error } = await supabase.from('support_tickets').insert({
+      user_id: user.id,
+      user_email: userEmail,
+      subject,
+      message,
+      status: 'open',
+      admin_response: null
+    });
+
+    if (error) {
+      console.error("Erreur Supabase:", error);
+      setStatus('error');
+      setErrorMsg("Une erreur est survenue. Vérifiez votre connexion.");
+    } else {
+      setStatus('success');
+      setSubject("");
+      setMessage("");
     }
   };
 
@@ -53,7 +74,6 @@ export default function HelpCenterPage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-8">
-        
         {/* FAQ */}
         <div>
           <h2 className="foodiz-title text-lg mb-4">Questions Fréquentes</h2>
@@ -80,16 +100,27 @@ export default function HelpCenterPage() {
             </div>
             <div>
               <h2 className="foodiz-title text-base">Contacter le Support</h2>
-              <p className="text-[10px] text-foodiz-gray">Une réponse sous 24h garantie.</p>
+              <p className="text-[10px] text-foodiz-gray">Réponse garantie sous 24h par notre équipe.</p>
             </div>
           </div>
 
           {status === 'success' ? (
             <div className="p-4 rounded-xl bg-foodiz-green/10 text-foodiz-green border border-foodiz-green/20 flex items-center gap-3 text-sm">
-              <CheckCircle size={18} /> Message envoyé ! Nous vous répondrons bientôt.
+              <CheckCircle size={18} /> Message envoyé avec succès ! Nous vous répondrons à l'adresse : {userEmail}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {status === 'error' && (
+                <div className="p-3 rounded-lg bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 flex items-center gap-2 text-xs">
+                  <AlertCircle size={14} /> {errorMsg}
+                </div>
+              )}
+              <input 
+                type="email" 
+                readOnly
+                value={userEmail}
+                className="w-full bg-foodiz-black/50 border border-foodiz-gold/10 rounded-xl p-3 text-foodiz-gray text-sm outline-none cursor-not-allowed" 
+              />
               <input 
                 type="text" 
                 placeholder="Sujet de votre demande..." 
@@ -106,7 +137,7 @@ export default function HelpCenterPage() {
                 className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold h-24 resize-none" 
               />
               <button type="submit" disabled={status === 'loading'} className="w-full foodiz-btn py-3 flex items-center justify-center gap-2 disabled:opacity-50">
-                {status === 'loading' ? 'Envoi en cours...' : <><Send size={16} /> Envoyer le message</>}
+                {status === 'loading' ? 'Envoi en cours...' : <><Send size={16} /> Envoyer au support</>}
               </button>
             </form>
           )}
