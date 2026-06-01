@@ -19,24 +19,31 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      // 1. CORRECTION CRITIQUE : On force la déconnexion de l'ancien compte (Admin) pour éviter les conflits de session
+      await supabase.auth.signOut();
+
+      // 2. On connecte le nouveau compte proprement
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         if (error.message.toLowerCase().includes("email not confirmed")) {
-          throw new Error("Votre adresse e-mail n’est pas encore confirmée. Vérifiez votre boîte mail avant de vous connecter.");
+          throw new Error("Votre adresse e-mail n’est pas encore confirmée. Vérifiez votre boîte mail.");
         }
         throw error;
       }
 
+      // 3. On attend un tout petit peu que la session soit bien mise à jour dans le navigateur
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const redirectPath = await resolveRedirectPath();
       if (redirectPath === "/auth/login") {
-        throw new Error("Votre profil n’est pas encore prêt. Réessayez dans quelques instants ou contactez le support Foodiz.");
+        throw new Error("Votre profil n’est pas encore prêt. Réessayez dans quelques instants.");
       }
 
       if (redirectPath === "/partner/validation-status") {
-        toast.success("Connexion réussie. Votre dossier partenaire est en attente de validation admin.");
+        toast.success("Connexion réussie. Dossier en attente de validation.");
       }
       if (redirectPath === "/courier/validation-status") {
-        toast.success("Connexion réussie. Votre dossier livreur est en attente de validation admin.");
+        toast.success("Connexion réussie. Dossier en attente de validation.");
       }
 
       navigate(redirectPath);

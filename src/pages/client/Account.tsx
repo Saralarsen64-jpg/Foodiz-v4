@@ -11,38 +11,41 @@ export default function AccountPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // 1. Écouter les changements d'authentification en temps réel
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    let isMounted = true;
+
+    const fetchProfile = async (userId: string, email: string) => {
+      if (!isMounted) return;
+      setUserEmail(email);
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      if (isMounted && data) {
+        setProfile({
+          full_name: data.full_name || "Utilisateur Foodiz",
+          avatar_url: data.avatar_url,
+          referral_count: data.referral_count || 0,
+        });
+      }
+    };
+
+    // 1. Écouter les changements de session en temps réel (quand on se connecte/déconnecte)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        setUserEmail(session.user.email || "");
-        fetchProfileData(session.user.id);
+        fetchProfile(session.user.id, session.user.email || "");
       }
     });
 
-    // 2. Vérifier la session actuelle au chargement de la page
+    // 2. Charger la session actuelle au démarrage de la page
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        setUserEmail(session.user.email || "");
-        fetchProfileData(session.user.id);
+        fetchProfile(session.user.id, session.user.email || "");
       }
     });
 
-    // Nettoyage de l'écouteur quand on quitte la page
+    // Nettoyage quand on quitte la page
     return () => {
-      authListener.subscription.unsubscribe();
+      isMounted = false;
+      subscription.unsubscribe();
     };
-  }, [navigate]);
-
-  const fetchProfileData = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (data) {
-      setProfile({
-        full_name: data.full_name || "Utilisateur Foodiz",
-        avatar_url: data.avatar_url,
-        referral_count: data.referral_count || 0,
-      });
-    }
-  };
+  }, []);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
