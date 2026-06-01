@@ -6,15 +6,18 @@ import { ChevronLeft, MessageSquare, Send, CheckCircle, HelpCircle, CreditCard, 
 export default function HelpCenterPage() {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserEmail(user.email || "");
+      if (user) {
+        setUserEmail(user.email || "");
+        setUserId(user.id);
+      }
     };
     getUser();
   }, []);
@@ -29,29 +32,26 @@ export default function HelpCenterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
-    setErrorMsg("");
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+
+    if (!userId) {
       setStatus('error');
-      setErrorMsg("Session expirée. Veuillez vous reconnecter.");
       return;
     }
 
-    // Envoi RÉEL vers la base de données (Payload simplifié)
-    const { error } = await supabase.from('support_tickets').insert({
-      user_id: user.id,
-      user_email: userEmail,
-      subject: subject,
-      message: message,
-      status: 'open'
-    });
+    // Envoi des données vers la NOUVELLE table
+    const { error } = await supabase
+      .from('support_tickets')
+      .insert({
+        user_id: userId,
+        user_email: userEmail,
+        subject: subject,
+        message: message,
+        status: 'open'
+      });
 
     if (error) {
-      console.error("Erreur Supabase détaillée:", error); // Regarde la console (F12) si ça bloque encore
+      console.error("Erreur d'envoi:", error);
       setStatus('error');
-      setErrorMsg("Impossible d'envoyer le message. Vérifiez votre connexion internet.");
     } else {
       setStatus('success');
       setSubject("");
@@ -91,7 +91,7 @@ export default function HelpCenterPage() {
           </div>
         </div>
 
-        {/* Formulaire de Contact Réel */}
+        {/* Formulaire de Contact */}
         <div className="foodiz-card p-6 bg-gradient-to-br from-foodiz-gold/5 to-foodiz-card border border-foodiz-gold/20">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center text-foodiz-gold">
@@ -99,44 +99,35 @@ export default function HelpCenterPage() {
             </div>
             <div>
               <h2 className="foodiz-title text-base">Contacter le Support</h2>
-              <p className="text-[10px] text-foodiz-gray">Réponse garantie sous 24h par notre équipe.</p>
+              <p className="text-[10px] text-foodiz-gray">Réponse garantie sous 24h.</p>
             </div>
           </div>
 
           {status === 'success' ? (
-            <div className="p-4 rounded-xl bg-foodiz-green/10 text-foodiz-green border border-foodiz-green/20 flex items-center gap-3 text-sm">
-              <CheckCircle size={18} /> Message envoyé avec succès ! Nous vous répondrons à : {userEmail}
+            <div className="p-4 rounded-xl bg-foodiz-green/10 text-foodiz-green border border-foodiz-green/20 flex items-center gap-3 text-sm animate-fade-in-up">
+              <CheckCircle size={18} /> Message envoyé ! L'admin a reçu votre demande.
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {status === 'error' && (
                 <div className="p-3 rounded-lg bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 flex items-center gap-2 text-xs">
-                  <AlertCircle size={14} /> {errorMsg}
+                  <AlertCircle size={14} /> Erreur lors de l'envoi. Réessayez.
                 </div>
               )}
               <input 
-                type="email" 
-                readOnly
-                value={userEmail}
+                type="email" readOnly value={userEmail}
                 className="w-full bg-foodiz-black/50 border border-foodiz-gold/10 rounded-xl p-3 text-foodiz-gray text-sm outline-none cursor-not-allowed" 
               />
               <input 
-                type="text" 
-                placeholder="Sujet de votre demande..." 
-                required 
-                value={subject} 
-                onChange={e => setSubject(e.target.value)} 
+                type="text" placeholder="Sujet..." required value={subject} onChange={e => setSubject(e.target.value)}
                 className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold" 
               />
               <textarea 
-                placeholder="Décrivez votre problème en détail..." 
-                required 
-                value={message} 
-                onChange={e => setMessage(e.target.value)} 
+                placeholder="Votre message..." required value={message} onChange={e => setMessage(e.target.value)}
                 className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none focus:border-foodiz-gold h-24 resize-none" 
               />
               <button type="submit" disabled={status === 'loading'} className="w-full foodiz-btn py-3 flex items-center justify-center gap-2 disabled:opacity-50">
-                {status === 'loading' ? 'Envoi en cours...' : <><Send size={16} /> Envoyer au support</>}
+                {status === 'loading' ? 'Envoi...' : <><Send size={16} /> Envoyer</>}
               </button>
             </form>
           )}
