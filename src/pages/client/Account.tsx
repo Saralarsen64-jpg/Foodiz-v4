@@ -9,18 +9,19 @@ export default function AccountPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      // 1. On récupère l'ID de la personne CONNECTÉE (pas d'admin, pas d'autre)
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (user) {
-        // On essaie de récupérer le profil complet
+        // 2. On demande UNIQUEMENT les données de CET ID
         const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         
-        // SÉCURITÉ ANTI-BUG : Si la table profiles bloque, on affiche au moins l'email de connexion
         setProfile({
           full_name: data?.full_name || "Utilisateur Foodiz",
-          email: user.email,
+          email: user.email, // L'email vient de l'auth sécurisée
           phone: data?.phone || "",
           address: data?.address || "",
-          ...data
+          referral_code: data?.referral_code || ""
         });
       }
     };
@@ -39,6 +40,7 @@ export default function AccountPage() {
     { label: "Mes adresses de livraison", icon: MapPin, path: "/client/account/addresses" },
     { label: "Mes moyens de paiement", icon: CreditCard, path: "/client/account/payments" },
     { label: "Mes favoris", icon: Gift, path: "/client/account/favorites" },
+    { label: "Parrainage", icon: Gift, path: "/client/account/referral" },
     { label: "Foodiz Club & Avantages", icon: Gift, path: "/client/advantages" },
     { label: "Centre d'aide", icon: Settings, path: "/client/help-center" },
   ];
@@ -48,7 +50,6 @@ export default function AccountPage() {
       <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       
-      {/* Header Profil avec VRAIES infos (ou fallback sécurisé) */}
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-8">
         <div className="max-w-lg mx-auto text-center">
           <div className="w-20 h-20 rounded-full bg-foodiz-gradient-gold mx-auto flex items-center justify-center mb-3 shadow-lg shadow-foodiz-gold/20">

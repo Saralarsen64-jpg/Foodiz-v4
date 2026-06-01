@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Search, MapPin, Gift, Star, Clock, Truck, ChevronRight, Flame, Beef, Pizza, Cookie, Wine, ShoppingCart, Sandwich, Salad, Navigation } from "lucide-react";
+import { Search, MapPin, Gift, Star, Clock, ChevronRight, Flame, Beef, Pizza, Cookie, Wine, ShoppingCart, Sandwich, Salad, Navigation } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 
 const CATEGORIES = [
@@ -26,10 +26,23 @@ export default function ClientHome() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [locationEnabled, setLocationEnabled] = useState(false);
+  const [cityName, setCityName] = useState("");
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [points, setPoints] = useState(0);
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [loadingRestos, setLoadingRestos] = useState(false);
+
+  // Fonction pour obtenir le nom de la ville réelle via OpenStreetMap
+  const fetchCityName = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await response.json();
+      const city = data.address.city || data.address.town || data.address.village || data.address.suburb || "Ma Position";
+      setCityName(city);
+    } catch (error) {
+      setCityName("Ma Position");
+    }
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -43,6 +56,7 @@ export default function ClientHome() {
         if (profile?.latitude && profile?.longitude) {
           setUserLocation({ lat: profile.latitude, lng: profile.longitude });
           setLocationEnabled(true);
+          fetchCityName(profile.latitude, profile.longitude);
           fetchRestaurants(profile.latitude, profile.longitude);
         }
       }
@@ -70,16 +84,16 @@ export default function ClientHome() {
       const lng = position.coords.longitude;
       setUserLocation({ lat, lng });
       setLocationEnabled(true);
+      await fetchCityName(lat, lng);
       
-      // Sauvegarder la VRAIE localisation dans le profil (pour le livreur)
+      // Sauvegarder la VRAIE localisation dans le profil (pour le livreur et les futures sessions)
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('profiles').update({ latitude: lat, longitude: lng }).eq('id', user.id);
       }
       fetchRestaurants(lat, lng);
     }, (error) => {
-      console.error("Erreur géolocalisation:", error);
-      alert("Veuillez autoriser l'accès à votre position pour voir les restaurants autour de vous.");
+      alert("Veuillez autoriser l'accès à votre position pour utiliser Foodiz.");
     });
   };
 
@@ -92,7 +106,7 @@ export default function ClientHome() {
         <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="w-full h-auto block" />
         <button onClick={enableLocation} className="absolute bottom-3 left-4 rounded-full border border-foodiz-gold/20 bg-black/45 backdrop-blur-sm px-3 py-1.5 text-[10px] font-medium text-foodiz-cream hover:border-foodiz-gold/40 transition-all flex items-center gap-2">
           <Navigation size={12} />
-          {locationEnabled ? "Localisation active (GPS)" : "Activer ma localisation"}
+          {locationEnabled ? `${cityName} (GPS Actif)` : "Activer ma localisation"}
         </button>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-foodiz-black/25 to-foodiz-black" />
       </div>
@@ -100,7 +114,7 @@ export default function ClientHome() {
       <section className="relative -mt-8 rounded-[2rem] border border-foodiz-gold/20 bg-[radial-gradient(circle_at_top,rgba(216,168,79,0.08),transparent_35%),rgba(10,10,10,0.98)] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.45),0_0_28px_rgba(216,168,79,0.06)]">
       <div className="flex items-center gap-2 text-foodiz-cream/80">
         <GoldIcon icon={MapPin} size={16} />
-        <span className="text-sm font-medium">{locationEnabled ? "Autour de vous (10km max)" : "Activez le GPS pour voir les restos"}</span>
+        <span className="text-sm font-medium">{locationEnabled ? `Autour de ${cityName} (10km max)` : "Activez le GPS pour voir les restos"}</span>
       </div>
 
       <div className="relative mt-4">
@@ -145,7 +159,18 @@ export default function ClientHome() {
 
       <div className="mt-6">
         <div className="flex items-center justify-between mb-4"><h2 className="foodiz-title text-lg">Restaurants à proximité</h2></div>
-        {!locationEnabled ? (<div className="foodiz-card p-6 text-center border-foodiz-gold/10"><p className="text-foodiz-gray text-sm mb-2">Cliquez sur "Activer ma localisation" en haut pour voir les restaurants autour de vous.</p></div>) : loadingRestos ? (<div className="text-center py-6 text-foodiz-gray text-sm animate-pulse">Recherche GPS en cours...</div>) : restaurants.length === 0 ? (<div className="foodiz-card p-6 text-center border-foodiz-gold/10"><p className="text-foodiz-gray text-sm">Aucun restaurant dans un rayon de 10km.</p></div>) : (
+        {!locationEnabled ? (
+          <div className="foodiz-card p-6 text-center border-foodiz-gold/10 bg-foodiz-red/5 border-foodiz-red/20">
+            <p className="text-foodiz-red text-sm font-bold mb-1">Localisation requise</p>
+            <p className="text-foodiz-gray text-xs">Cliquez sur "Activer ma localisation" en haut pour voir les restaurants autour de vous.</p>
+          </div>
+        ) : loadingRestos ? (
+          <div className="text-center py-6 text-foodiz-gray text-sm animate-pulse">Recherche GPS en cours...</div>
+        ) : restaurants.length === 0 ? (
+          <div className="foodiz-card p-6 text-center border-foodiz-gold/10">
+            <p className="text-foodiz-gray text-sm">Aucun restaurant dans un rayon de 10km autour de {cityName}.</p>
+          </div>
+        ) : (
           <div className="space-y-3">
             {restaurants.map((r) => (
               <button key={r.id} onClick={() => navigate(`/client/establishments/${r.id}`)} className="w-full foodiz-card p-2 pr-4 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all">
