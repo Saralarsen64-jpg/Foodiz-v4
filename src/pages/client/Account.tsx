@@ -1,32 +1,64 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { User, Mail, MapPin, ChevronRight, LogOut, Gift, CreditCard, Settings } from "lucide-react";
+import { User, Mail, MapPin, ChevronRight, LogOut, Gift, CreditCard, Settings, Camera } from "lucide-react";
 
 export default function AccountPage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
+  const [userEmail, setUserEmail] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      // 1. On récupère l'ID de la personne CONNECTÉE (pas d'admin, pas d'autre)
+      // 1. On récupère l'utilisateur CONNECTÉ (Sécurisé)
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
-        // 2. On demande UNIQUEMENT les données de CET ID
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setUserEmail(user.email || ""); // On utilise l'email de l'auth, impossible d'avoir celui de l'admin
         
+        // 2. On récupère ses infos profil (Avatar, Nom, Compteur parrainage)
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         setProfile({
           full_name: data?.full_name || "Utilisateur Foodiz",
-          email: user.email, // L'email vient de l'auth sécurisée
-          phone: data?.phone || "",
-          address: data?.address || "",
-          referral_code: data?.referral_code || ""
+          avatar_url: data?.avatar_url,
+          referral_count: data?.referral_count || 0,
+          ...data
         });
       }
     };
     fetchProfile();
   }, []);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !event.target.files || event.target.files.length === 0) return;
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}.${fileExt}`;
+
+      // Upload vers le bucket 'avatars'
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      // Récupérer l'URL publique
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      // Mettre à jour le profil
+      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatar_url: publicUrl });
+    } catch (error) {
+      console.error("Erreur upload avatar:", error);
+      alert("Erreur lors de l'upload de la photo.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -40,7 +72,7 @@ export default function AccountPage() {
     { label: "Mes adresses de livraison", icon: MapPin, path: "/client/account/addresses" },
     { label: "Mes moyens de paiement", icon: CreditCard, path: "/client/account/payments" },
     { label: "Mes favoris", icon: Gift, path: "/client/account/favorites" },
-    { label: "Parrainage", icon: Gift, path: "/client/account/referral" },
+    { label: "Parrainage & VIP", icon: Gift, path: "/client/account/referral" },
     { label: "Foodiz Club & Avantages", icon: Gift, path: "/client/advantages" },
     { label: "Centre d'aide", icon: Settings, path: "/client/help-center" },
   ];
@@ -50,15 +82,31 @@ export default function AccountPage() {
       <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       
+      {/* Header Profil avec VRAIE Photo et VRAI Email */}
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-8">
         <div className="max-w-lg mx-auto text-center">
-          <div className="w-20 h-20 rounded-full bg-foodiz-gradient-gold mx-auto flex items-center justify-center mb-3 shadow-lg shadow-foodiz-gold/20">
-            <User size={32} className="text-foodiz-black" />
+          <div className="relative w-24 h-24 mx-auto mb-3 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <div className="w-full h-full rounded-full bg-foodiz-gradient-gold p-1 shadow-lg shadow-foodiz-gold/20 overflow-hidden">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Profil" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-foodiz-black flex items-center justify-center">
+                  <User size={32} className="text-foodiz-gold" />
+                </div>
+              )}
+            </div>
+            {/* Icone appareil photo au survol */}
+            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera size={24} className="text-white" />
+            </div>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
           </div>
+          
           <h1 className="foodiz-title text-xl text-foodiz-cream">{profile.full_name}</h1>
           <p className="text-foodiz-gray text-xs mt-1 flex items-center justify-center gap-1">
-            <Mail size={12} /> {profile.email}
+            <Mail size={12} /> {userEmail} {/* Affiche l'email sécurisé de la session */}
           </p>
+          {uploading && <p className="text-foodiz-gold text-[10px] mt-2 animate-pulse">Upload en cours...</p>}
         </div>
       </header>
 
