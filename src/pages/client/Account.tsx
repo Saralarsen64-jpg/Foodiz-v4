@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { User, Mail, MapPin, Phone, ChevronRight, LogOut, Gift, CreditCard, Settings } from "lucide-react";
+import { User, Mail, MapPin, ChevronRight, LogOut, Gift, CreditCard, Settings } from "lucide-react";
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -11,9 +11,17 @@ export default function AccountPage() {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Récupération des VRAIES infos depuis la base de données
+        // On essaie de récupérer le profil complet
         const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile({ ...user, ...data });
+        
+        // SÉCURITÉ ANTI-BUG : Si la table profiles bloque, on affiche au moins l'email de connexion
+        setProfile({
+          full_name: data?.full_name || "Utilisateur Foodiz",
+          email: user.email,
+          phone: data?.phone || "",
+          address: data?.address || "",
+          ...data
+        });
       }
     };
     fetchProfile();
@@ -31,7 +39,7 @@ export default function AccountPage() {
     { label: "Mes adresses de livraison", icon: MapPin, path: "/client/account/addresses" },
     { label: "Mes moyens de paiement", icon: CreditCard, path: "/client/account/payments" },
     { label: "Mes favoris", icon: Gift, path: "/client/account/favorites" },
-    { label: "Mes avantages Foodiz", icon: Gift, path: "/client/advantages" },
+    { label: "Foodiz Club & Avantages", icon: Gift, path: "/client/advantages" },
     { label: "Centre d'aide", icon: Settings, path: "/client/help-center" },
   ];
 
@@ -40,14 +48,13 @@ export default function AccountPage() {
       <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       
-      {/* Header Profil avec VRAIES infos */}
+      {/* Header Profil avec VRAIES infos (ou fallback sécurisé) */}
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-8">
         <div className="max-w-lg mx-auto text-center">
           <div className="w-20 h-20 rounded-full bg-foodiz-gradient-gold mx-auto flex items-center justify-center mb-3 shadow-lg shadow-foodiz-gold/20">
             <User size={32} className="text-foodiz-black" />
           </div>
-          {/* Affichage du VRAI nom et email */}
-          <h1 className="foodiz-title text-xl text-foodiz-cream">{profile.full_name || "Utilisateur"}</h1>
+          <h1 className="foodiz-title text-xl text-foodiz-cream">{profile.full_name}</h1>
           <p className="text-foodiz-gray text-xs mt-1 flex items-center justify-center gap-1">
             <Mail size={12} /> {profile.email}
           </p>
