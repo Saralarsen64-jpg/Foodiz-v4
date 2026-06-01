@@ -6,46 +6,44 @@ import { User, Mail, MapPin, ChevronRight, LogOut, Gift, CreditCard, Settings, C
 export default function AccountPage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
-  const [userEmail, setUserEmail] = useState("");
+  const [userEmail, setUserEmail] = useState("Chargement...");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    const fetchProfile = async () => {
+      try {
+        // 1. On récupère la session de l'utilisateur connecté
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // 2. On affiche son email réel
+          setUserEmail(session.user.email || "Email non disponible");
+          
+          // 3. On récupère ses infos (Nom, Photo, etc.)
+          const { data, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+          
+          if (error) {
+            console.error("Erreur lors de la récupération du profil:", error);
+          }
 
-    const fetchProfile = async (userId: string, email: string) => {
-      if (!isMounted) return;
-      setUserEmail(email);
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (isMounted && data) {
-        setProfile({
-          full_name: data.full_name || "Utilisateur Foodiz",
-          avatar_url: data.avatar_url,
-          referral_count: data.referral_count || 0,
-        });
+          setProfile({
+            full_name: data?.full_name || "Utilisateur Foodiz",
+            avatar_url: data?.avatar_url,
+            referral_count: data?.referral_count || 0,
+          });
+        } else {
+          // Si personne n'est connecté, on renvoie vers la page de connexion
+          navigate("/auth");
+        }
+      } catch (err) {
+        console.error("Erreur critique chargement compte:", err);
+        setUserEmail("Erreur de chargement");
       }
     };
 
-    // 1. Écouter les changements de session en temps réel (quand on se connecte/déconnecte)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email || "");
-      }
-    });
-
-    // 2. Charger la session actuelle au démarrage de la page
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email || "");
-      }
-    });
-
-    // Nettoyage quand on quitte la page
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+    fetchProfile();
+  }, [navigate]);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -67,7 +65,7 @@ export default function AccountPage() {
       setProfile({ ...profile, avatar_url: publicUrl });
     } catch (error) {
       console.error("Erreur upload avatar:", error);
-      alert("Erreur lors de l'upload.");
+      alert("Erreur lors de l'upload. Vérifiez la console (F12) pour plus de détails.");
     } finally {
       setUploading(false);
     }
@@ -78,7 +76,15 @@ export default function AccountPage() {
     navigate("/auth");
   };
 
-  if (!profile) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gold animate-pulse">Chargement du profil...</div>;
+  // Si le profil n'est pas encore chargé, on affiche un texte simple (plus de page blanche !)
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
+        <p className="animate-pulse text-lg">Chargement de votre profil...</p>
+        <p className="text-xs text-foodiz-gray mt-2">Email détecté : {userEmail}</p>
+      </div>
+    );
+  }
 
   const menuItems = [
     { label: "Mes informations personnelles", icon: User, path: "/client/account/personal-info" },
