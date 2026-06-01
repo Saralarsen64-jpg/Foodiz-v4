@@ -35,24 +35,23 @@ export default function HelpCenterPage() {
     
     if (!user) {
       setStatus('error');
-      setErrorMsg("Vous devez être connecté pour envoyer un message.");
+      setErrorMsg("Session expirée. Veuillez vous reconnecter.");
       return;
     }
 
-    // Envoi RÉEL vers la base de données
+    // Envoi RÉEL vers la base de données (Payload simplifié)
     const { error } = await supabase.from('support_tickets').insert({
       user_id: user.id,
       user_email: userEmail,
-      subject,
-      message,
-      status: 'open',
-      admin_response: null
+      subject: subject,
+      message: message,
+      status: 'open'
     });
 
     if (error) {
-      console.error("Erreur Supabase:", error);
+      console.error("Erreur Supabase détaillée:", error); // Regarde la console (F12) si ça bloque encore
       setStatus('error');
-      setErrorMsg("Une erreur est survenue. Vérifiez votre connexion.");
+      setErrorMsg("Impossible d'envoyer le message. Vérifiez votre connexion internet.");
     } else {
       setStatus('success');
       setSubject("");
@@ -106,7 +105,7 @@ export default function HelpCenterPage() {
 
           {status === 'success' ? (
             <div className="p-4 rounded-xl bg-foodiz-green/10 text-foodiz-green border border-foodiz-green/20 flex items-center gap-3 text-sm">
-              <CheckCircle size={18} /> Message envoyé avec succès ! Nous vous répondrons à l'adresse : {userEmail}
+              <CheckCircle size={18} /> Message envoyé avec succès ! Nous vous répondrons à : {userEmail}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
