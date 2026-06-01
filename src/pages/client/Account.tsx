@@ -12,13 +12,14 @@ export default function AccountPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      // 1. On récupère l'utilisateur CONNECTÉ (Sécurisé)
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email || ""); // On utilise l'email de l'auth, impossible d'avoir celui de l'admin
+      // 1. On force la lecture de la session ACTIVE (plus de bug admin)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        setUserEmail(session.user.email || ""); // Affiche l'email réel connecté
         
-        // 2. On récupère ses infos profil (Avatar, Nom, Compteur parrainage)
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        // 2. On récupère les infos profil avec l'ID de cette session
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         setProfile({
           full_name: data?.full_name || "Utilisateur Foodiz",
           avatar_url: data?.avatar_url,
@@ -33,12 +34,13 @@ export default function AccountPage() {
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !event.target.files || event.target.files.length === 0) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || !event.target.files || event.target.files.length === 0) return;
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}.${fileExt}`;
+      // Le fichier sera nommé "uuid-user.png"
+      const filePath = `${session.user.id}.${fileExt}`;
 
       // Upload vers le bucket 'avatars'
       const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
@@ -48,13 +50,13 @@ export default function AccountPage() {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
       // Mettre à jour le profil
-      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', session.user.id);
       if (updateError) throw updateError;
 
       setProfile({ ...profile, avatar_url: publicUrl });
     } catch (error) {
       console.error("Erreur upload avatar:", error);
-      alert("Erreur lors de l'upload de la photo.");
+      alert("Erreur lors de l'upload. Vérifiez que le bucket 'avatars' est bien créé et public dans Supabase.");
     } finally {
       setUploading(false);
     }
@@ -82,7 +84,6 @@ export default function AccountPage() {
       <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
       
-      {/* Header Profil avec VRAIE Photo et VRAI Email */}
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-8">
         <div className="max-w-lg mx-auto text-center">
           <div className="relative w-24 h-24 mx-auto mb-3 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
@@ -95,7 +96,6 @@ export default function AccountPage() {
                 </div>
               )}
             </div>
-            {/* Icone appareil photo au survol */}
             <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <Camera size={24} className="text-white" />
             </div>
@@ -104,7 +104,7 @@ export default function AccountPage() {
           
           <h1 className="foodiz-title text-xl text-foodiz-cream">{profile.full_name}</h1>
           <p className="text-foodiz-gray text-xs mt-1 flex items-center justify-center gap-1">
-            <Mail size={12} /> {userEmail} {/* Affiche l'email sécurisé de la session */}
+            <Mail size={12} /> {userEmail}
           </p>
           {uploading && <p className="text-foodiz-gold text-[10px] mt-2 animate-pulse">Upload en cours...</p>}
         </div>
@@ -112,11 +112,7 @@ export default function AccountPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-2">
         {menuItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => navigate(item.path)}
-            className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group"
-          >
+          <button key={item.label} onClick={() => navigate(item.path)} className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-gold/20 flex items-center justify-center text-foodiz-gold group-hover:bg-foodiz-gold group-hover:text-foodiz-black transition-colors">
                 <item.icon size={18} />
@@ -127,10 +123,7 @@ export default function AccountPage() {
           </button>
         ))}
 
-        <button
-          onClick={handleLogout}
-          className="w-full foodiz-card p-4 flex items-center gap-4 mt-8 border-foodiz-red/20 hover:bg-foodiz-red/5 transition-all group"
-        >
+        <button onClick={handleLogout} className="w-full foodiz-card p-4 flex items-center gap-4 mt-8 border-foodiz-red/20 hover:bg-foodiz-red/5 transition-all group">
           <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-red/20 flex items-center justify-center text-foodiz-red group-hover:bg-foodiz-red group-hover:text-white transition-colors">
             <LogOut size={18} />
           </div>

@@ -9,7 +9,6 @@ export default function PersonalInfoPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   
-  // Initialisation avec des chaînes vides (JAMAIS de faux noms ici)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -19,14 +18,14 @@ export default function PersonalInfoPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Récupération des VRAIES infos depuis la base de données
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      // Lecture de la session active réelle
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profile) {
           setFormData({
             fullName: profile.full_name || "",
-            email: user.email || "",
+            email: session.user.email || "", // Email réel de la session
             phone: profile.phone || "",
             address: profile.address || ""
           });
@@ -41,10 +40,9 @@ export default function PersonalInfoPage() {
     setLoading(true);
     setMessage(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
 
-    // Mise à jour de la table profiles avec les VRAIES infos modifiées
     const { error: dbError } = await supabase
       .from('profiles')
       .update({ 
@@ -52,9 +50,8 @@ export default function PersonalInfoPage() {
         phone: formData.phone, 
         address: formData.address 
       })
-      .eq('id', user.id);
+      .eq('id', session.user.id);
 
-    // Mise à jour de l'email dans l'authentification
     const { error: authError } = await supabase.auth.updateUser({ email: formData.email });
 
     if (authError || dbError) {
