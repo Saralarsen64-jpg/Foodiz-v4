@@ -10,24 +10,20 @@ export default function AccountPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      // 1. On récupère la session de l'utilisateur connecté
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
+        // On affiche TOUJOURS l'email de la session connectée
         setUserEmail(session.user.email || "");
         
-        // 2. On essaie de récupérer le profil en base de données
         const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         
-        // 3. On affiche les infos. Si la BDD bloque, on affiche au moins les infos de la session pour ne jamais avoir d'écran noir.
+        // On utilise les données de la BDD, ou à défaut les métadonnées de l'inscription (Nom)
         setProfile({ 
-          full_name: profileData?.full_name || session.user.user_metadata?.full_name || "Utilisateur Foodiz", 
+          full_name: profileData?.full_name || session.user.user_metadata?.full_name || "Utilisateur", 
           avatar_url: profileData?.avatar_url || null,
           referral_count: profileData?.referral_count || 0
         });
-      } else {
-        // Sécurité ultime : si personne n'est connecté, on affiche quand même la page pour éviter le bug écran noir
-        setProfile({ full_name: "Invité", avatar_url: null });
       }
     };
     fetchProfile();
@@ -38,15 +34,7 @@ export default function AccountPage() {
     navigate("/auth");
   };
 
-  // Si le profil charge encore, on affiche un spinner simple (SANS rediriger vers auth)
-  if (!profile) {
-    return (
-      <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
-        <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
-        <p className="text-sm animate-pulse">Chargement de votre espace...</p>
-      </div>
-    );
-  }
+  if (!profile) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gold animate-pulse">Chargement...</div>;
 
   const menuItems = [
     { label: "Mes informations", icon: User, path: "/client/account/personal-info" },
@@ -60,7 +48,6 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up relative overflow-x-hidden">
-      {/* Bordures dorées latérales */}
       <div className="pointer-events-none fixed top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
       <div className="pointer-events-none fixed top-0 bottom-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
       
@@ -76,11 +63,7 @@ export default function AccountPage() {
                 </div>
               )}
             </div>
-            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera size={24} className="text-white" />
-            </div>
           </div>
-          
           <h1 className="foodiz-title text-2xl text-foodiz-cream">{profile.full_name}</h1>
           <p className="text-foodiz-gray text-xs mt-2 flex items-center justify-center gap-1">
             <Mail size={12} /> {userEmail}
@@ -90,11 +73,7 @@ export default function AccountPage() {
 
       <main className="max-w-lg mx-auto px-6 py-8 space-y-3">
         {menuItems.map((item) => (
-          <button 
-            key={item.label} 
-            onClick={() => navigate(item.path)} 
-            className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group bg-[#0A0A0A]"
-          >
+          <button key={item.label} onClick={() => navigate(item.path)} className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group bg-[#0A0A0A]">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-gold/20 flex items-center justify-center text-foodiz-gold group-hover:bg-foodiz-gold group-hover:text-foodiz-black transition-colors">
                 <item.icon size={18} />
@@ -105,10 +84,7 @@ export default function AccountPage() {
           </button>
         ))}
 
-        <button 
-          onClick={handleLogout} 
-          className="w-full foodiz-card p-4 flex items-center gap-4 mt-8 border-foodiz-red/20 hover:bg-foodiz-red/5 transition-all group bg-[#0A0A0A]"
-        >
+        <button onClick={handleLogout} className="w-full foodiz-card p-4 flex items-center gap-4 mt-8 border-foodiz-red/20 hover:bg-foodiz-red/5 transition-all group bg-[#0A0A0A]">
           <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-red/20 flex items-center justify-center text-foodiz-red group-hover:bg-foodiz-red group-hover:text-white transition-colors">
             <LogOut size={18} />
           </div>
