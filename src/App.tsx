@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-// CORRECTION ICI : Ajout du dossier /admin/ si le fichier s'y trouve
-import AdminAuth from "./pages/admin/AdminAuth"; 
+import AdminAuth from "./pages/admin/AdminAuth";
 
 // Layouts
 import ClientLayout from "./components/ClientLayout";
@@ -71,6 +70,7 @@ import AdminSubscriptionsPage from "./pages/admin/Subscriptions";
 import AdminPartnerApplicationsPage from "./pages/admin/PartnerApplications";
 import AdminCourierApplicationsPage from "./pages/admin/CourierApplications";
 import AdminMarketingCampaignsPage from "./pages/admin/MarketingCampaigns";
+import AdminReferralsPage from "./pages/admin/Referrals"; // NOUVEL IMPORT
 
 export default function App() {
   return (
@@ -152,6 +152,7 @@ export default function App() {
       <Route path="/admin/partner-applications" element={<AdminPartnerApplicationsPage />} />
       <Route path="/admin/courier-applications" element={<AdminCourierApplicationsPage />} />
       <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
+      <Route path="/admin/referrals" element={<AdminReferralsPage />} /> {/* NOUVELLE ROUTE */}
 
       {/* ─── Catch all ───────────────────────────────────────────── */}
       <Route path="*" element={<Navigate to="/client" replace />} />

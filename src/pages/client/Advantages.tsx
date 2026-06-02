@@ -1,39 +1,32 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, Gift, Star, Trophy, Crown, Lock, Unlock, Clock, Zap, Hourglass } from "lucide-react";
+import { ChevronLeft, Gift, Star, Trophy, Crown, Lock, Unlock, Zap, Hourglass } from "lucide-react";
 
 export default function AdvantagesPage() {
   const navigate = useNavigate();
   const [points, setPoints] = useState(0);
   const [advantages, setAdvantages] = useState<any[]>([]);
-  const [lockedAdvantages, setLockedAdvantages] = useState<any[]>([]);
+  const [lockedAdvantage, setLockedAdvantage] = useState<any | null>(null); // Un seul avantage verrouillé
   const [timeLeft, setTimeLeft] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Compte à rebours de 48h
   useEffect(() => {
     const fetchCatalog = async () => {
       const { data } = await supabase.from('advantage_catalog').select('*').limit(1);
       if (data && data.length > 0) {
         const validUntil = new Date(data[0].valid_until).getTime();
-        
         const updateTimer = () => {
           const now = new Date().getTime();
           const distance = validUntil - now;
-          
-          if (distance < 0) {
-            setTimeLeft("Renouvellement en cours...");
-            // Si le temps est écoulé, on relance la génération (simulation pour la démo)
-            // En prod, un cron job le ferait.
-          } else {
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24 * 2)) / (1000 * 60 * 60)); // Max 48h
+          if (distance < 0) setTimeLeft("Renouvellement...");
+          else {
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24 * 2)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
             setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
           }
         };
-        
         updateTimer();
         const timerInterval = setInterval(updateTimer, 1000);
         return () => clearInterval(timerInterval);
@@ -46,18 +39,15 @@ export default function AdvantagesPage() {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // 1. Vrais points
         const { data: wallet } = await supabase.from('client_wallets').select('points_balance').eq('user_id', user.id).single();
-        const currentPoints = wallet?.points_balance || 0;
-        setPoints(currentPoints);
+        if (wallet) setPoints(wallet.points_balance || 0);
 
-        // 2. Récupérer les VRAIS avantages générés par le moteur Supabase
         const { data: advs } = await supabase.from('advantage_catalog').select('*');
         if (advs) setAdvantages(advs);
 
-        // 3. Récupérer les avantages verrouillés
-        const { data: locked } = await supabase.from('client_locked_advantages').select('*').eq('user_id', user.id).eq('status', 'locked');
-        if (locked) setLockedAdvantages(locked);
+        // Récupérer L'UNIQUE avantage verrouillé
+        const { data: locked } = await supabase.from('client_locked_advantages').select('*').eq('user_id', user.id).limit(1).single();
+        if (locked) setLockedAdvantage(locked);
       }
       setLoading(false);
     };
@@ -67,13 +57,23 @@ export default function AdvantagesPage() {
   const handleLock = async (adv: any) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from('client_locked_advantages').insert({
-        user_id: user.id,
-        title: adv.title,
-        description: adv.description,
-        points_cost: adv.points_cost
-      });
-      setLockedAdvantages([...lockedAdvantages, { ...adv, status: 'locked' }]);
+      // 1. Si un avantage est déjà verrouillé, on le supprime (Déverrouillage automatique)
+      if (lockedAdvantage) {
+        await supabase.from('client_locked_advantages').delete().eq('id', lockedAdvantage.id);
+      }
+      // 2. On verrouille le nouvel avantage
+      const { data: newLock } = await supabase.from('client_locked_advantages').insert({
+        user_id: user.id, title: adv.title, description: adv.description, points_cost: adv.points_cost
+      }).select().single();
+      
+      setLockedAdvantage(newLock);
+    }
+  };
+
+  const handleUnlock = async () => {
+    if (lockedAdvantage) {
+      await supabase.from('client_locked_advantages').delete().eq('id', lockedAdvantage.id);
+      setLockedAdvantage(null);
     }
   };
 
@@ -106,7 +106,7 @@ export default function AdvantagesPage() {
           <Gift size={120} className="absolute -bottom-4 -right-4 text-foodiz-gold/5 rotate-12" />
         </div>
 
-        {/* Compte à rebours 48h */}
+        {/* Compte à rebours */}
         <div className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/20 flex items-center justify-center gap-3">
           <Hourglass size={18} className="text-foodiz-gold animate-pulse" />
           <div className="text-center">
@@ -115,36 +115,37 @@ export default function AdvantagesPage() {
           </div>
         </div>
 
-        {/* Avantages Verrouillés (Objectifs) */}
-        {lockedAdvantages.length > 0 && (
+        {/* Avantage Verrouillé (Unique) */}
+        {lockedAdvantage && (
           <div>
-            <h3 className="foodiz-title text-lg mb-4 flex items-center gap-2 text-foodiz-gold"><Lock size={18} /> Mes Avantages Verrouillés</h3>
-            <div className="space-y-3">
-              {lockedAdvantages.map((lock, idx) => (
-                <div key={idx} className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/20 flex justify-between items-center">
-                  <div>
-                    <p className="text-foodiz-cream font-bold text-sm">{lock.title}</p>
-                    <p className="text-foodiz-gray text-xs">{lock.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-foodiz-gold font-bold text-sm">{lock.points_cost} pts</p>
-                    <p className="text-[10px] text-foodiz-gray">{points >= lock.points_cost ? "Débloquable !" : `Encore ${lock.points_cost - points} pts`}</p>
-                  </div>
-                </div>
-              ))}
+            <h3 className="foodiz-title text-lg mb-4 flex items-center gap-2 text-foodiz-gold"><Lock size={18} /> Mon Avantage Verrouillé</h3>
+            <div className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/20 flex justify-between items-center">
+              <div>
+                <p className="text-foodiz-cream font-bold text-sm">{lockedAdvantage.title}</p>
+                <p className="text-foodiz-gray text-xs">{lockedAdvantage.description}</p>
+              </div>
+              <div className="text-right flex flex-col items-end gap-2">
+                <p className="text-foodiz-gold font-bold text-sm">{lockedAdvantage.points_cost} pts</p>
+                {points >= lockedAdvantage.points_cost ? (
+                  <button className="px-3 py-1 rounded-lg bg-foodiz-green text-foodiz-black text-[10px] font-bold">Débloquer</button>
+                ) : (
+                  <button onClick={handleUnlock} className="px-3 py-1 rounded-lg bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 text-[10px] font-bold">Déverrouiller</button>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Catalogue Généré par le Moteur IA (Base de données) */}
+        {/* Catalogue */}
         <div>
           <h3 className="foodiz-title text-lg mb-4 flex items-center gap-2"><Zap size={18} className="text-foodiz-gold" /> Avantages du cycle actuel</h3>
-          
           <div className="space-y-3">
             {advantages.map((adv) => {
+              const isLocked = lockedAdvantage?.id === adv.id;
               const canUnlock = points >= adv.points_cost;
+              
               return (
-                <div key={adv.id} className={`foodiz-card p-4 flex justify-between items-center transition-all ${canUnlock ? 'border-foodiz-green/30 bg-foodiz-green/5' : 'border-foodiz-gold/10'}`}>
+                <div key={adv.id} className={`foodiz-card p-4 flex justify-between items-center transition-all ${isLocked ? 'border-foodiz-gold bg-foodiz-gold/5' : 'border-foodiz-gold/10'}`}>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-foodiz-cream font-bold text-sm">{adv.title}</p>
@@ -153,7 +154,9 @@ export default function AdvantagesPage() {
                     <p className="text-foodiz-gray text-xs">{adv.description}</p>
                   </div>
                   <div className="ml-4">
-                    {canUnlock ? (
+                    {isLocked ? (
+                      <span className="text-[10px] text-foodiz-gold font-bold px-3 py-2">Verrouillé</span>
+                    ) : canUnlock ? (
                       <button className="px-3 py-2 rounded-xl bg-foodiz-green text-foodiz-black text-xs font-bold flex items-center gap-1 hover:bg-foodiz-green/80">
                         <Unlock size={12} /> Débloquer
                       </button>
