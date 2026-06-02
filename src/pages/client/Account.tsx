@@ -15,25 +15,22 @@ export default function AccountPage() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // On affiche l'email tout de suite
+        // On affiche l'email et le nom
         setUserEmail(session.user.email || "");
-        // On affiche le nom d'inscription par défaut en attendant la base de données
         setFullName(session.user.user_metadata?.full_name || "Utilisateur");
         
-        // 2. On essaie de récupérer les infos profil (Avatar, Nom mis à jour)
+        // 2. On récupère l'avatar et le nom mis à jour depuis la base de données
         const { data: profileData } = await supabase.from('profiles').select('avatar_url, full_name').eq('id', session.user.id).single();
         
         if (profileData) {
           if (profileData.full_name) setFullName(profileData.full_name);
           if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
         }
-      } else {
-        // Si vraiment personne n'est connecté, on renvoie à la page de connexion
-        navigate("/auth");
       }
+      // PAS DE REDIRECTION ICI. La page reste affichée quoi qu'il arrive.
     };
     fetchProfile();
-  }, [navigate]);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -50,7 +47,7 @@ export default function AccountPage() {
     { label: "Centre d'aide", icon: Settings, path: "/client/help-center" },
   ];
 
-  // La page s'affiche IMMÉDIATEMENT, plus de blocage "if (!profile)".
+  // La page s'affiche IMMÉDIATEMENT.
   return (
     <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up relative overflow-x-hidden">
       <div className="pointer-events-none fixed top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
@@ -75,7 +72,7 @@ export default function AccountPage() {
           
           <h1 className="foodiz-title text-2xl text-foodiz-cream">{fullName}</h1>
           <p className="text-foodiz-gray text-xs mt-2 flex items-center justify-center gap-1">
-            <Mail size={12} /> {userEmail || "Chargement de l'email..."}
+            <Mail size={12} /> {userEmail}
           </p>
         </div>
       </header>
