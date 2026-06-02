@@ -232,7 +232,7 @@ export default function ClientHome() {
         </div>
       </main>
 
-            {/* BARRE DE NAVIGATION DU BAS (Flottante, centrée et cliquable) */}
+      {/* BARRE DE NAVIGATION DU BAS (Flottante, centrée et cliquable) */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-lg bg-foodiz-card/95 backdrop-blur-md border border-foodiz-gold/20 rounded-2xl px-6 py-4 flex justify-between items-center z-50 shadow-2xl shadow-black/50">
           <button onClick={() => navigate("/client")} className="flex flex-col items-center gap-1 text-foodiz-gold">
             <Search size={20} />
@@ -251,3 +251,6 @@ export default function ClientHome() {
             <span className="text-[9px] font-medium">Compte</span>
           </button>
       </div>
+    </div>
+  );
+}
