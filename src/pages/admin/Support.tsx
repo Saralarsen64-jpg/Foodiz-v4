@@ -1,1 +1,80 @@
-import { useMemo } from "react";import { useNavigate } from "react-router-dom";import { ChevronLeft, LifeBuoy } from "lucide-react";import { loadSupportTickets } from "../../utils/supportStore";export default function AdminSupport(){const navigate=useNavigate();const tickets=useMemo(()=>loadSupportTickets(),[]);return <div className="min-h-screen bg-foodiz-black text-foodiz-cream"><header className="bg-foodiz-card border-b border-foodiz-gold/10 px-6 py-4"><div className="max-w-6xl mx-auto flex items-center gap-3"><button onClick={()=>navigate('/admin')} className="text-foodiz-gold"><ChevronLeft size={20}/></button><h1 className="foodiz-title text-lg">Centre d’aide admin</h1></div></header><main className="max-w-6xl mx-auto p-6 space-y-3">{tickets.length===0&&<div className="foodiz-card p-5 text-sm text-foodiz-gray">Aucun ticket pour le moment.</div>}{tickets.map((t)=><div key={t.id} className="foodiz-card p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-medium">{t.subject}</p><p className="text-[10px] text-foodiz-gray mt-1">{t.role} · {t.userName} · {t.city || '—'} {t.orderId ? `· ${t.orderId}` : ''}</p><p className="text-xs text-foodiz-gray mt-2">{t.message}</p></div><div className="text-right"><p className="text-[10px] uppercase text-foodiz-gold">{t.status}</p><p className="text-[10px] text-foodiz-gray mt-1">{t.createdAt}</p></div></div></div>)}</main></div>}
+import { useEffect, useState } from "react";
+import { supabase } from "../../lib/supabase";
+import { MessageSquare, Clock, CheckCircle, AlertCircle } from "lucide-react";
+
+export default function AdminSupportPage() {
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      // Récupère tous les tickets, du plus récent au plus ancien
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) setTickets(data);
+      setLoading(false);
+    };
+
+    fetchTickets();
+    
+    // Écoute en temps réel : si un client envoie un message, il apparaît sans recharger la page
+    const channel = supabase
+      .channel('support_tickets_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+        fetchTickets();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  return (
+    <div className="p-8 max-w-5xl mx-auto">
+      <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Centre de Support</h1>
+      <p className="text-foodiz-gray text-sm mb-8">Gestion des demandes clients en temps réel.</p>
+
+      {loading ? (
+        <div className="text-center py-20 text-foodiz-gray animate-pulse">Chargement des tickets...</div>
+      ) : tickets.length === 0 ? (
+        <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
+          <MessageSquare size={48} className="mx-auto text-foodiz-gray/20 mb-4" />
+          <h3 className="text-foodiz-cream text-lg font-medium mb-2">Aucun ticket pour le moment</h3>
+          <p className="text-foodiz-gray text-sm">Tout va bien, vos clients n'ont pas de problèmes !</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {tickets.map((ticket) => (
+            <div key={ticket.id} className={`foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/10 flex flex-col gap-4 ${ticket.status === 'open' ? 'border-l-4 border-l-foodiz-gold' : 'opacity-60'}`}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-foodiz-cream font-bold text-lg">{ticket.subject}</h3>
+                    <span className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 ${ticket.status === 'open' ? 'bg-foodiz-gold/10 text-foodiz-gold border-foodiz-gold/20' : 'bg-foodiz-green/10 text-foodiz-green border-foodiz-green/20'}`}>
+                      {ticket.status === 'open' ? <AlertCircle size={10} /> : <CheckCircle size={10} />}
+                      {ticket.status === 'open' ? 'EN ATTENTE' : 'TRAITÉ'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-foodiz-gray">De: {ticket.user_email} · Le {new Date(ticket.created_at).toLocaleDateString('fr-FR')} à {new Date(ticket.created_at).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</p>
+                </div>
+              </div>
+              
+              <div className="bg-foodiz-black/50 p-4 rounded-xl border border-foodiz-gold/5">
+                <p className="text-foodiz-gray text-sm whitespace-pre-wrap">{ticket.message}</p>
+              </div>
+
+              {ticket.admin_response && (
+                <div className="bg-foodiz-green/5 p-4 rounded-xl border border-foodiz-green/20">
+                  <p className="text-[10px] text-foodiz-green uppercase font-bold mb-1">Votre réponse :</p>
+                  <p className="text-foodiz-cream text-sm whitespace-pre-wrap">{ticket.admin_response}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
