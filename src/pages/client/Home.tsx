@@ -27,6 +27,7 @@ export default function ClientHome() {
   const [points, setPoints] = useState(0);
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [loadingRestos, setLoadingRestos] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchCityName = async (lat: number, lng: number) => {
     try {
@@ -40,8 +41,15 @@ export default function ClientHome() {
     const fetchInitialData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // 1. Points
         const { data: wallet } = await supabase.from('client_wallets').select('points_balance').eq('user_id', user.id).single();
         if (wallet) setPoints(wallet.points_balance || 0);
+        
+        // 2. Notifications non lues
+        const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false);
+        if (count) setUnreadCount(count);
+
+        // 3. Localisation
         const { data: profile } = await supabase.from('profiles').select('latitude, longitude').eq('id', user.id).single();
         if (profile?.latitude && profile?.longitude) {
           setLocationEnabled(true);
@@ -80,7 +88,6 @@ export default function ClientHome() {
 
   return (
     <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up relative overflow-x-hidden">
-      {/* Bordures dorées latérales subtiles */}
       <div className="pointer-events-none fixed top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
       <div className="pointer-events-none fixed top-0 bottom-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
 
@@ -89,8 +96,11 @@ export default function ClientHome() {
         <div className="max-w-lg mx-auto flex justify-between items-center mb-8">
           <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="h-10 w-auto" />
           <div className="flex gap-3">
-            <button onClick={() => navigate("/client/account/notifications")} className="p-2.5 rounded-full bg-foodiz-black border border-foodiz-gold/20 text-foodiz-gold hover:bg-foodiz-gold/10 transition-colors">
+            <button onClick={() => navigate("/client/notifications")} className="relative p-2.5 rounded-full bg-foodiz-black border border-foodiz-gold/20 text-foodiz-gold hover:bg-foodiz-gold/10 transition-colors">
               <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 w-3 h-3 bg-foodiz-red rounded-full border-2 border-foodiz-black"></span>
+              )}
             </button>
             <button onClick={() => navigate("/client/account")} className="p-2.5 rounded-full bg-foodiz-black border border-foodiz-gold/20 text-foodiz-gold hover:bg-foodiz-gold/10 transition-colors">
               <User size={18} />
@@ -143,7 +153,7 @@ export default function ClientHome() {
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-foodiz-gold/10 rounded-full blur-xl"></div>
         </div>
 
-        {/* CATÉGORIES (Scroll horizontal élégant) */}
+        {/* CATÉGORIES */}
         <div>
           <h2 className="foodiz-title text-lg mb-4">Catégories</h2>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 px-6">
@@ -158,7 +168,7 @@ export default function ClientHome() {
           </div>
         </div>
 
-        {/* CARTES IMMERSIVES (Market & Restaurants) - ESPACE GÉNÉREUX */}
+        {/* CARTES IMMERSIVES */}
         <div className="pt-4">
           <h2 className="foodiz-title text-lg mb-6">Explorer</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -173,7 +183,6 @@ export default function ClientHome() {
               >
                 <img src={card.image} alt={card.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
                 <div className={`absolute inset-0 bg-gradient-to-t ${card.color} via-foodiz-black/60 to-transparent`} />
-                
                 <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
                   <h3 className="text-2xl font-serif italic text-foodiz-cream mb-1">{card.title}</h3>
                   <div className="flex items-center gap-2">
@@ -232,7 +241,7 @@ export default function ClientHome() {
         </div>
       </main>
 
-      {/* BARRE DE NAVIGATION DU BAS (Flottante, centrée et cliquable) */}
+      {/* BARRE DE NAVIGATION DU BAS */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-lg bg-foodiz-card/95 backdrop-blur-md border border-foodiz-gold/20 rounded-2xl px-6 py-4 flex justify-between items-center z-50 shadow-2xl shadow-black/50">
           <button onClick={() => navigate("/client")} className="flex flex-col items-center gap-1 text-foodiz-gold">
             <Search size={20} />

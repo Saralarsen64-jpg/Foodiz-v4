@@ -16,7 +16,6 @@ export default function AdminSupportPage() {
     };
     fetchTickets();
 
-    // Écoute en temps réel
     const channel = supabase.channel('support_tickets_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => fetchTickets())
       .subscribe();
@@ -25,10 +24,26 @@ export default function AdminSupportPage() {
 
   const handleReply = async (ticketId: string) => {
     if (!replyText) return;
+    const ticket = tickets.find(t => t.id === ticketId);
+    
+    // 1. Mettre à jour le ticket
     await supabase.from('support_tickets').update({ 
       admin_response: replyText, 
       status: 'closed' 
     }).eq('id', ticketId);
+
+    // 2. ENVOYER LA NOTIFICATION AU CLIENT
+    if (ticket) {
+      await supabase.from('notifications').insert({
+        user_id: ticket.user_id,
+        title: 'Réponse du support Foodiz',
+        message: 'L\'administrateur a répondu à votre demande "' + ticket.subject + '". Cliquez pour consulter.',
+        type: 'support_reply',
+        link: '/client/help-center',
+        is_read: false
+      });
+    }
+
     setReplyText("");
     setActiveTicketId(null);
   };
@@ -79,7 +94,7 @@ export default function AdminSupportPage() {
                       <div className="flex gap-3 justify-end">
                         <button onClick={() => setActiveTicketId(null)} className="px-4 py-2 rounded-xl text-foodiz-gray hover:text-foodiz-cream text-sm">Annuler</button>
                         <button onClick={() => handleReply(ticket.id)} className="px-4 py-2 rounded-xl bg-foodiz-green text-foodiz-black font-bold flex items-center gap-2 text-sm hover:bg-foodiz-green/80">
-                          <Send size={14} /> Répondre et Clôturer
+                          <Send size={14} /> Répondre etNotifier
                         </button>
                       </div>
                     </div>
