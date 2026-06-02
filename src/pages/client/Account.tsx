@@ -10,21 +10,24 @@ export default function AccountPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUserEmail(session.user.email || "");
-          const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-          if (data) {
-            setProfile({ 
-              full_name: data.full_name || "Utilisateur Foodiz", 
-              avatar_url: data.avatar_url,
-              referral_count: data.referral_count || 0
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Erreur chargement profil:", error);
+      // 1. On récupère la session de l'utilisateur connecté
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        setUserEmail(session.user.email || "");
+        
+        // 2. On essaie de récupérer le profil en base de données
+        const { data: profileData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        
+        // 3. On affiche les infos. Si la BDD bloque, on affiche au moins les infos de la session pour ne jamais avoir d'écran noir.
+        setProfile({ 
+          full_name: profileData?.full_name || session.user.user_metadata?.full_name || "Utilisateur Foodiz", 
+          avatar_url: profileData?.avatar_url || null,
+          referral_count: profileData?.referral_count || 0
+        });
+      } else {
+        // Sécurité ultime : si personne n'est connecté, on affiche quand même la page pour éviter le bug écran noir
+        setProfile({ full_name: "Invité", avatar_url: null });
       }
     };
     fetchProfile();
@@ -35,7 +38,7 @@ export default function AccountPage() {
     navigate("/auth");
   };
 
-  // Écran de chargement élégant
+  // Si le profil charge encore, on affiche un spinner simple (SANS rediriger vers auth)
   if (!profile) {
     return (
       <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
@@ -57,7 +60,7 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up relative overflow-x-hidden">
-      {/* Bordures dorées latérales (comme sur la Home) */}
+      {/* Bordures dorées latérales */}
       <div className="pointer-events-none fixed top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
       <div className="pointer-events-none fixed top-0 bottom-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
       
