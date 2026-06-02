@@ -1,132 +1,104 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Search,
-  Star,
-  Clock,
-  Truck,
-  ChevronRight,
-  BadgeCheck,
-  Sparkles,
-} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { ChevronLeft, Star, Clock, MapPin } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 
-const CATEGORIES = [
-  "Toutes", "Halal", "Burgers", "Pizzas", "Asiatique", "Gastronomique", "Gourmandises"
-];
-
-const RESTAURANTS = [
-  { id: "r1", name: "Maison K", note: 4.9, temps: "20-30 min", frais: 2.50, min: 12, verified: true, halal: true, image: "/images/restaurant-maison-k.jpg", emoji: "🍔" },
-  { id: "r2", name: "Le Bistrot Parisien", note: 4.8, temps: "25-35 min", frais: 2.00, min: 15, verified: true, image: "/images/restaurant-bistrot.jpg", emoji: "🥖" },
-  { id: "r3", name: "Sushi Ko", note: 4.7, temps: "20-30 min", frais: 3.00, min: 18, verified: true, image: "/images/restaurant-sushi.jpg", emoji: "🍣" },
-  { id: "r4", name: "Bella Napoli", note: 4.6, temps: "25-40 min", frais: 2.50, min: 10, image: "/images/restaurant-pizza.jpg", emoji: "🍕" },
-  { id: "r5", name: "Le Dragon d'Or", note: 4.5, temps: "30-40 min", frais: 3.00, min: 14, halal: true, image: "/images/restaurant-sushi.jpg", emoji: "🥟" },
-  { id: "r6", name: "Green Kitchen", note: 4.4, temps: "20-30 min", frais: 1.50, min: 8, image: "/images/market-bio.jpg", emoji: "🥗" },
-];
+// Fonction de calcul de distance (Haversine)
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  var R = 6371; var dLat = deg2rad(lat2 - lat1); var dLon = deg2rad(lon2 - lon1);
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
+}
+function deg2rad(deg: number) { return deg * (Math.PI / 180) }
 
 export default function RestaurantsPage() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [activeCat, setActiveCat] = useState("Toutes");
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [cityName, setCityName] = useState("votre position");
+  const [loading, setLoading] = useState(true);
 
-  const filtered = RESTAURANTS.filter((r) => {
-    const matchSearch = r.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = activeCat === "Toutes" || (activeCat === "Halal" && r.halal);
-    return matchSearch && matchCat;
-  });
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // 1. Récupérer la position GPS enregistrée du client
+        const { data: profile } = await supabase.from('profiles').select('latitude, longitude').eq('id', user.id).single();
+        
+        if (profile?.latitude && profile?.longitude) {
+          // Trouver le nom de la ville
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${profile.latitude}&lon=${profile.longitude}`);
+            const data = await res.json();
+            setCityName(data.address.city || data.address.town || "votre position");
+          } catch(e) {}
+
+          // 2. Récupérer les VRAIS restaurants actifs
+          const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
+          if (restos) {
+            // 3. Filtrer à 10km max
+            const filtered = restos.filter((r: any) => {
+              if (r.latitude && r.longitude) {
+                return getDistanceFromLatLonInKm(profile.latitude, profile.longitude, r.latitude, r.longitude) <= 10;
+              }
+              return true; // Si le resto n'a pas de GPS, on l'affiche par sécurité (à retirer en prod stricte)
+            });
+            setRestaurants(filtered);
+          }
+        }
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   return (
-    <div className="animate-fade-in-up">
-      <h1 className="foodiz-title text-2xl mb-4">Restaurants</h1>
+    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
 
-      {/* Search */}
-      <div className="relative mb-5">
-        <GoldIcon icon={Search} size={18} className="absolute left-4 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un restaurant..."
-          className="w-full bg-foodiz-card border border-foodiz-gold/15 rounded-2xl py-3.5 pl-12 pr-4 text-foodiz-cream placeholder-foodiz-gray/50 text-sm outline-none focus:border-foodiz-gold/40 transition-all"
-        />
-      </div>
-
-      {/* Foodiz Advantage Banner */}
-      <div className="foodiz-card p-4 mb-5 bg-foodiz-gradient-gold border-foodiz-gold/20 flex items-center gap-3">
-        <GoldIcon icon={Sparkles} size={20} />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foodiz-cream">Avantages Foodiz disponibles</p>
-          <p className="text-[11px] text-foodiz-gray mt-0.5">Économisez avec vos points fidélité</p>
+      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <button onClick={() => navigate("/client")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
+          <h1 className="foodiz-title text-lg">Restaurants</h1>
+          <div className="w-6" />
         </div>
-        <ChevronRight size={16} className="text-foodiz-gold/50" />
-      </div>
+      </header>
 
-      {/* Categories */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-none">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCat(cat)}
-            className={`shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all ${
-              activeCat === cat
-                ? "bg-foodiz-gold text-foodiz-black"
-                : "bg-foodiz-card border border-foodiz-gold/15 text-foodiz-gray hover:border-foodiz-gold/30"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+      <main className="max-w-lg mx-auto px-4 py-6">
+        <div className="flex items-center gap-2 text-foodiz-gray text-xs mb-6">
+          <MapPin size={14} className="text-foodiz-gold" />
+          <span>Autour de {cityName} (10km max)</span>
+        </div>
 
-      {/* Restaurant List */}
-      <div className="space-y-3">
-        {filtered.map((r) => (
-          <button
-            key={r.id}
-            onClick={() => navigate(`/client/establishments/${r.id}`)}
-            className="w-full foodiz-card p-2 pr-4 flex gap-3 text-left hover:border-foodiz-gold/30 transition-all"
-          >
-            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-foodiz-card border border-foodiz-gold/10">
-              <img
-                src={r.image}
-                alt={r.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                  (e.target as HTMLImageElement).parentElement!.innerHTML =
-                    `<span style="font-size:32px;display:flex;align-items:center;justify-content:center;height:100%">${r.emoji}</span>`;
-                }}
-              />
-            </div>
-            <div className="flex-1 min-w-0 py-1">
-              <div className="flex items-center gap-2">
-                <h3 className="foodiz-title text-sm">{r.name}</h3>
-                {r.verified && <BadgeCheck size={14} className="text-foodiz-gold shrink-0" />}
-                {r.halal && (
-                  <span className="text-[9px] text-foodiz-green bg-foodiz-green/10 px-1.5 py-0.5 rounded font-medium shrink-0">
-                    Halal
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 mt-1.5 text-foodiz-gray text-xs flex-wrap">
-                <span className="flex items-center gap-1">
-                  <GoldIcon icon={Star} size={11} /> {r.note}
-                </span>
-                <span className="flex items-center gap-1">
-                  <GoldIcon icon={Clock} size={11} /> {r.temps}
-                </span>
-                <span className="flex items-center gap-1">
-                  <GoldIcon icon={Truck} size={11} /> {r.frais.toFixed(2).replace(".", ",")} €
-                </span>
-              </div>
-              <p className="text-[10px] text-foodiz-gray/50 mt-1">
-                Min. {r.min.toFixed(2).replace(".", ",")} €
-              </p>
-            </div>
-            <ChevronRight size={16} className="text-foodiz-gold/30 self-center shrink-0" />
-          </button>
-        ))}
-      </div>
+        {loading ? (
+          <div className="text-center py-20 text-foodiz-gray animate-pulse">Recherche des restaurants...</div>
+        ) : restaurants.length === 0 ? (
+          <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
+            <h3 className="text-foodiz-cream text-lg font-medium mb-2">Aucun restaurant trouvé</h3>
+            <p className="text-foodiz-gray text-sm">Il n'y a pas de restaurants partenaires dans un rayon de 10km autour de {cityName} pour le moment.</p>
+            <button onClick={() => navigate("/client")} className="mt-6 text-foodiz-gold text-xs underline">Retour à l'accueil</button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {restaurants.map((r) => (
+              <button key={r.id} onClick={() => navigate(`/client/establishments/${r.id}`)} className="w-full foodiz-card p-3 flex items-center gap-4 text-left hover:border-foodiz-gold/30 transition-all">
+                <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-foodiz-card">
+                  {r.cover_image ? <img src={r.cover_image} alt={r.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>}
+                </div>
+                <div className="flex-1">
+                  <h3 className="foodiz-title text-base">{r.name}</h3>
+                  <p className="text-foodiz-gray text-xs mt-1">{r.cuisine_type || "Gastronomie"}</p>
+                  <div className="flex items-center gap-3 mt-2 text-foodiz-gray text-xs">
+                    <span className="flex items-center gap-1"><GoldIcon icon={Star} size={12} /> 4.8</span>
+                    <span className="flex items-center gap-1"><GoldIcon icon={Clock} size={12} /> 20-30 min</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
