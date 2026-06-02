@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Mail, Lock, User, Phone, MapPin, Briefcase, AlertCircle, CheckCircle } from "lucide-react";
+import { Mail, Lock, User, Phone, MapPin, Hash, Briefcase, AlertCircle, CheckCircle } from "lucide-react";
 import Logo from "../../components/Logo";
 
 export default function SignupPage() {
@@ -16,10 +16,14 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [workAddress, setWorkAddress] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [city, setCity] = useState("");
+  const [siret, setSiret] = useState("");
   const [cguAccepted, setCguAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+
+  const isPro = role === 'partner' || role === 'courier';
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,9 +44,11 @@ export default function SignupPage() {
           last_name: lastName,
           phone: phone,
           address: address,
-          work_address: workAddress,
+          postal_code: postalCode,
+          city: city,
+          siret: isPro ? siret : null, // Envoie le SIRET seulement si c'est un pro
           cgu_accepted: cguAccepted,
-          ref: refCode || null, // Envoie le code parrain pour les 500pts
+          ref: refCode || null,
         },
       },
     });
@@ -80,7 +86,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        <form onSubmit={handleSignup} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+        <form onSubmit={handleSignup} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2 px-3 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
               <User size={16} className="text-foodiz-gold" />
@@ -104,13 +110,27 @@ export default function SignupPage() {
 
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
             <MapPin size={18} className="text-foodiz-gold" />
-            <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Adresse postale personnelle" />
+            <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Adresse postale" />
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
-            <Briefcase size={18} className="text-foodiz-gold" />
-            <input type="text" value={workAddress} onChange={(e) => setWorkAddress(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Adresse du travail (Optionnel)" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 px-3 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
+              <Hash size={16} className="text-foodiz-gold" />
+              <input type="text" required value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Code Postal" />
+            </div>
+            <div className="flex items-center gap-2 px-3 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
+              <MapPin size={16} className="text-foodiz-gold" />
+              <input type="text" required value={city} onChange={(e) => setCity(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Ville" />
+            </div>
           </div>
+
+          {/* Champ SIRET uniquement pour les Pros */}
+          {isPro && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
+              <Briefcase size={18} className="text-foodiz-gold" />
+              <input type="text" required value={siret} onChange={(e) => setSiret(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Numéro SIRET" />
+            </div>
+          )}
 
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
             <Lock size={18} className="text-foodiz-gold" />
