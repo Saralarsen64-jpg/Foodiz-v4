@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import AdminAuth from "./pages/AdminAuth";
+// CORRECTION ICI : Ajout du dossier /admin/ si le fichier s'y trouve
+import AdminAuth from "./pages/admin/AdminAuth"; 
 
 // Layouts
 import ClientLayout from "./components/ClientLayout";
