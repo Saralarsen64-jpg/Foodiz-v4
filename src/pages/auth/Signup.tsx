@@ -38,6 +38,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
+        emailRedirectTo: 'https://foodiz.co/auth/callback', // Redirection après clic sur le lien email
         data: {
           role: role,
           first_name: firstName,
@@ -46,7 +47,7 @@ export default function SignupPage() {
           address: address,
           postal_code: postalCode,
           city: city,
-          siret: isPro ? siret : null, // Envoie le SIRET seulement si c'est un pro
+          siret: isPro ? siret : null,
           cgu_accepted: cguAccepted,
           ref: refCode || null,
         },
@@ -57,15 +58,9 @@ export default function SignupPage() {
 
     if (error) {
       setStatus({ type: 'error', msg: error.message });
-    } else if (data.session) {
-      setStatus({ type: 'success', msg: "Compte créé avec succès ! Redirection..." });
-      setTimeout(() => {
-        if (role === 'partner') navigate("/partner");
-        else if (role === 'courier') navigate("/courier");
-        else navigate("/client");
-      }, 1500);
     } else {
-      setStatus({ type: 'success', msg: "Compte créé ! Vérifiez vos emails." });
+      // Que la session soit créée ou non (selon config Supabase), on affiche le message de confirmation
+      setStatus({ type: 'success', msg: "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail." });
     }
   };
 
@@ -124,7 +119,6 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* Champ SIRET uniquement pour les Pros */}
           {isPro && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
               <Briefcase size={18} className="text-foodiz-gold" />
@@ -146,6 +140,10 @@ export default function SignupPage() {
             {loading ? "Création en cours..." : "Créer mon compte"}
           </button>
         </form>
+        
+        <p className="text-center text-xs text-foodiz-gray mt-6">
+          Déjà un compte ? <button onClick={() => navigate(`/auth/login?role=${role}`)} className="text-foodiz-gold font-bold hover:underline">Se connecter</button>
+        </p>
       </div>
     </div>
   );

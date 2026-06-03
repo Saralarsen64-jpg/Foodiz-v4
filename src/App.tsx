@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import AdminAuth from "./pages/admin/AdminAuth";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Layouts
 import ClientLayout from "./components/ClientLayout";
@@ -60,6 +61,7 @@ import CourierValidationStatusPage from "./pages/courier/ValidationStatus";
 import RoleSelectPage from "./pages/auth/RoleSelect";
 import LoginPage from "./pages/auth/Login";
 import SignupPage from "./pages/auth/Signup";
+import AuthCallback from "./pages/auth/Callback"; // NOUVEL IMPORT
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/Dashboard";
@@ -70,7 +72,7 @@ import AdminSubscriptionsPage from "./pages/admin/Subscriptions";
 import AdminPartnerApplicationsPage from "./pages/admin/PartnerApplications";
 import AdminCourierApplicationsPage from "./pages/admin/CourierApplications";
 import AdminMarketingCampaignsPage from "./pages/admin/MarketingCampaigns";
-import AdminReferralsPage from "./pages/admin/Referrals"; // NOUVEL IMPORT
+import AdminReferralsPage from "./pages/admin/Referrals";
 
 export default function App() {
   return (
@@ -78,84 +80,90 @@ export default function App() {
       {/* Redirect root */}
       <Route path="/" element={<Navigate to="/auth" replace />} />
 
-      {/* ─── AUTH ROUTES ─────────────────────────────────────────── */}
+      {/* ─── AUTH ROUTES (Publiques) ─────────────────────────────────────── */}
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
-
-      {/* ─── CLIENT ROUTES ───────────────────────────────────────── */}
-      <Route element={<ClientLayout />}>
-        <Route path="/client" element={<ClientHome />} />
-        <Route path="/client/restaurants" element={<RestaurantsPage />} />
-        <Route path="/client/market" element={<MarketPage />} />
-        <Route path="/client/search" element={<ClientHome />} />
-        <Route path="/client/establishments/:id" element={<EstablishmentPage />} />
-        <Route path="/client/cart" element={<CartPage />} />
-        <Route path="/client/checkout" element={<CheckoutPage />} />
-        <Route path="/client/orders" element={<OrdersPage />} />
-        <Route path="/client/orders/:id" element={<OrderDetailPage />} />
-        <Route path="/client/orders/:id/review" element={<OrderReviewPage />} />
-        <Route path="/client/account" element={<AccountPage />} />
-        <Route path="/client/account/personal-info" element={<PersonalInfoPage />} />
-        <Route path="/client/account/addresses" element={<AddressesPage />} />
-        <Route path="/client/account/payments" element={<PaymentsPage />} />
-        <Route path="/client/account/favorites" element={<FavoritesPage />} />
-        <Route path="/client/account/help" element={<HelpPage />} />
-        <Route path="/client/account/notifications" element={<NotificationsPage />} />
-        <Route path="/client/account/delete" element={<DeleteAccountPage />} />
-        <Route path="/client/account/referral" element={<ReferralPage />} />
-        <Route path="/client/help-center" element={<HelpCenterPage />} />
-        <Route path="/client/advantages" element={<AdvantagesPage />} />
-        <Route path="/client/advantages/history" element={<AdvantagesPage />} />
-      </Route>
-
-      {/* ─── PARTNER ROUTES ──────────────────────────────────────── */}
-      <Route path="/partner" element={<PartnerDashboard />} />
-      <Route path="/partner/orders/current" element={<PartnerOrdersCurrent />} />
-      <Route path="/partner/orders/history" element={<PartnerOrdersHistory />} />
-      <Route path="/partner/orders/:id" element={<PartnerOrderDetail />} />
-      <Route path="/partner/revenues" element={<PartnerRevenues />} />
-      <Route path="/partner/payouts" element={<PartnerPayouts />} />
-      <Route path="/partner/customers" element={<PartnerCustomers />} />
-      <Route path="/partner/marketing" element={<PartnerMarketing />} />
-      <Route path="/partner/onboarding" element={<PartnerOnboarding />} />
-      <Route path="/partner/validation-status" element={<PartnerValidationStatus />} />
-      <Route path="/partner/support" element={<PartnerSupport />} />
-      <Route path="/partner/menu" element={<PartnerMenu />} />
-      <Route path="/partner/products" element={<PartnerProducts />} />
-      <Route path="/partner/products/new" element={<ProductEditPage />} />
-      <Route path="/partner/products/:id/edit" element={<ProductEditPage />} />
-      <Route path="/partner/settings" element={<PartnerSettings />} />
-
-      {/* ─── COURIER ROUTES ──────────────────────────────────────── */}
-      <Route path="/courier" element={<CourierDashboard />} />
-      <Route path="/courier/deliveries/available" element={<DeliveriesAvailable />} />
-      <Route path="/courier/deliveries/current" element={<DeliveryCurrent />} />
-      <Route path="/courier/deliveries/history" element={<DeliveriesHistoryPage />} />
-      <Route path="/courier/deliveries/:id" element={<DeliveryCurrent />} />
-      <Route path="/courier/revenues" element={<CourierRevenuesPage />} />
-      <Route path="/courier/payouts" element={<CourierPayoutsPage />} />
-      <Route path="/courier/profile" element={<CourierProfilePage />} />
-      <Route path="/courier/support" element={<CourierSupportPage />} />
-      <Route path="/courier/help-center" element={<CourierHelpCenterPage />} />
-      <Route path="/courier/onboarding" element={<CourierOnboardingPage />} />
-      <Route path="/courier/validation-status" element={<CourierValidationStatusPage />} />
-
-      {/* ─── ADMIN ROUTES ────────────────────────────────────────── */}
+      <Route path="/auth/callback" element={<AuthCallback />} /> {/* NOUVELLE ROUTE */}
       <Route path="/admin/auth" element={<AdminAuth />} />
       <Route path="/admin-auth" element={<AdminAuth />} />
-      <Route path="/admin" element={<AdminDashboardPage />} />
-      <Route path="/admin/economics" element={<AdminEconomics />} />
-      <Route path="/admin/payouts" element={<AdminPayouts />} />
-      <Route path="/admin/support" element={<AdminSupportPage />} />
-      <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
-      <Route path="/admin/partner-applications" element={<AdminPartnerApplicationsPage />} />
-      <Route path="/admin/courier-applications" element={<AdminCourierApplicationsPage />} />
-      <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
-      <Route path="/admin/referrals" element={<AdminReferralsPage />} /> {/* NOUVELLE ROUTE */}
+
+      {/* ─── ROUTES PROTÉGÉES (Nécessite une connexion ET email confirmé) ── */}
+      <Route element={<ProtectedRoute />}>
+        
+        {/* CLIENT */}
+        <Route element={<ClientLayout />}>
+          <Route path="/client" element={<ClientHome />} />
+          <Route path="/client/restaurants" element={<RestaurantsPage />} />
+          <Route path="/client/market" element={<MarketPage />} />
+          <Route path="/client/search" element={<ClientHome />} />
+          <Route path="/client/establishments/:id" element={<EstablishmentPage />} />
+          <Route path="/client/cart" element={<CartPage />} />
+          <Route path="/client/checkout" element={<CheckoutPage />} />
+          <Route path="/client/orders" element={<OrdersPage />} />
+          <Route path="/client/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/client/orders/:id/review" element={<OrderReviewPage />} />
+          <Route path="/client/account" element={<AccountPage />} />
+          <Route path="/client/account/personal-info" element={<PersonalInfoPage />} />
+          <Route path="/client/account/addresses" element={<AddressesPage />} />
+          <Route path="/client/account/payments" element={<PaymentsPage />} />
+          <Route path="/client/account/favorites" element={<FavoritesPage />} />
+          <Route path="/client/account/help" element={<HelpPage />} />
+          <Route path="/client/account/notifications" element={<NotificationsPage />} />
+          <Route path="/client/account/delete" element={<DeleteAccountPage />} />
+          <Route path="/client/account/referral" element={<ReferralPage />} />
+          <Route path="/client/help-center" element={<HelpCenterPage />} />
+          <Route path="/client/advantages" element={<AdvantagesPage />} />
+          <Route path="/client/advantages/history" element={<AdvantagesPage />} />
+        </Route>
+
+        {/* PARTNER */}
+        <Route path="/partner" element={<PartnerDashboard />} />
+        <Route path="/partner/orders/current" element={<PartnerOrdersCurrent />} />
+        <Route path="/partner/orders/history" element={<PartnerOrdersHistory />} />
+        <Route path="/partner/orders/:id" element={<PartnerOrderDetail />} />
+        <Route path="/partner/revenues" element={<PartnerRevenues />} />
+        <Route path="/partner/payouts" element={<PartnerPayouts />} />
+        <Route path="/partner/customers" element={<PartnerCustomers />} />
+        <Route path="/partner/marketing" element={<PartnerMarketing />} />
+        <Route path="/partner/onboarding" element={<PartnerOnboarding />} />
+        <Route path="/partner/validation-status" element={<PartnerValidationStatus />} />
+        <Route path="/partner/support" element={<PartnerSupport />} />
+        <Route path="/partner/menu" element={<PartnerMenu />} />
+        <Route path="/partner/products" element={<PartnerProducts />} />
+        <Route path="/partner/products/new" element={<ProductEditPage />} />
+        <Route path="/partner/products/:id/edit" element={<ProductEditPage />} />
+        <Route path="/partner/settings" element={<PartnerSettings />} />
+
+        {/* COURIER */}
+        <Route path="/courier" element={<CourierDashboard />} />
+        <Route path="/courier/deliveries/available" element={<DeliveriesAvailable />} />
+        <Route path="/courier/deliveries/current" element={<DeliveryCurrent />} />
+        <Route path="/courier/deliveries/history" element={<DeliveriesHistoryPage />} />
+        <Route path="/courier/deliveries/:id" element={<DeliveryCurrent />} />
+        <Route path="/courier/revenues" element={<CourierRevenuesPage />} />
+        <Route path="/courier/payouts" element={<CourierPayoutsPage />} />
+        <Route path="/courier/profile" element={<CourierProfilePage />} />
+        <Route path="/courier/support" element={<CourierSupportPage />} />
+        <Route path="/courier/help-center" element={<CourierHelpCenterPage />} />
+        <Route path="/courier/onboarding" element={<CourierOnboardingPage />} />
+        <Route path="/courier/validation-status" element={<CourierValidationStatusPage />} />
+
+        {/* ADMIN */}
+        <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/economics" element={<AdminEconomics />} />
+        <Route path="/admin/payouts" element={<AdminPayouts />} />
+        <Route path="/admin/support" element={<AdminSupportPage />} />
+        <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+        <Route path="/admin/partner-applications" element={<AdminPartnerApplicationsPage />} />
+        <Route path="/admin/courier-applications" element={<AdminCourierApplicationsPage />} />
+        <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
+        <Route path="/admin/referrals" element={<AdminReferralsPage />} />
+      
+      </Route>
 
       {/* ─── Catch all ───────────────────────────────────────────── */}
-      <Route path="*" element={<Navigate to="/client" replace />} />
+      <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   );
 }
