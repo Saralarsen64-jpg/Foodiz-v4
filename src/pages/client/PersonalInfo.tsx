@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, Save, User, Mail, Phone, MapPin, CheckCircle, AlertCircle } from "lucide-react";
+import { ChevronLeft, Save, User, Mail, Phone, MapPin, Hash, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function PersonalInfoPage() {
   const navigate = useNavigate();
@@ -9,7 +9,10 @@ export default function PersonalInfoPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({ fullName: "", email: "", phone: "", address: "" });
+  const [formData, setFormData] = useState({ 
+    fullName: "", email: "", phone: "", 
+    address: "", postalCode: "", city: "" 
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -19,10 +22,12 @@ export default function PersonalInfoPage() {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profile) {
           setFormData({
-            fullName: profile.full_name || "",
+            fullName: profile.full_name || (profile.first_name + ' ' + profile.last_name) || "",
             email: session.user.email || "",
             phone: profile.phone || "",
-            address: profile.address || ""
+            address: profile.address || "",
+            postalCode: profile.postal_code || "",
+            city: profile.city || ""
           });
         }
       }
@@ -36,13 +41,18 @@ export default function PersonalInfoPage() {
     setLoading(true);
     setMessage(null);
 
-    // Mise à jour de la table profiles
+    // Mise à jour ciblée pour ne pas écraser les autres données
     const { error: dbError } = await supabase
       .from('profiles')
-      .update({ full_name: formData.fullName, phone: formData.phone, address: formData.address })
+      .update({ 
+        full_name: formData.fullName, 
+        phone: formData.phone, 
+        address: formData.address,
+        postal_code: formData.postalCode,
+        city: formData.city
+      })
       .eq('id', userId);
 
-    // Mise à jour de l'email dans l'auth
     const { error: authError } = await supabase.auth.updateUser({ email: formData.email });
 
     if (authError || dbError) {
@@ -84,7 +94,17 @@ export default function PersonalInfoPage() {
           </div>
           <div className="foodiz-card p-4 flex items-center gap-3">
             <MapPin size={16} className="text-foodiz-gold" />
-            <input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Adresse de livraison" required />
+            <input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Adresse postale" required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="foodiz-card p-4 flex items-center gap-3">
+              <Hash size={16} className="text-foodiz-gold" />
+              <input value={formData.postalCode} onChange={e => setFormData({...formData, postalCode: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Code Postal" required />
+            </div>
+            <div className="foodiz-card p-4 flex items-center gap-3">
+              <MapPin size={16} className="text-foodiz-gold" />
+              <input value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Ville" required />
+            </div>
           </div>
           <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4 flex items-center justify-center gap-2 disabled:opacity-50 mt-6">
             <Save size={18} /> {loading ? "Enregistrement..." : "Enregistrer"}
