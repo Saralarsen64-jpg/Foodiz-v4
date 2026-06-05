@@ -1,37 +1,59 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Supabase traite automatiquement le hash de l'URL (#access_token=...)
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error || !session) {
-        navigate('/auth/login');
-        return;
+      try {
+        // 1. Récupérer la session. Supabase échange automatiquement le hash de l'URL (#access_token=...) contre une session valide.
+        // C'est CETTE étape qui confirme l'email côté Supabase (passe le statut de pending à active).
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          setError("Lien de confirmation invalide, expiré ou déjà utilisé.");
+          return;
+        }
+
+        // 2. Si la session est bonne, l'email est confirmé. On récupère le rôle pour rediriger.
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+        const role = profile?.role || 'client';
+
+        // 3. Redirection vers le bon dashboard
+        if (role === 'admin') navigate('/admin');
+        else if (role === 'partner') navigate('/partner');
+        else if (role === 'courier') navigate('/courier');
+        else navigate('/client');
+
+      } catch (err) {
+        console.error("Erreur lors du callback:", err);
+        setError("Une erreur technique est survenue. Veuillez réessayer de vous connecter.");
       }
-
-      // Récupérer le rôle pour rediriger vers le bon dashboard
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-      const role = profile?.role || 'client';
-
-      if (role === 'admin') navigate('/admin');
-      else if (role === 'partner') navigate('/partner');
-      else if (role === 'courier') navigate('/courier');
-      else navigate('/client');
     };
 
     handleCallback();
   }, [navigate]);
 
+  // Affichage en cas d'erreur (lien invalide)
+  if (error) {
+    return (
+      <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-cream p-6 text-center">
+        <h1 className="foodiz-title text-2xl text-foodiz-red mb-4">Oups !</h1>
+        <p className="text-foodiz-gray mb-6">{error}</p>
+        <button onClick={() => navigate('/auth/login')} className="foodiz-btn px-6 py-3">Retour à la connexion</button>
+      </div>
+    );
+  }
+
+  // Affichage pendant le chargement
   return (
     <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
       <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
-      <p className="text-sm animate-pulse">Confirmation de votre compte Foodiz...</p>
+      <p className="text-sm animate-pulse">Confirmation de votre compte Foodiz en cours...</p>
+      <p className="text-[10px] text-foodiz-gray mt-2">Ne fermez pas cette page.</p>
     </div>
   );
 }
