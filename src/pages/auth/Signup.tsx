@@ -34,11 +34,14 @@ export default function SignupPage() {
     setLoading(true);
     setStatus(null);
 
+    console.log("Tentative d'inscription pour :", email);
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: 'https://foodiz.co/auth/callback', // Redirection après clic sur le lien email
+        // Redirection automatique vers ton site après clic sur le lien email
+        emailRedirectTo: `${window.location.origin}/auth/callback`, 
         data: {
           role: role,
           first_name: firstName,
@@ -57,10 +60,11 @@ export default function SignupPage() {
     setLoading(false);
 
     if (error) {
+      console.error("ERREUR SUPABASE SIGNUP:", error);
       setStatus({ type: 'error', msg: error.message });
     } else {
-      // Que la session soit créée ou non (selon config Supabase), on affiche le message de confirmation
-      setStatus({ type: 'success', msg: "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail." });
+      console.log("Inscription réussie, session:", data.session);
+      setStatus({ type: 'success', msg: "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail (et vos spams)." });
     }
   };
 
