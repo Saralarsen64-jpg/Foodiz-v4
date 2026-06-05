@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
-import { resolveRedirectPath } from "../../utils/authProfile";
 import toast from "react-hot-toast";
 
 export default function LoginPage() {
@@ -19,36 +18,30 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      // 1. CORRECTION CRITIQUE : On force la déconnexion de l'ancien compte (Admin) pour éviter les conflits de session
+      // 1. On nettoie toute ancienne session pour éviter les conflits
       await supabase.auth.signOut();
+      
+      // 2. On se connecte
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
 
-      // 2. On connecte le nouveau compte proprement
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (error.message.toLowerCase().includes("email not confirmed")) {
-          throw new Error("Votre adresse e-mail n’est pas encore confirmée. Vérifiez votre boîte mail.");
-        }
-        throw error;
+      if (data.user) {
+        // 3. On attend 500ms que la session soit bien enregistrée dans le navigateur
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // 4. On regarde le rôle de l'utilisateur dans la base de données
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+        const userRole = profile?.role || 'client';
+
+        // 5. On redirige vers le bon dashboard
+        if (userRole === 'admin') navigate('/admin');
+        else if (userRole === 'partner') navigate('/partner');
+        else if (userRole === 'courier') navigate('/courier');
+        else navigate('/client');
       }
-
-      // 3. On attend un tout petit peu que la session soit bien mise à jour dans le navigateur
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const redirectPath = await resolveRedirectPath();
-      if (redirectPath === "/auth/login") {
-        throw new Error("Votre profil n’est pas encore prêt. Réessayez dans quelques instants.");
-      }
-
-      if (redirectPath === "/partner/validation-status") {
-        toast.success("Connexion réussie. Dossier en attente de validation.");
-      }
-      if (redirectPath === "/courier/validation-status") {
-        toast.success("Connexion réussie. Dossier en attente de validation.");
-      }
-
-      navigate(redirectPath);
     } catch (err: any) {
-      toast.error(err.message || "Connexion impossible.");
+      console.error("Erreur connexion:", err);
+      toast.error(err.message || "Email ou mot de passe incorrect.");
     } finally {
       setLoading(false);
     }
