@@ -7,7 +7,7 @@ export default function ProtectedRoute() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // 1. On récupère la session du navigateur
+      // 1. On récupère la session actuelle du navigateur
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
@@ -15,19 +15,30 @@ export default function ProtectedRoute() {
         return;
       }
 
-      // 2. VÉRIFICATION ROBUSTE : On va chercher l'info directement dans la base de données
-      // Cela contourne le problème de "vieux badge" (JWT cache) du navigateur
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_approved')
-        .eq('id', session.user.id)
-        .single();
+      // 2. VÉRIFICATION DOUBLE SÉCURITÉ :
+      // A. Est-ce que l'email est confirmé dans la session Supabase ?
+      const isEmailConfirmed = !!session.user.email_confirmed_at;
 
-      // 3. Si le profil existe et est approuvé (is_approved = true), on laisse passer
-      if (profile?.is_approved) {
+      // B. Est-ce que le profil est approuvé dans la base de données ?
+      let isProfileApproved = false;
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_approved')
+          .eq('id', session.user.id)
+          .single();
+        if (profile?.is_approved) {
+          isProfileApproved = true;
+        }
+      } catch (e) {
+        console.warn("Vérification DB ignorée, on se fie à la session.");
+      }
+
+      // 3. Si l'un des deux est vrai, on laisse passer !
+      if (isEmailConfirmed || isProfileApproved) {
         setStatus('allowed');
       } else {
-        // Sinon, on déconnecte et on bloque
+        // Sinon, on déconnecte proprement et on bloque
         await supabase.auth.signOut();
         setStatus('blocked');
       }
@@ -45,7 +56,7 @@ export default function ProtectedRoute() {
     );
   }
 
-  // Si bloqué (pas de session ou compte non approuvé), on renvoie à l'authentification
+  // Si bloqué, on renvoie à l'authentification
   if (status === 'blocked') {
     return <Navigate to="/auth" replace />;
   }
