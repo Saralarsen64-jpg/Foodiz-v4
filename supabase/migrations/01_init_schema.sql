@@ -3,12 +3,12 @@
 -- ============================================================
 
 -- 1. PROFILES TABLE (Auth + User Info)
-CREATE TABLE IF NOT EXISTS profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('client', 'partner', 'courier', 'admin')),
+  role text NOT NULL DEFAULT 'client' CHECK (role IN ('client', 'partner', 'courier', 'admin')),
+  email text,
   first_name text,
   last_name text,
-  email text NOT NULL,
   phone text,
   address text,
   postal_code text,
@@ -16,17 +16,15 @@ CREATE TABLE IF NOT EXISTS profiles (
   latitude numeric,
   longitude numeric,
   avatar_url text,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
   cgu_accepted boolean DEFAULT false,
-  ref_code text UNIQUE,
-  referred_by uuid REFERENCES profiles(id)
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
 );
 
 -- 2. RESTAURANTS TABLE (Partner Establishments)
-CREATE TABLE IF NOT EXISTS restaurants (
+CREATE TABLE IF NOT EXISTS public.restaurants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  owner_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   name text NOT NULL,
   description text,
   phone text,

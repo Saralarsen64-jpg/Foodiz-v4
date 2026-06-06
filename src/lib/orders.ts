@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { calculateFoodizOrder } from './engines/foodizEconomicEngine';
 
 export interface OrderCreateData {
   clientId: string;
@@ -6,58 +7,35 @@ export interface OrderCreateData {
   items: Array<{
     productId: string;
     quantity: number;
-    unitPriceCents: number;
+    partnerPriceCents: number; // Prix du produit côté partenaire (avant supplements)
   }>;
   deliveryAddress: string;
+  distanceKm?: number; // Distance pour calcul livraison (auto-calculée si absent)
+  clientLatitude?: number;
+  clientLongitude?: number;
+  restaurantLatitude?: number;
+  restaurantLongitude?: number;
 }
 
 /**
- * Calcule la répartition des frais d'une commande selon le modèle économique Foodiz
- * 
- * FRAIS CONSTANTS (à ajuster selon votre config):
- * - Service Foodiz: 15%
- * - Frais internes: 2%
- * - Livreur de base: 3€
- * - Prime fund (livreur): 0.50€
- * - Loyalty fund: 0.50€
+ * Calcule la distance entre deux points GPS (Haversine)
  */
-export function calculateOrderSplit(clientTotalCents: number) {
-  const SERVICE_FEE_PERCENT = 0.15;      // 15%
-  const INTERNAL_FEES_PERCENT = 0.02;    // 2%
-  const COURIER_BASE_CENTS = 300;        // 3€
-  const COURIER_PRIME_FUND = 50;         // 0.50€
-  const LOYALTY_FUND_CENTS = 50;         // 0.50€
-  const REFERRAL_FUND_CENTS = 30;        // 0.30€ (peut être 0)
-
-  const serviceFee = Math.round(clientTotalCents * SERVICE_FEE_PERCENT);
-  const internalFees = Math.round(clientTotalCents * INTERNAL_FEES_PERCENT);
-  const deliveryFee = COURIER_BASE_CENTS;
-  const courierEarnings = COURIER_BASE_CENTS;
-  const courierPrimeFund = COURIER_PRIME_FUND;
-  const loyaltyFund = LOYALTY_FUND_CENTS;
-  const referralFund = REFERRAL_FUND_CENTS;
-
-  // Partenaire reçoit: total_client - service_fee - internal_fees - delivery
-  const partnerTotal = clientTotalCents - serviceFee - internalFees - deliveryFee;
-
-  // Revenue Foodiz = service_fee + internal_fees + delivery_fee - courier_earnings - funds
-  const foodizRevenue = serviceFee + internalFees + deliveryFee - courierEarnings - courierPrimeFund - loyaltyFund - referralFund;
-
-  return {
-    serviceFee,
-    internalFees,
-    deliveryFee,
-    courierEarnings,
-    courierPrimeFund,
-    loyaltyFund,
-    referralFund,
-    partnerTotal,
-    foodizRevenue,
-  };
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Rayon de la Terre en km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**
- * Crée une commande dans Supabase
+ * Crée une commande dans Supabase avec le modèle économique Foodiz
  */
 export async function createOrder(data: OrderCreateData): Promise<string> {
   try {
@@ -66,8 +44,8 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
       { data: restaurant, error: restaurantError },
       { data: client, error: clientError },
     ] = await Promise.all([
-      supabase.from('restaurants').select('id').eq('id', data.restaurantId).single(),
-      supabase.from('profiles').select('id').eq('id', data.clientId).single(),
+      supabase.from('restaurants').select('id, latitude, longitude').eq('id', data.restaurantId).single(),
+      supabase.from('profiles').select('id, latitude, longitude').eq('id', data.clientId).single(),
     ]);
 
     if (restaurantError || !restaurant) {
@@ -77,16 +55,33 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
       throw new Error('Client non trouvé');
     }
 
-    // 2. Calculer le total des articles
-    let clientTotalCents = 0;
-    for (const item of data.items) {
-      clientTotalCents += item.unitPriceCents * item.quantity;
+    // 2. Calculer la distance si pas fournie
+    let distanceKm = data.distanceKm || 2.0; // Par défaut 2km
+    if (
+      restaurant.latitude &&
+      restaurant.longitude &&
+      client.latitude &&
+      client.longitude
+    ) {
+      distanceKm = calculateDistance(
+        client.latitude,
+        client.longitude,
+        restaurant.latitude,
+        restaurant.longitude
+      );
     }
 
-    // 3. Calculer la répartition des frais
-    const split = calculateOrderSplit(clientTotalCents);
+    // 3. Préparer les items avec quantité pour le calcul
+    const itemsForCalculation = data.items.flatMap(item =>
+      Array(item.quantity).fill({
+        partnerPriceCents: item.partnerPriceCents,
+      })
+    );
 
-    // 4. Créer la commande
+    // 4. Calculer la répartition économique avec le vrai modèle
+    const orderTotals = calculateFoodizOrder(itemsForCalculation, distanceKm);
+
+    // 5. Créer la commande dans Supabase
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -94,17 +89,20 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
         restaurant_id: data.restaurantId,
         status: 'pending',
         delivery_address: data.deliveryAddress,
-        final_client_total_cents: clientTotalCents,
-        partner_total_cents: split.partnerTotal,
-        service_fee_cents: split.serviceFee,
-        internal_fees_cents: split.internalFees,
-        delivery_fee_cents: split.deliveryFee,
-        courier_earnings_cents: split.courierEarnings,
-        courier_prime_fund_cents: split.courierPrimeFund,
-        loyalty_fund_cents: split.loyaltyFund,
-        referral_fund_cents: split.referralFund,
-        foodiz_revenue_cents: split.foodizRevenue,
-        estimated_time_mins: 30, // À ajuster selon le restaurant
+        client_latitude: client.latitude,
+        client_longitude: client.longitude,
+        final_client_total_cents: orderTotals.finalClientTotalCents,
+        partner_total_cents: orderTotals.partnerTotalCents,
+        service_fee_cents: orderTotals.serviceFeeCents,
+        internal_fees_cents: orderTotals.internalFeesCents,
+        delivery_fee_cents: orderTotals.deliveryFeeCents,
+        courier_earnings_cents: orderTotals.courierEarningsCents,
+        courier_prime_fund_cents: orderTotals.courierPrimeFundCents,
+        loyalty_fund_cents: orderTotals.loyaltyFundCents,
+        referral_fund_cents: orderTotals.referralFundCents,
+        foodiz_revenue_cents: orderTotals.foodizRevenueCents,
+        system_reserve_cents: orderTotals.systemReserveCents,
+        estimated_time_mins: 30,
       })
       .select()
       .single();
@@ -113,13 +111,13 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
       throw new Error('Erreur création commande');
     }
 
-    // 5. Créer les order_items
+    // 6. Créer les order_items avec les vrais prix
     const orderItems = data.items.map((item) => ({
       order_id: order.id,
       product_id: item.productId,
       quantity: item.quantity,
-      unit_price_cents: item.unitPriceCents,
-      total_price_cents: item.unitPriceCents * item.quantity,
+      unit_price_cents: item.partnerPriceCents,
+      total_price_cents: item.partnerPriceCents * item.quantity,
     }));
 
     const { error: itemsError } = await supabase
@@ -130,8 +128,8 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
       throw new Error('Erreur ajout articles');
     }
 
-    // 6. Ajouter les points au portefeuille du client (basé sur le montant)
-    const pointsEarned = Math.floor(clientTotalCents / 100); // 1 point par euro
+    // 7. Ajouter les points au portefeuille du client
+    const pointsEarned = Math.floor(orderTotals.finalClientTotalCents / 100); // 1 point par euro
     const { data: wallet } = await supabase
       .from('client_wallets')
       .select('points_balance')
@@ -145,7 +143,7 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
         .eq('user_id', data.clientId);
     }
 
-    // 7. Créer une notification pour le partenaire
+    // 8. Créer une notification pour le partenaire
     const { data: restaurant_data } = await supabase
       .from('restaurants')
       .select('owner_id')
@@ -156,7 +154,7 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
       await supabase.from('notifications').insert({
         user_id: restaurant_data.owner_id,
         title: 'Nouvelle commande',
-        message: `Commande #${order.id.slice(0, 8)} de ${clientTotalCents / 100}€`,
+        message: `Commande #${order.id.slice(0, 8)} de ${orderTotals.finalClientTotalCents / 100}€`,
         type: 'order',
         related_order_id: order.id,
       });

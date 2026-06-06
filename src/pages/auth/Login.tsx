@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
@@ -13,53 +13,61 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
-
-  // Écouter l'authentification pour redirection sûre
-  useEffect(() => {
-    if (!redirecting) return;
-
-    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        try {
-          // Récupérer le profil utilisateur avec le rôle
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-          const userRole = profile?.role || 'client';
-
-          if (userRole === 'admin') navigate('/admin');
-          else if (userRole === 'partner') navigate('/partner');
-          else if (userRole === 'courier') navigate('/courier');
-          else navigate('/client');
-        } catch (err) {
-          console.error('Erreur lors de la redirection:', err);
-          toast.error('Erreur lors de la redirection');
-          setRedirecting(false);
-        }
-      }
-    });
-
-    return () => {
-      data?.subscription.unsubscribe();
-    };
-  }, [redirecting, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) {
+    try {
+      // 1. Connexion
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data.user) {
+        toast.error("Erreur de connexion");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Vérifier que la session est bien établie
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Session non établie");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Récupérer le rôle depuis le profil
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('Profil non trouvé:', profileError);
+        toast.error("Profil utilisateur non trouvé");
+        setLoading(false);
+        return;
+      }
+
+      // 4. Rediriger selon le rôle
+      const userRole = profile.role || 'client';
+      if (userRole === 'admin') navigate('/admin');
+      else if (userRole === 'partner') navigate('/partner');
+      else if (userRole === 'courier') navigate('/courier');
+      else navigate('/client');
+
+    } catch (err: any) {
+      console.error('Erreur login:', err);
+      toast.error(err.message || "Erreur lors de la connexion");
       setLoading(false);
-      toast.error(error.message);
-    } else {
-      // L'événement SIGNED_IN sera déclenché par supabase.auth et gérera la redirection
-      setRedirecting(true);
     }
   };
 

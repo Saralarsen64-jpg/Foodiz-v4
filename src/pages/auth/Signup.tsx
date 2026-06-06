@@ -64,7 +64,6 @@ export default function SignupPage() {
         postal_code: postalCode,
         city: city,
         cgu_accepted: cguAccepted,
-        referred_by: refCode ? (await supabase.from('profiles').select('id').eq('ref_code', refCode).single()).data?.id : null,
       });
 
       if (profileError) {

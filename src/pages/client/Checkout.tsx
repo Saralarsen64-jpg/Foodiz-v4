@@ -1,32 +1,26 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, CheckCircle, MapPin, Loader } from "lucide-react";
+import { ChevronLeft, CheckCircle, MapPin, Loader, Info } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { createOrder } from "../../lib/orders";
+import { createOrder, calculateDistance } from "../../lib/orders";
+import { calculateFoodizOrder } from "../../lib/engines/foodizEconomicEngine";
 import toast from "react-hot-toast";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, subtotal, establishmentId, clearCart, totalPoints } = useCart();
+  const { items, establishmentId, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'review' | 'success'>('review');
   const [userPoints, setUserPoints] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [loading, setLoading] = useState(true);
+  const [distanceKm, setDistanceKm] = useState(2.0);
+  const [orderBreakdown, setOrderBreakdown] = useState<any>(null);
+  const [restaurantData, setRestaurantData] = useState<any>(null);
 
-  const DELIVERY_FEE_CENTS = 250;  // 2.50€
-  const SERVICE_FEE_PERCENT = 0.15; // 15%
-
-  const subtotalCents = Math.round(subtotal * 100);
-  const serviceFeesCents = Math.round(subtotalCents * SERVICE_FEE_PERCENT);
-  const totalBeforePointsCents = subtotalCents + serviceFeesCents + DELIVERY_FEE_CENTS;
-  
-  // Calcul de la réduction en points (1 point = 0.01€)
-  const pointsReductionCents = usePoints ? Math.min(userPoints, totalBeforePointsCents) : 0;
-  const finalTotalCents = totalBeforePointsCents - pointsReductionCents;
-
+  // Charger les données et calculer les montants
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -43,13 +37,12 @@ export default function CheckoutPage() {
           .select('points_balance')
           .eq('user_id', user.id)
           .single();
-
         setUserPoints(wallet?.points_balance || 0);
 
         // Récupérer l'adresse de livraison
         const { data: profile } = await supabase
           .from('profiles')
-          .select('address, postal_code, city')
+          .select('address, postal_code, city, latitude, longitude')
           .eq('id', user.id)
           .single();
 
@@ -58,21 +51,70 @@ export default function CheckoutPage() {
             .filter(Boolean)
             .join(', ');
           setDeliveryAddress(addr || 'Adresse non enregistrée');
+
+          // Récupérer les données du restaurant pour distance
+          if (establishmentId) {
+            const { data: restaurant } = await supabase
+              .from('restaurants')
+              .select('id, name, latitude, longitude, owner_id')
+              .eq('id', establishmentId)
+              .single();
+
+            if (restaurant) {
+              setRestaurantData(restaurant);
+              
+              // Calculer la distance
+              if (profile.latitude && profile.longitude && restaurant.latitude && restaurant.longitude) {
+                const distance = calculateDistance(
+                  profile.latitude,
+                  profile.longitude,
+                  restaurant.latitude,
+                  restaurant.longitude
+                );
+                setDistanceKm(distance);
+              }
+            }
+          }
+        }
+
+        // Récupérer les vrais prix des produits pour le calcul
+        if (items.length > 0 && establishmentId) {
+          const productIds = items.map(item => item.id);
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, partner_price_cents')
+            .in('id', productIds)
+            .eq('restaurant_id', establishmentId);
+
+          if (products) {
+            // Construire les items pour le calcul avec les vrais prix partenaire
+            const itemsForCalculation = items.flatMap(cartItem => {
+              const product = products.find(p => p.id === cartItem.id);
+              return Array(cartItem.quantity).fill({
+                partnerPriceCents: product?.partner_price_cents || Math.round(cartItem.price * 100),
+              });
+            });
+
+            // Calculer le breakdown économique
+            const breakdown = calculateFoodizOrder(itemsForCalculation, distanceKm);
+            setOrderBreakdown(breakdown);
+          }
         }
 
         setLoading(false);
       } catch (err) {
         console.error('Erreur chargement données:', err);
+        toast.error('Erreur lors du chargement des données');
         setLoading(false);
       }
     };
 
     loadData();
-  }, [navigate]);
+  }, [establishmentId, items, navigate, distanceKm]);
 
   const handleConfirmOrder = async () => {
-    if (!establishmentId || items.length === 0) {
-      toast.error("Le panier est vide");
+    if (!establishmentId || items.length === 0 || !orderBreakdown) {
+      toast.error("Le panier est vide ou les données ne sont pas chargées");
       return;
     }
 
@@ -82,24 +124,43 @@ export default function CheckoutPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Utilisateur non trouvé");
 
-      // Créer les items pour la commande
-      const orderItems = items.map(item => ({
-        productId: item.id,
-        quantity: item.quantity,
-        unitPriceCents: Math.round(item.price * 100),
-      }));
+      // Récupérer les vrais prix des produits
+      const productIds = items.map(item => item.id);
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, partner_price_cents')
+        .in('id', productIds)
+        .eq('restaurant_id', establishmentId);
 
-      // Créer la commande
+      if (!products) throw new Error("Produits non trouvés");
+
+      // Créer les items pour la commande avec les vrais prix partenaire
+      const orderItems = items.map(item => {
+        const product = products.find(p => p.id === item.id);
+        return {
+          productId: item.id,
+          quantity: item.quantity,
+          partnerPriceCents: product?.partner_price_cents || Math.round(item.price * 100),
+        };
+      });
+
+      // Créer la commande avec le modèle économique Foodiz
       const orderId = await createOrder({
         clientId: user.id,
         restaurantId: establishmentId,
         items: orderItems,
         deliveryAddress: deliveryAddress,
+        distanceKm: distanceKm,
+        clientLatitude: (await supabase.from('profiles').select('latitude').eq('id', user.id).single()).data?.latitude,
+        clientLongitude: (await supabase.from('profiles').select('longitude').eq('id', user.id).single()).data?.longitude,
+        restaurantLatitude: restaurantData?.latitude,
+        restaurantLongitude: restaurantData?.longitude,
       });
 
       // Déduire les points si utilisés
-      if (usePoints && pointsReductionCents > 0) {
-        const newBalance = Math.max(0, userPoints - pointsReductionCents);
+      if (usePoints && userPoints > 0) {
+        const pointsToUse = Math.min(userPoints, orderBreakdown.finalClientTotalCents);
+        const newBalance = Math.max(0, userPoints - pointsToUse);
         await supabase
           .from('client_wallets')
           .update({ points_balance: newBalance })
@@ -187,32 +248,36 @@ export default function CheckoutPage() {
             </div>
           ))}
 
-          <div className="space-y-2 pt-3 border-t border-foodiz-gold/10">
-            <div className="flex justify-between text-xs">
-              <span className="text-foodiz-gray">Sous-total</span>
-              <span className="text-foodiz-cream">{subtotal.toFixed(2)}€</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-foodiz-gray">Frais de service</span>
-              <span className="text-foodiz-cream">{(serviceFeesCents / 100).toFixed(2)}€</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-foodiz-gray">Livraison</span>
-              <span className="text-foodiz-cream">{(DELIVERY_FEE_CENTS / 100).toFixed(2)}€</span>
-            </div>
-
-            {usePoints && pointsReductionCents > 0 && (
-              <div className="flex justify-between text-xs text-foodiz-green">
-                <span>Réduction points</span>
-                <span>-{(pointsReductionCents / 100).toFixed(2)}€</span>
+          {orderBreakdown && (
+            <div className="space-y-2 pt-3 border-t border-foodiz-gold/10">
+              <div className="flex justify-between text-xs">
+                <span className="text-foodiz-gray">Prix articles</span>
+                <span className="text-foodiz-cream">{(orderBreakdown.partnerTotalCents / 100).toFixed(2)}€</span>
               </div>
-            )}
+              <div className="flex justify-between text-xs">
+                <span className="text-foodiz-gray">Frais de service</span>
+                <span className="text-foodiz-cream">{(orderBreakdown.serviceFeeCents / 100).toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-foodiz-gray">Livraison ({distanceKm.toFixed(1)}km)</span>
+                <span className="text-foodiz-cream">{(orderBreakdown.deliveryFeeCents / 100).toFixed(2)}€</span>
+              </div>
 
-            <div className="flex justify-between text-sm font-bold pt-2 border-t border-foodiz-gold/20">
-              <span className="text-foodiz-cream">TOTAL</span>
-              <span className="text-foodiz-gold">{(finalTotalCents / 100).toFixed(2)}€</span>
+              {usePoints && userPoints > 0 && (
+                <div className="flex justify-between text-xs text-foodiz-green">
+                  <span>Réduction points</span>
+                  <span>-{Math.min(userPoints, orderBreakdown.finalClientTotalCents) / 100}€</span>
+                </div>
+              )}
+
+              <div className="flex justify-between text-sm font-bold pt-2 border-t border-foodiz-gold/20">
+                <span className="text-foodiz-cream">TOTAL</span>
+                <span className="text-foodiz-gold">
+                  {((orderBreakdown.finalClientTotalCents - (usePoints ? Math.min(userPoints, orderBreakdown.finalClientTotalCents) : 0)) / 100).toFixed(2)}€
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Points */}
@@ -236,7 +301,7 @@ export default function CheckoutPage() {
         {/* Bouton validation */}
         <button
           onClick={handleConfirmOrder}
-          disabled={isProcessing}
+          disabled={isProcessing || !orderBreakdown}
           className="w-full foodiz-btn py-4 flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {isProcessing ? (
@@ -244,8 +309,10 @@ export default function CheckoutPage() {
               <Loader size={18} className="animate-spin" />
               Création en cours...
             </>
+          ) : orderBreakdown ? (
+            `Confirmer ma commande ${((orderBreakdown.finalClientTotalCents - (usePoints ? Math.min(userPoints, orderBreakdown.finalClientTotalCents) : 0)) / 100).toFixed(2)}€`
           ) : (
-            `Confirmer ma commande ${(finalTotalCents / 100).toFixed(2)}€`
+            'Chargement...'
           )}
         </button>
       </main>

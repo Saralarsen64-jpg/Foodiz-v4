@@ -26,6 +26,7 @@ import NotificationsPage from "./pages/client/Notifications";
 import DeleteAccountPage from "./pages/client/DeleteAccount";
 import AdvantagesPage from "./pages/client/Advantages";
 import ReferralPage from "./pages/client/Referral";
+import DeliveryTrackingPage from "./pages/client/DeliveryTracking";
 
 // Partner Pages
 import PartnerDashboard from "./pages/partner/Dashboard";
@@ -103,6 +104,7 @@ export default function App() {
           <Route path="/client/orders" element={<OrdersPage />} />
           <Route path="/client/orders/:id" element={<OrderDetailPage />} />
           <Route path="/client/orders/:id/review" element={<OrderReviewPage />} />
+          <Route path="/client/orders/:orderId/tracking" element={<DeliveryTrackingPage />} />
           <Route path="/client/account" element={<AccountPage />} />
           <Route path="/client/account/personal-info" element={<PersonalInfoPage />} />
           <Route path="/client/account/addresses" element={<AddressesPage />} />
