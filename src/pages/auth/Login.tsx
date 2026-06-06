@@ -17,33 +17,23 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      // 1. On nettoie toute ancienne session pour éviter les conflits
-      await supabase.auth.signOut();
-      
-      // 2. On se connecte
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+    
+    // Connexion directe (Supabase bloque automatiquement si l'email n'est pas confirmé)
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    setLoading(false);
 
-      if (data.user) {
-        // 3. On attend 500ms que la session soit bien enregistrée dans le navigateur
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // 4. On regarde le rôle de l'utilisateur dans la base de données
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-        const userRole = profile?.role || 'client';
+    if (error) {
+      toast.error(error.message);
+    } else if (data.user) {
+      // Si la connexion réussit, on récupère le rôle pour rediriger
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+      const userRole = profile?.role || 'client';
 
-        // 5. On redirige vers le bon dashboard
-        if (userRole === 'admin') navigate('/admin');
-        else if (userRole === 'partner') navigate('/partner');
-        else if (userRole === 'courier') navigate('/courier');
-        else navigate('/client');
-      }
-    } catch (err: any) {
-      console.error("Erreur connexion:", err);
-      toast.error(err.message || "Email ou mot de passe incorrect.");
-    } finally {
-      setLoading(false);
+      if (userRole === 'admin') navigate('/admin');
+      else if (userRole === 'partner') navigate('/partner');
+      else if (userRole === 'courier') navigate('/courier');
+      else navigate('/client');
     }
   };
 
