@@ -26,14 +26,19 @@ export default function LoginPage() {
     if (error) {
       toast.error(error.message);
     } else if (data.user) {
-      // Si la connexion réussit, on récupère le rôle pour rediriger
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      const userRole = profile?.role || 'client';
+      // Vérifier que la session est bien établie
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Récupérer le rôle pour rediriger vers la bonne page
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+        const userRole = profile?.role || 'client';
 
-      if (userRole === 'admin') navigate('/admin');
-      else if (userRole === 'partner') navigate('/partner');
-      else if (userRole === 'courier') navigate('/courier');
-      else navigate('/client');
+        if (userRole === 'admin') navigate('/admin');
+        else if (userRole === 'partner') navigate('/partner');
+        else if (userRole === 'courier') navigate('/courier');
+        else navigate('/client');
+      }
     }
   };
 
