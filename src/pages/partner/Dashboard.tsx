@@ -97,6 +97,10 @@ export default function PartnerDashboard() {
   const [period, setPeriod] = useState<PeriodKey>("week");
   const [restaurantName, setRestaurantName] = useState("Mon Établissement");
   const [ownerName, setOwnerName] = useState("Partenaire");
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
+  const [historyOrders, setHistoryOrders] = useState<any[]>([]);
+  const [todayRevenue, setTodayRevenue] = useState(0);
+  const [loading, setLoading] = useState(true);
   const profile = useMemo(() => loadPartnerProfile(), []);
 
   useEffect(() => {
@@ -114,11 +118,17 @@ export default function PartnerDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (user) {
+        if (!user) {
+          navigate('/auth/login?role=partner');
+          return;
+        }
+
+        // 1. Récupérer les infos du partenaire
         const { data: profileData } = await supabase
           .from("profiles")
           .select("first_name,last_name,email")
@@ -130,24 +140,87 @@ export default function PartnerDashboard() {
           setOwnerName(fullName || profileData.email || "Partenaire");
         }
 
+        // 2. Récupérer le restaurant
         const { data: restaurant } = await supabase
           .from("restaurants")
-          .select("name")
+          .select("*")
           .eq("owner_id", user.id)
           .single();
 
-        if (restaurant?.name) {
-          setRestaurantName(restaurant.name);
-        } else {
-          setRestaurantName(profile.name);
+        if (!restaurant) {
+          setRestaurantName("Aucun établissement");
+          setLoading(false);
+          return;
         }
-      } else {
-        setRestaurantName(profile.name);
+
+        if (restaurant.name) {
+          setRestaurantName(restaurant.name);
+        }
+
+        // 3. Récupérer les commandes actives
+        const { data: activeOrdersData } = await supabase
+          .from("orders")
+          .select(`
+            id,
+            status,
+            final_client_total_cents,
+            created_at,
+            client:profiles(first_name, last_name),
+            order_items(quantity)
+          `)
+          .eq("restaurant_id", restaurant.id)
+          .in("status", ["pending", "preparing", "ready", "pickup"])
+          .order("created_at", { ascending: true });
+
+        const formattedActive = (activeOrdersData || []).map((order: any) => ({
+          id: order.id,
+          items: `Commande #${order.id.slice(0, 8)}`,
+          total: (order.final_client_total_cents || 0) / 100,
+          status: order.status,
+          time: order.status === "ready" ? "Prête" : "En cours",
+          client: `${order.client?.first_name || "Client"} ${order.client?.last_name || ""}`,
+        }));
+
+        setActiveOrders(formattedActive);
+
+        // 4. Récupérer les commandes livrées (historique + calcul revenu du jour)
+        const { data: deliveredOrders } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("restaurant_id", restaurant.id)
+          .eq("status", "delivered")
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (deliveredOrders) {
+          const formattedHistory = deliveredOrders.map((order: any) => ({
+            id: order.id,
+            client: `#${order.id.slice(0, 8)}`,
+            total: (order.final_client_total_cents || 0) / 100,
+            partnerTotal: (order.partner_total_cents || 0) / 100,
+            date: new Date(order.delivered_at || order.created_at).toLocaleDateString('fr-FR'),
+          }));
+          
+          setHistoryOrders(formattedHistory);
+
+          // Calculer le revenu du jour
+          const today = new Date().toDateString();
+          const todayRevenue = deliveredOrders
+            .filter(order => new Date(order.created_at).toDateString() === today)
+            .reduce((sum, order) => sum + ((order.partner_total_cents || 0) / 100), 0);
+          
+          setTodayRevenue(todayRevenue);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Erreur chargement dashboard:', err);
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [profile.name]);
+  }, [navigate]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -373,7 +446,7 @@ export default function PartnerDashboard() {
               </button>
             </div>
             <div className="space-y-3">
-              {ACTIVE_ORDERS.map((order) => (
+              {activeOrders.slice(0, 3).map((order) => (
                 <button
                   key={order.id}
                   onClick={() => navigate(`/partner/orders/${order.id}`)}
@@ -413,7 +486,7 @@ export default function PartnerDashboard() {
                 </button>
               </div>
               <div className="space-y-2">
-                {HISTORY_ORDERS.slice(0, 4).map((order) => (
+                {historyOrders.slice(0, 4).map((order) => (
                   <div key={order.id} className="foodiz-card p-4 flex items-center justify-between gap-4">
                     <div>
                       <p className="text-sm text-foodiz-cream font-medium">{order.client}</p>

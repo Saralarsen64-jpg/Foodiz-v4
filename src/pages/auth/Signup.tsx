@@ -34,37 +34,93 @@ export default function SignupPage() {
     setLoading(true);
     setStatus(null);
 
-    console.log("Tentative d'inscription pour :", email);
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        // Redirection automatique vers ton site après clic sur le lien email
-        emailRedirectTo: `${window.location.origin}/auth/callback`, 
-        data: {
-          role: role,
-          first_name: firstName,
-          last_name: lastName,
-          phone: phone,
-          address: address,
-          postal_code: postalCode,
-          city: city,
-          siret: isPro ? siret : null,
-          cgu_accepted: cguAccepted,
-          ref: refCode || null,
+    try {
+      // 1. Créer l'utilisateur Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
-      },
-    });
+      });
 
-    setLoading(false);
+      if (authError) {
+        throw new Error(authError.message);
+      }
 
-    if (error) {
-      console.error("ERREUR SUPABASE SIGNUP:", error);
-      setStatus({ type: 'error', msg: error.message });
-    } else {
-      console.log("Inscription réussie, session:", data.session);
+      if (!authData.user) {
+        throw new Error("Erreur lors de la création du compte");
+      }
+
+      // 2. Créer le profil dans la table profiles
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: authData.user.id,
+        role: role,
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+        address: address,
+        postal_code: postalCode,
+        city: city,
+        cgu_accepted: cguAccepted,
+        referred_by: refCode ? (await supabase.from('profiles').select('id').eq('ref_code', refCode).single()).data?.id : null,
+      });
+
+      if (profileError) {
+        throw new Error(`Erreur création profil: ${profileError.message}`);
+      }
+
+      // 3. Si client, créer la wallet
+      if (role === 'client') {
+        const { error: walletError } = await supabase.from('client_wallets').insert({
+          user_id: authData.user.id,
+          points_balance: 0,
+          loyalty_tier: 'bronze',
+        });
+
+        if (walletError) {
+          console.warn('Avertissement wallet:', walletError);
+        }
+      }
+
+      // 4. Si partenaire ou livreur, créer les enregistrements spécifiques
+      if (role === 'partner' && siret) {
+        const { error: restaurantError } = await supabase.from('restaurants').insert({
+          owner_id: authData.user.id,
+          name: `${firstName} ${lastName}`,
+          status: 'pending',
+          siret: siret,
+          city: city,
+          postal_code: postalCode,
+          address: address,
+        });
+
+        if (restaurantError) {
+          console.warn('Avertissement restaurant:', restaurantError);
+        }
+      } else if (role === 'courier') {
+        const { error: courierError } = await supabase.from('courier_applications').insert({
+          user_id: authData.user.id,
+          status: 'pending',
+          city: city,
+        });
+
+        if (courierError) {
+          console.warn('Avertissement application livreur:', courierError);
+        }
+      }
+
+      setLoading(false);
       setStatus({ type: 'success', msg: "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail (et vos spams)." });
+      
+      // Redirection après 3 secondes
+      setTimeout(() => navigate('/auth'), 3000);
+
+    } catch (err: any) {
+      setLoading(false);
+      console.error("ERREUR INSCRIPTION:", err);
+      setStatus({ type: 'error', msg: err.message || "Erreur lors de l'inscription" });
     }
   };
 
