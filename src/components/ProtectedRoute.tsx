@@ -3,43 +3,38 @@ import { Navigate, Outlet } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 export default function ProtectedRoute() {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // On utilise 'undefined' pour dire "on ne sait pas encore", 'null' pour "pas connecté"
+  const [session, setSession] = useState<any>(undefined);
 
   useEffect(() => {
-    // 1. L'écouteur temps réel (il se déclenche IMMÉDIATEMENT avec la session actuelle)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 1. On récupère la session immédiatement
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setLoading(false); // On ne débloque la porte que quand on a une réponse claire ici
     });
 
-    // 2. Vérification de secours (mais on ne débloque la porte QUE si on a une session valide)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setSession(session);
-        setLoading(false);
-      }
-      // Si session est null ici, on ne fait rien : on attend que l'écouteur (point 1) nous donne la réponse.
+    // 2. On écoute les changements (comme quand on vient de se connecter via Login.tsx)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Tant qu'on n'a pas de réponse claire (session ou confirmation de déconnexion), on affiche le chargement
-  if (loading) {
+  // TANT QUE session est undefined (chargement en cours), on affiche le spinner
+  if (session === undefined) {
     return (
       <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
         <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
-        <p className="text-sm animate-pulse">Sécurisation de l'accès...</p>
+        <p className="text-sm animate-pulse">Chargement de votre espace...</p>
       </div>
     );
   }
 
-  // Si le chargement est fini et qu'il n'y a toujours pas de session, alors on renvoie à l'auth
+  // Si session est null (chargement fini, mais pas de connexion), on renvoie à l'auth
   if (!session) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Si on a une session, on ouvre la porte !
+  // Si session existe, on affiche la page (Dashboard, Home, etc.)
   return <Outlet />;
 }
