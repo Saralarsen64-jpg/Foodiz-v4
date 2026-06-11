@@ -3,25 +3,28 @@ import { Navigate, Outlet } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 export default function ProtectedRoute() {
-  // On utilise 'undefined' pour dire "on ne sait pas encore", 'null' pour "pas connecté"
-  const [session, setSession] = useState<any>(undefined);
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. On récupère la session immédiatement
+    console.log("🔒 ProtectedRoute: Je vérifie si tu es connecté...");
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("🔒 Résultat de la vérification :", session ? "Session trouvée !" : "AUCUNE SESSION (NULL)");
       setSession(session);
+      setLoading(false);
     });
 
-    // 2. On écoute les changements (comme quand on vient de se connecter via Login.tsx)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("🔒 Changement détecté :", session ? "Tu es connecté !" : "Tu es déconnecté.");
       setSession(session);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // TANT QUE session est undefined (chargement en cours), on affiche le spinner
-  if (session === undefined) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
         <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
@@ -30,11 +33,11 @@ export default function ProtectedRoute() {
     );
   }
 
-  // Si session est null (chargement fini, mais pas de connexion), on renvoie à l'auth
   if (!session) {
+    console.log("🚫 ACCÈS REFUSÉ : Je te renvoie vers la page de connexion car je ne vois pas de session.");
     return <Navigate to="/auth" replace />;
   }
 
-  // Si session existe, on affiche la page (Dashboard, Home, etc.)
+  console.log("✅ ACCÈS AUTORISÉ : Bienvenue dans ton espace !");
   return <Outlet />;
 }
