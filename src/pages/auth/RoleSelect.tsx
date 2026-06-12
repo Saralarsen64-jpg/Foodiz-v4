@@ -12,14 +12,40 @@ import {
   Headphones,
   ChefHat,
 } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const [showPwd, setShowPwd] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // LOGIQUE DE CONNEXION RÉELLE AJOUTÉE ICI
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/client");
+    setLoading(true);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (data.user) {
+      // On récupère le rôle pour rediriger vers le bon espace
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+      const userRole = profile?.role || 'client';
+      
+      if (userRole === 'admin') navigate('/admin');
+      else if (userRole === 'partner') navigate('/partner');
+      else if (userRole === 'courier') navigate('/courier');
+      else navigate('/client');
+    }
+    setLoading(false);
   };
 
   return (
@@ -77,6 +103,8 @@ export default function AuthPage() {
               type="email"
               placeholder="Adresse email"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/60"
             />
           </div>
@@ -93,6 +121,8 @@ export default function AuthPage() {
               type={showPwd ? "text" : "password"}
               placeholder="Mot de passe"
               required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/60"
             />
             <button
@@ -107,7 +137,8 @@ export default function AuthPage() {
           {/* Big Gold Button */}
           <button
             type="submit"
-            className="w-full py-4 rounded-2xl text-foodiz-black font-semibold text-base transition-all hover:shadow-xl hover:shadow-foodiz-gold/30 hover:-translate-y-0.5"
+            disabled={loading}
+            className="w-full py-4 rounded-2xl text-foodiz-black font-semibold text-base transition-all hover:shadow-xl hover:shadow-foodiz-gold/30 hover:-translate-y-0.5 disabled:opacity-50"
             style={{
               background:
                 "linear-gradient(180deg, #E0B45C 0%, #D8A84F 50%, #C9A45C 100%)",
@@ -115,7 +146,7 @@ export default function AuthPage() {
                 "0 4px 20px rgba(216, 168, 79, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25)",
             }}
           >
-            Se connecter
+            {loading ? "Connexion en cours..." : "Se connecter"}
           </button>
         </form>
 
