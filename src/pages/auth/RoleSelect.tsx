@@ -1,294 +1,93 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  Store,
-  Award,
-  MapPin,
-  ShieldCheck,
-  Headphones,
-  ChefHat,
-} from "lucide-react";
+import { User, Briefcase, Bike, ChevronRight } from "lucide-react";
+import Logo from "../../components/Logo";
 
-export default function AuthPage() {
+export default function RoleSelectPage() {
   const navigate = useNavigate();
-  const [showPwd, setShowPwd] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate("/client");
-  };
 
   return (
-    <div className="min-h-screen bg-foodiz-black">
-      {/* ─── Kraft Envelope Header ───────────────────────────────────── */}
-      <div className="relative w-full overflow-hidden pb-10">
-        <img
-          src="https://i.imgur.com/gtCArFr.png"
-          alt="Foodiz"
-          className="block w-full h-auto align-top"
-        />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-foodiz-black/35 to-foodiz-black" />
+    <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Effets de bordure dorée */}
+      <div className="pointer-events-none fixed top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
+      <div className="pointer-events-none fixed top-0 bottom-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
+
+      <div className="w-full max-w-md z-10">
+        <div className="flex justify-center mb-10">
+          <Logo size="lg" />
+        </div>
+        
+        <h1 className="foodiz-title text-3xl text-foodiz-cream text-center mb-2">Bienvenue sur Foodiz</h1>
+        <p className="text-foodiz-gray text-center mb-10 text-sm">L'excellence de la livraison gastronomique. Choisissez votre espace.</p>
+
+        <div className="space-y-4">
+          
+          {/* Carte CLIENT */}
+          <div className="foodiz-card p-5 bg-[#0A0A0A] border-foodiz-gold/20 rounded-2xl hover:border-foodiz-gold/50 transition-all group">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-foodiz-gold/10 flex items-center justify-center text-foodiz-gold group-hover:bg-foodiz-gold group-hover:text-foodiz-black transition-colors">
+                <User size={24} />
+              </div>
+              <div>
+                <h2 className="foodiz-title text-xl text-foodiz-cream">Espace Client</h2>
+                <p className="text-[10px] text-foodiz-gray uppercase tracking-widest">Commandez vos plats préférés</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => navigate('/auth/login?role=client')} className="py-3 rounded-xl border border-foodiz-gold/30 text-foodiz-gold text-xs font-bold hover:bg-foodiz-gold/10 transition-colors">
+                Se connecter
+              </button>
+              <button onClick={() => navigate('/auth/signup?role=client')} className="py-3 rounded-xl bg-foodiz-gold text-foodiz-black text-xs font-bold hover:bg-foodiz-gold/90 transition-colors flex items-center justify-center gap-1">
+                S'inscrire <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Carte PARTENAIRE */}
+          <div className="foodiz-card p-5 bg-[#0A0A0A] border-foodiz-gold/20 rounded-2xl hover:border-foodiz-gold/50 transition-all group">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-foodiz-gold/10 flex items-center justify-center text-foodiz-gold group-hover:bg-foodiz-gold group-hover:text-foodiz-black transition-colors">
+                <Briefcase size={24} />
+              </div>
+              <div>
+                <h2 className="foodiz-title text-xl text-foodiz-cream">Espace Partenaire</h2>
+                <p className="text-[10px] text-foodiz-gray uppercase tracking-widest">Gérez votre restaurant</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => navigate('/auth/login?role=partner')} className="py-3 rounded-xl border border-foodiz-gold/30 text-foodiz-gold text-xs font-bold hover:bg-foodiz-gold/10 transition-colors">
+                Se connecter
+              </button>
+              <button onClick={() => navigate('/auth/signup?role=partner')} className="py-3 rounded-xl bg-foodiz-gold text-foodiz-black text-xs font-bold hover:bg-foodiz-gold/90 transition-colors flex items-center justify-center gap-1">
+                S'inscrire <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Carte LIVREUR */}
+          <div className="foodiz-card p-5 bg-[#0A0A0A] border-foodiz-gold/20 rounded-2xl hover:border-foodiz-gold/50 transition-all group">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-foodiz-gold/10 flex items-center justify-center text-foodiz-gold group-hover:bg-foodiz-gold group-hover:text-foodiz-black transition-colors">
+                <Bike size={24} />
+              </div>
+              <div>
+                <h2 className="foodiz-title text-xl text-foodiz-cream">Espace Livreur</h2>
+                <p className="text-[10px] text-foodiz-gray uppercase tracking-widest">Rejoignez la flotte Foodiz</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => navigate('/auth/login?role=courier')} className="py-3 rounded-xl border border-foodiz-gold/30 text-foodiz-gold text-xs font-bold hover:bg-foodiz-gold/10 transition-colors">
+                Se connecter
+              </button>
+              <button onClick={() => navigate('/auth/signup?role=courier')} className="py-3 rounded-xl bg-foodiz-gold text-foodiz-black text-xs font-bold hover:bg-foodiz-gold/90 transition-colors flex items-center justify-center gap-1">
+                S'inscrire <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+
+        </div>
+        
+        <p className="text-center text-[10px] text-foodiz-gray/40 mt-12">© 2026 Foodiz. Tous droits réservés.</p>
       </div>
-
-      {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <section
-        className="relative z-10 mx-4 -mt-16 max-w-[520px] overflow-hidden rounded-[34px] border border-foodiz-gold/35 md:mx-auto"
-        style={{
-          background:
-            "radial-gradient(circle at top, rgba(216, 168, 79, 0.08), transparent 38%), #050505",
-          boxShadow:
-            "0 -1px 0 rgba(224, 180, 92, 0.35), 0 28px 90px rgba(0, 0, 0, 0.7), 0 0 48px rgba(216, 168, 79, 0.13)",
-        }}
-      >
-        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-foodiz-gold/70 to-transparent" />
-        <div className="pointer-events-none absolute -top-24 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-foodiz-gold/10 blur-3xl" />
-
-      <main className="relative z-10 max-w-md mx-auto px-6 pt-8 pb-6">
-        {/* Title */}
-        <h1
-          className="text-center text-3xl mb-4"
-          style={{ fontFamily: "'Playfair Display', serif", fontWeight: 500 }}
-        >
-          <span className="text-foodiz-cream">Envie de vous faire </span>
-          <span className="text-foodiz-gold italic">livrer</span>
-          <span className="text-foodiz-cream"> ?</span>
-        </h1>
-        <p className="text-foodiz-gray text-sm text-center mb-8 leading-relaxed">
-          Vos adresses préférées, vos envies du moment,
-          <br />
-          livrées simplement.
-        </p>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email */}
-          <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-foodiz-gold/30 hover:border-foodiz-gold/50 focus-within:border-foodiz-gold transition-all">
-            <Mail
-              size={18}
-              className="text-foodiz-gold shrink-0"
-              strokeWidth={1.8}
-              style={{ filter: "drop-shadow(0 0 4px rgba(216, 168, 79, 0.4))" }}
-            />
-            <input
-              type="email"
-              placeholder="Adresse email"
-              required
-              className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/60"
-            />
-          </div>
-
-          {/* Password */}
-          <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-foodiz-gold/30 hover:border-foodiz-gold/50 focus-within:border-foodiz-gold transition-all">
-            <Lock
-              size={18}
-              className="text-foodiz-gold shrink-0"
-              strokeWidth={1.8}
-              style={{ filter: "drop-shadow(0 0 4px rgba(216, 168, 79, 0.4))" }}
-            />
-            <input
-              type={showPwd ? "text" : "password"}
-              placeholder="Mot de passe"
-              required
-              className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/60"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPwd(!showPwd)}
-              className="text-foodiz-gold/70 hover:text-foodiz-gold transition-colors"
-            >
-              {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-
-          {/* Big Gold Button */}
-          <button
-            type="submit"
-            className="w-full py-4 rounded-2xl text-foodiz-black font-semibold text-base transition-all hover:shadow-xl hover:shadow-foodiz-gold/30 hover:-translate-y-0.5"
-            style={{
-              background:
-                "linear-gradient(180deg, #E0B45C 0%, #D8A84F 50%, #C9A45C 100%)",
-              boxShadow:
-                "0 4px 20px rgba(216, 168, 79, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25)",
-            }}
-          >
-            Se connecter
-          </button>
-        </form>
-
-        {/* Create account */}
-        <p className="text-center text-sm text-foodiz-gray mt-6">
-          Pas encore de compte ?{" "}
-          <button
-            onClick={() => navigate("/auth/signup?role=client")}
-            className="text-foodiz-gold font-semibold hover:underline ml-1"
-          >
-            Créer mon compte
-          </button>
-        </p>
-
-
-        {/* Divider: Vous êtes professionnel ? + chef hat */}
-        <div className="my-8">
-          <div className="flex justify-center mb-3">
-            <div className="bg-foodiz-black px-2">
-              <ChefHat
-                size={20}
-                className="text-foodiz-gold"
-                strokeWidth={1.8}
-                style={{ filter: "drop-shadow(0 0 6px rgba(216, 168, 79, 0.5))" }}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-foodiz-gold/30" />
-            <span className="text-xs text-foodiz-gold font-semibold tracking-wide whitespace-nowrap">
-              Vous êtes professionnel ?
-            </span>
-            <div className="flex-1 h-px bg-foodiz-gold/30" />
-          </div>
-        </div>
-
-        {/* Pro Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Restaurants & Épiciers Card */}
-          <div className="relative rounded-2xl border border-foodiz-gold/30 overflow-hidden bg-foodiz-card flex flex-col">
-            <div className="p-4 pt-5 flex flex-col items-center text-center flex-1">
-              {/* Circular gold icon */}
-              <div className="w-14 h-14 rounded-full border-2 border-foodiz-gold flex items-center justify-center mb-3"
-                style={{ boxShadow: "0 0 16px rgba(216, 168, 79, 0.25), inset 0 0 10px rgba(216, 168, 79, 0.08)" }}>
-                <Store
-                  size={26}
-                  className="text-foodiz-gold"
-                  strokeWidth={1.5}
-                  style={{ filter: "drop-shadow(0 0 4px rgba(216, 168, 79, 0.5))" }}
-                />
-              </div>
-              <h3
-                className="text-lg leading-tight mb-2 text-foodiz-cream"
-                style={{ fontFamily: "'Playfair Display', serif", fontWeight: 500 }}
-              >
-                Restaurants<br />& Épiciers
-              </h3>
-              <p className="text-[11px] text-foodiz-gray leading-relaxed mb-4 px-1">
-                Faites découvrir vos meilleures offres aux clients de votre ville.
-              </p>
-              <button
-                onClick={() => navigate("/auth/signup?role=partner")}
-                className="w-full py-2.5 rounded-xl text-foodiz-black text-xs font-semibold mb-2 transition-all hover:shadow-lg hover:shadow-foodiz-gold/30"
-                style={{
-                  background: "linear-gradient(180deg, #E0B45C 0%, #D8A84F 100%)",
-                  boxShadow: "0 2px 10px rgba(216, 168, 79, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
-                }}
-              >
-                S'inscrire
-              </button>
-              <button
-                onClick={() => navigate("/auth/login?role=partner")}
-                className="w-full py-2.5 rounded-xl border border-foodiz-gold/50 text-foodiz-gold text-xs font-semibold hover:bg-foodiz-gold/5 transition-all"
-              >
-                Se connecter
-              </button>
-            </div>
-            {/* Image at bottom — partially visible */}
-            <div className="h-20 overflow-hidden bg-foodiz-black">
-              <img src="/images/auth-restaurant.jpg" alt="" className="w-full h-full object-cover" />
-            </div>
-          </div>
-
-          {/* Livreurs Card */}
-          <div className="relative rounded-2xl border border-foodiz-gold/30 overflow-hidden bg-foodiz-card flex flex-col">
-            <div className="p-4 pt-5 flex flex-col items-center text-center flex-1">
-              <div className="w-14 h-14 rounded-full border-2 border-foodiz-gold flex items-center justify-center mb-3"
-                style={{ boxShadow: "0 0 16px rgba(216, 168, 79, 0.25), inset 0 0 10px rgba(216, 168, 79, 0.08)" }}>
-                {/* Scooter SVG */}
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-foodiz-gold"
-                  style={{ filter: "drop-shadow(0 0 4px rgba(216, 168, 79, 0.5))" }}
-                >
-                  <circle cx="6" cy="17" r="3" />
-                  <circle cx="18" cy="17" r="3" />
-                  <path d="M6 17h7l2-5h-3l-1-3H8" />
-                  <path d="M15 12V6h4" />
-                </svg>
-              </div>
-              <h3
-                className="text-lg leading-tight mb-2 text-foodiz-cream"
-                style={{ fontFamily: "'Playfair Display', serif", fontWeight: 500 }}
-              >
-                Livreurs
-              </h3>
-              <p className="text-[11px] text-foodiz-gray leading-relaxed mb-4 px-1">
-                Rejoignez une expérience de livraison plus premium, plus claire, mieux pilotée.
-              </p>
-              <button
-                onClick={() => navigate("/auth/signup?role=courier")}
-                className="w-full py-2.5 rounded-xl text-foodiz-black text-xs font-semibold mb-2 transition-all hover:shadow-lg hover:shadow-foodiz-gold/30"
-                style={{
-                  background: "linear-gradient(180deg, #E0B45C 0%, #D8A84F 100%)",
-                  boxShadow: "0 2px 10px rgba(216, 168, 79, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
-                }}
-              >
-                S'inscrire
-              </button>
-              <button
-                onClick={() => navigate("/auth/login?role=courier")}
-                className="w-full py-2.5 rounded-xl border border-foodiz-gold/50 text-foodiz-gold text-xs font-semibold hover:bg-foodiz-gold/5 transition-all"
-              >
-                Se connecter
-              </button>
-            </div>
-            {/* Image at bottom — partially visible */}
-            <div className="h-20 overflow-hidden bg-foodiz-black">
-              <img src="/images/auth-courier.jpg" alt="" className="w-full h-full object-cover object-center" />
-            </div>
-          </div>
-        </div>
-
-        {/* Trust Badges Row */}
-        <div className="grid grid-cols-4 gap-2 mt-10">
-          {[
-            { icon: Award, label: "Qualité\nsélectionnée" },
-            { icon: MapPin, label: "Livraison\nrapide" },
-            { icon: ShieldCheck, label: "Paiement\nsécurisé" },
-            { icon: Headphones, label: "Support\ndisponible" },
-          ].map((badge) => (
-            <div key={badge.label} className="flex flex-col items-center text-center">
-              <div className="w-10 h-10 rounded-full border border-foodiz-gold/50 flex items-center justify-center mb-2"
-                style={{ boxShadow: "0 0 10px rgba(216, 168, 79, 0.15)" }}>
-                <badge.icon
-                  size={18}
-                  className="text-foodiz-gold"
-                  strokeWidth={1.5}
-                  style={{ filter: "drop-shadow(0 0 3px rgba(216, 168, 79, 0.4))" }}
-                />
-              </div>
-              <p className="text-[10px] text-foodiz-gray leading-tight whitespace-pre-line">
-                {badge.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 max-w-md mx-auto px-6 py-6 text-center">
-        <p className="text-[10px] text-foodiz-gray/40 tracking-widest">
-          © {new Date().getFullYear()} · FOODIZ
-        </p>
-      </footer>
-      </section>
     </div>
   );
 }
