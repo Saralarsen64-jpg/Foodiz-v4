@@ -128,8 +128,9 @@ export async function createOrder(data: OrderCreateData): Promise<string> {
       throw new Error('Erreur ajout articles');
     }
 
-    // 7. Ajouter les points au portefeuille du client
-    const pointsEarned = Math.floor(orderTotals.finalClientTotalCents / 100); // 1 point par euro
+    // 7. Ajouter les points provisionnés par la réserve fidélité.
+    // Règle Foodiz: 1 point = 1 centime, financé par loyalty_fund_cents.
+    const pointsEarned = orderTotals.loyaltyFundCents;
     const { data: wallet } = await supabase
       .from('client_wallets')
       .select('points_balance')

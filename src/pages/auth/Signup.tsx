@@ -57,6 +57,7 @@ export default function SignupPage() {
         id: authData.user.id,
         role: role,
         email: email,
+        full_name: `${firstName} ${lastName}`.trim(),
         first_name: firstName,
         last_name: lastName,
         phone: phone,
@@ -97,6 +98,22 @@ export default function SignupPage() {
 
         if (restaurantError) {
           console.warn('Avertissement restaurant:', restaurantError);
+        }
+
+        const { error: applicationError } = await supabase.from('partner_applications').insert({
+          user_id: authData.user.id,
+          business_name: `${firstName} ${lastName}`.trim(),
+          siret,
+          phone,
+          email,
+          address,
+          postal_code: postalCode,
+          city,
+          status: 'pending',
+        });
+
+        if (applicationError) {
+          console.warn('Avertissement candidature partenaire:', applicationError);
         }
       } else if (role === 'courier') {
         const { error: courierError } = await supabase.from('courier_applications').insert({

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, CheckCircle, MapPin, Loader, Info } from "lucide-react";
+import { ChevronLeft, CheckCircle, MapPin, Loader } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { createOrder, calculateDistance } from "../../lib/orders";
+import { calculateDistance } from "../../lib/orders";
 import { calculateFoodizOrder } from "../../lib/engines/foodizEconomicEngine";
 import toast from "react-hot-toast";
 
@@ -19,6 +19,10 @@ export default function CheckoutPage() {
   const [distanceKm, setDistanceKm] = useState(2.0);
   const [orderBreakdown, setOrderBreakdown] = useState<any>(null);
   const [restaurantData, setRestaurantData] = useState<any>(null);
+  const pointsReductionCents =
+    orderBreakdown && usePoints
+      ? Math.min(userPoints, orderBreakdown.finalClientTotalCents)
+      : 0;
 
   // Charger les données et calculer les montants
   useEffect(() => {
@@ -121,64 +125,37 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Utilisateur non trouvé");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Utilisateur non trouvé");
 
-      // Récupérer les vrais prix des produits
-      const productIds = items.map(item => item.id);
-      const { data: products } = await supabase
-        .from('products')
-        .select('id, partner_price_cents')
-        .in('id', productIds)
-        .eq('restaurant_id', establishmentId);
-
-      if (!products) throw new Error("Produits non trouvés");
-
-      // Créer les items pour la commande avec les vrais prix partenaire
-      const orderItems = items.map(item => {
-        const product = products.find(p => p.id === item.id);
-        return {
-          productId: item.id,
-          quantity: item.quantity,
-          partnerPriceCents: product?.partner_price_cents || Math.round(item.price * 100),
-        };
+      const response = await fetch("/.netlify/functions/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          restaurantId: establishmentId,
+          deliveryAddress,
+          usePoints,
+          items: items.map((item) => ({
+            productId: item.id,
+            quantity: item.quantity,
+          })),
+        }),
       });
 
-      // Créer la commande avec le modèle économique Foodiz
-      const orderId = await createOrder({
-        clientId: user.id,
-        restaurantId: establishmentId,
-        items: orderItems,
-        deliveryAddress: deliveryAddress,
-        distanceKm: distanceKm,
-        clientLatitude: (await supabase.from('profiles').select('latitude').eq('id', user.id).single()).data?.latitude,
-        clientLongitude: (await supabase.from('profiles').select('longitude').eq('id', user.id).single()).data?.longitude,
-        restaurantLatitude: restaurantData?.latitude,
-        restaurantLongitude: restaurantData?.longitude,
-      });
-
-      // Déduire les points si utilisés
-      if (usePoints && userPoints > 0) {
-        const pointsToUse = Math.min(userPoints, orderBreakdown.finalClientTotalCents);
-        const newBalance = Math.max(0, userPoints - pointsToUse);
-        await supabase
-          .from('client_wallets')
-          .update({ points_balance: newBalance })
-          .eq('user_id', user.id);
+      const checkout = await response.json();
+      if (!response.ok) {
+        throw new Error(checkout.error || "Impossible de créer le paiement");
       }
 
-      // Vider le panier
       clearCart();
-      
-      // Afficher le succès
-      setStep('success');
-      
-      // Redirection automatique après 3 secondes
-      setTimeout(() => navigate(`/client/orders/${orderId}`), 3000);
+      window.location.assign(checkout.url);
 
     } catch (err: any) {
       console.error("Erreur création commande:", err);
-      toast.error(err.message || "Erreur lors de la création de la commande");
+      toast.error(err.message || "Erreur lors de la création du paiement");
     } finally {
       setIsProcessing(false);
     }
@@ -273,7 +250,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between text-sm font-bold pt-2 border-t border-foodiz-gold/20">
                 <span className="text-foodiz-cream">TOTAL</span>
                 <span className="text-foodiz-gold">
-                  {((orderBreakdown.finalClientTotalCents - (usePoints ? Math.min(userPoints, orderBreakdown.finalClientTotalCents) : 0)) / 100).toFixed(2)}€
+                  {((orderBreakdown.finalClientTotalCents - pointsReductionCents) / 100).toFixed(2)}€
                 </span>
               </div>
             </div>
@@ -292,7 +269,7 @@ export default function CheckoutPage() {
             <div className="flex-1">
               <p className="text-xs text-foodiz-cream">Utiliser mes points ({userPoints} points)</p>
               <p className="text-[10px] text-foodiz-gray mt-1">
-                Réduction: {(pointsReductionCents / 100).toFixed(2)}€
+                Réduction disponible: {(pointsReductionCents / 100).toFixed(2)}€
               </p>
             </div>
           </div>
@@ -307,10 +284,10 @@ export default function CheckoutPage() {
           {isProcessing ? (
             <>
               <Loader size={18} className="animate-spin" />
-              Création en cours...
+              Paiement en cours...
             </>
           ) : orderBreakdown ? (
-            `Confirmer ma commande ${((orderBreakdown.finalClientTotalCents - (usePoints ? Math.min(userPoints, orderBreakdown.finalClientTotalCents) : 0)) / 100).toFixed(2)}€`
+            `Payer ma commande ${((orderBreakdown.finalClientTotalCents - pointsReductionCents) / 100).toFixed(2)}€`
           ) : (
             'Chargement...'
           )}

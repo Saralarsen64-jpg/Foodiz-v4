@@ -4,7 +4,7 @@ import { ChevronLeft, Trash2, ShoppingBag, ChevronRight } from "lucide-react";
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { items, subtotal, removeFromCart, clearCart } = useCart();
+  const { items, subtotal, removeItem, clearCart } = useCart();
 
   if (items.length === 0) {
     return (
@@ -44,7 +44,7 @@ export default function CartPage() {
             </div>
             <div className="text-right">
               <p className="text-foodiz-cream font-bold text-sm">{(item.price * item.quantity).toFixed(2)} €</p>
-              <button onClick={() => removeFromCart(item.id)} className="text-foodiz-gray hover:text-foodiz-red mt-1"><Trash2 size={16} /></button>
+              <button onClick={() => removeItem(item.id)} className="text-foodiz-gray hover:text-foodiz-red mt-1"><Trash2 size={16} /></button>
             </div>
           </div>
         ))}

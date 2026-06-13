@@ -34,28 +34,58 @@ const handler: Handler = async (event) => {
         const orderId = paymentIntent.metadata?.orderId;
 
         if (orderId) {
-          // Mettre à jour la commande comme payée
           await supabase
             .from("orders")
             .update({
               status: "preparing",
               payment_status: "completed",
+              stripe_payment_intent_id: paymentIntent.id,
             })
             .eq("id", orderId);
 
-          // Créer une notification
+          await supabase
+            .from("order_payments")
+            .update({ status: "succeeded", stripe_payment_intent_id: paymentIntent.id })
+            .eq("order_id", orderId);
+
           const { data: order } = await supabase
             .from("orders")
-            .select("client_id, restaurant_id")
+            .select("client_id, restaurant_id, loyalty_fund_cents, restaurants(owner_id)")
             .eq("id", orderId)
             .single();
 
           if (order) {
+            const ownerId = (order.restaurants as any)?.owner_id;
+            const pointsEarned = Math.max(0, order.loyalty_fund_cents || 0);
+
+            const { data: wallet } = await supabase
+              .from("client_wallets")
+              .select("points_balance")
+              .eq("user_id", order.client_id)
+              .single();
+
+            if (wallet) {
+              await supabase
+                .from("client_wallets")
+                .update({ points_balance: (wallet.points_balance || 0) + pointsEarned })
+                .eq("user_id", order.client_id);
+            }
+
+            if (ownerId) {
+              await supabase.from("notifications").insert({
+                user_id: ownerId,
+                title: "Paiement reçu",
+                message: `Commande #${orderId.slice(0, 8)} - Paiement confirmé`,
+                type: "payment",
+                related_order_id: orderId,
+              });
+            }
+
             await supabase.from("notifications").insert({
-              user_id: order.restaurant_id,
-              title: "Paiement reçu",
-              message: `Commande #${orderId.slice(0, 8)} - Paiement confirmé`,
-              type: "payment",
+              user_id: order.client_id,
+              title: "Commande confirmée",
+              message: `Votre commande #${orderId.slice(0, 8)} est en préparation. ${pointsEarned} point(s) Foodiz ont été ajoutés à votre compte.`,
+              type: "order",
               related_order_id: orderId,
             });
           }
@@ -68,7 +98,12 @@ const handler: Handler = async (event) => {
         const orderId = paymentIntent.metadata?.orderId;
 
         if (orderId) {
-          // Mettre à jour la commande comme échouée
+          const { data: order } = await supabase
+            .from("orders")
+            .select("client_id, points_redeemed_cents")
+            .eq("id", orderId)
+            .single();
+
           await supabase
             .from("orders")
             .update({
@@ -76,6 +111,26 @@ const handler: Handler = async (event) => {
               payment_status: "failed",
             })
             .eq("id", orderId);
+
+          await supabase
+            .from("order_payments")
+            .update({ status: "failed" })
+            .eq("order_id", orderId);
+
+          if (order?.points_redeemed_cents) {
+            const { data: wallet } = await supabase
+              .from("client_wallets")
+              .select("points_balance")
+              .eq("user_id", order.client_id)
+              .single();
+
+            if (wallet) {
+              await supabase
+                .from("client_wallets")
+                .update({ points_balance: (wallet.points_balance || 0) + order.points_redeemed_cents })
+                .eq("user_id", order.client_id);
+            }
+          }
         }
         break;
       }

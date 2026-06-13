@@ -69,6 +69,8 @@ import AdminDashboardPage from "./pages/admin/Dashboard";
 import AdminEconomics from "./pages/admin/Economics";
 import AdminPayouts from "./pages/admin/Payouts";
 import AdminSupportPage from "./pages/admin/Support";
+import AdminOrdersPage from "./pages/admin/Orders";
+import AdminBroadcastPage from "./pages/admin/Broadcast";
 import AdminSubscriptionsPage from "./pages/admin/Subscriptions";
 import AdminPartnerApplicationsPage from "./pages/admin/PartnerApplications";
 import AdminCourierApplicationsPage from "./pages/admin/CourierApplications";
@@ -89,10 +91,8 @@ export default function App() {
       <Route path="/admin/auth" element={<AdminAuth />} />
       <Route path="/admin-auth" element={<AdminAuth />} />
 
-      {/* ─── ROUTES PROTÉGÉES (Nécessite une connexion ET email confirmé) ── */}
-      <Route element={<ProtectedRoute />}>
-        
-        {/* CLIENT */}
+      {/* ─── ROUTES PROTÉGÉES PAR RÔLE ───────────────────────────────────── */}
+      <Route element={<ProtectedRoute allowedRoles={["client"]} />}>
         <Route element={<ClientLayout />}>
           <Route path="/client" element={<ClientHome />} />
           <Route path="/client/restaurants" element={<RestaurantsPage />} />
@@ -118,8 +118,9 @@ export default function App() {
           <Route path="/client/advantages" element={<AdvantagesPage />} />
           <Route path="/client/advantages/history" element={<AdvantagesPage />} />
         </Route>
+      </Route>
 
-        {/* PARTNER */}
+      <Route element={<ProtectedRoute allowedRoles={["partner"]} />}>
         <Route path="/partner" element={<PartnerDashboard />} />
         <Route path="/partner/orders/current" element={<PartnerOrdersCurrent />} />
         <Route path="/partner/orders/history" element={<PartnerOrdersHistory />} />
@@ -136,8 +137,9 @@ export default function App() {
         <Route path="/partner/products/new" element={<ProductEditPage />} />
         <Route path="/partner/products/:id/edit" element={<ProductEditPage />} />
         <Route path="/partner/settings" element={<PartnerSettings />} />
+      </Route>
 
-        {/* COURIER */}
+      <Route element={<ProtectedRoute allowedRoles={["courier"]} />}>
         <Route path="/courier" element={<CourierDashboard />} />
         <Route path="/courier/deliveries/available" element={<DeliveriesAvailable />} />
         <Route path="/courier/deliveries/current" element={<DeliveryCurrent />} />
@@ -150,9 +152,12 @@ export default function App() {
         <Route path="/courier/help-center" element={<CourierHelpCenterPage />} />
         <Route path="/courier/onboarding" element={<CourierOnboardingPage />} />
         <Route path="/courier/validation-status" element={<CourierValidationStatusPage />} />
+      </Route>
 
-        {/* ADMIN */}
+      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
         <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/orders" element={<AdminOrdersPage />} />
+        <Route path="/admin/broadcast" element={<AdminBroadcastPage />} />
         <Route path="/admin/economics" element={<AdminEconomics />} />
         <Route path="/admin/payouts" element={<AdminPayouts />} />
         <Route path="/admin/support" element={<AdminSupportPage />} />
@@ -161,7 +166,6 @@ export default function App() {
         <Route path="/admin/courier-applications" element={<AdminCourierApplicationsPage />} />
         <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
         <Route path="/admin/referrals" element={<AdminReferralsPage />} />
-      
       </Route>
 
       {/* ─── Catch all ───────────────────────────────────────────── */}

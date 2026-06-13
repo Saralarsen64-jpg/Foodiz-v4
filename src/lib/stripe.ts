@@ -46,9 +46,14 @@ export async function createPaymentIntent(
  */
 export async function confirmPayment(stripe: Stripe, clientSecret: string) {
   try {
+    const cardElement = stripe.elements().getElement("card");
+    if (!cardElement) {
+      throw new Error("Le formulaire de carte bancaire n'est pas initialisé.");
+    }
+
     const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
-        card: await stripe.elements().getElement("card"),
+        card: cardElement,
         billing_details: {
           email: (await supabase.auth.getUser()).data.user?.email,
         },

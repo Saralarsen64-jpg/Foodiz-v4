@@ -98,7 +98,7 @@ export default function AdvantagesPage() {
           <div className="relative z-10">
             <p className="text-foodiz-gold text-xs uppercase tracking-widest font-bold mb-2">Mon Solde Foodiz</p>
             {loading ? <div className="text-4xl font-serif italic text-foodiz-cream animate-pulse">...</div> : <div className="text-5xl font-serif italic text-foodiz-cream mb-2">{points.toLocaleString('fr-FR')}</div>}
-            <p className="text-foodiz-gray text-sm">points fidélité</p>
+            <p className="text-foodiz-gray text-sm">points fidélité disponibles</p>
             <div className={`mt-4 text-sm font-bold flex items-center justify-center gap-2 ${currentTier.color}`}>
               <currentTier.icon size={16} /> Statut {currentTier.name}
             </div>

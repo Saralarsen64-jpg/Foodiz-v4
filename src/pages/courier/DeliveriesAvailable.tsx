@@ -12,7 +12,7 @@ export default function DeliveriesAvailable() {
     const fetchDeliveries = async () => {
       const { data } = await supabase
         .from('orders')
-        .select('*, restaurants(name, address)')
+        .select('*, restaurants(name, address), order_items(quantity)')
         .eq('status', 'ready')
         .is('courier_id', null)
         .order('created_at', { ascending: false });
@@ -35,7 +35,7 @@ export default function DeliveriesAvailable() {
   const handleAccept = async (orderId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from('orders').update({ status: 'picked_up', courier_id: user.id }).eq('id', orderId);
+      await supabase.from('orders').update({ status: 'pickup', courier_id: user.id }).eq('id', orderId);
       navigate(`/courier/deliveries/${orderId}/tracking`);
     }
   };
@@ -65,10 +65,12 @@ export default function DeliveriesAvailable() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-serif italic text-foodiz-cream">{job.restaurants?.name || "Restaurant"}</h3>
-                  <p className="text-xs text-foodiz-gray mt-1 flex items-center gap-1"><MapPin size={12} /> {job.address}</p>
+                  <p className="text-xs text-foodiz-gray mt-1 flex items-center gap-1"><MapPin size={12} /> {job.restaurants?.address || job.delivery_address}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-foodiz-green font-bold text-xl block">+4.50 €</span>
+                  <span className="text-foodiz-green font-bold text-xl block">
+                    +{(((job.courier_earnings_cents || 0) + (job.courier_prime_fund_cents || 0) + (job.delivery_fee_cents || 0)) / 100).toFixed(2)} €
+                  </span>
                   <span className="text-[10px] text-foodiz-gray">Frais de course</span>
                 </div>
               </div>

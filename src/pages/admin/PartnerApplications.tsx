@@ -38,7 +38,7 @@ export default function AdminPartnerApplicationsPage() {
     await supabase.from("partner_applications").update({ status }).eq("id", item.id);
     await supabase.from("profiles").update({ status }).eq("id", item.user_id);
     if (status === "validated") {
-      await supabase.from("restaurants").update({ status: "active" }).eq("owner_id", item.user_id);
+      await supabase.from("restaurants").update({ status: "active", is_active: true }).eq("owner_id", item.user_id);
     }
     await loadItems();
   };

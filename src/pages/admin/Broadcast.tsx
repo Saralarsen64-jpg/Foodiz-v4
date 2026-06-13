@@ -24,8 +24,7 @@ export default function AdminBroadcast() {
         user_id: client.id,
         title: title,
         message: message,
-        type: 'marketing',
-        link: '/client/advantages',
+        type: 'info',
         is_read: false
       }));
 
@@ -33,7 +32,13 @@ export default function AdminBroadcast() {
       
       // 3. Enregistrer dans l'historique admin
       await supabase.from('admin_broadcasts').insert({
-        title, message, sent_by: user.id
+        admin_id: user.id,
+        title,
+        message,
+        target_roles: ['client'],
+        is_sent: true,
+        sent_at: new Date().toISOString(),
+        recipients_count: clients.length,
       });
     }
     
