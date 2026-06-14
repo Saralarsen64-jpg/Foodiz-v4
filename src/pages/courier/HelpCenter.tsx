@@ -1,4 +1,5 @@
-import { KeyRound, MapPinCheck, PackageCheck, Store, LifeBuoy } from "lucide-react";
+import { KeyRound, MapPinCheck, PackageCheck, Store, LifeBuoy, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import CourierShell from "../../components/CourierShell";
 
 const topics = [
@@ -9,8 +10,10 @@ const topics = [
 ];
 
 export default function CourierHelpCenter() {
+  const navigate = useNavigate();
   return <CourierShell title="Centre d'aide" back="/courier">
     <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.16),rgba(13,13,13,0.98)_50%)] p-6 text-center"><LifeBuoy size={30} className="mx-auto text-foodiz-gold" /><h2 className="foodiz-title mt-3 text-2xl">Les bons réflexes</h2><p className="mt-2 text-sm text-foodiz-gray">Un parcours simple pour une livraison fluide et rassurante.</p></section>
     <div className="mt-4 space-y-3">{topics.map((topic) => <article key={topic.title} className="foodiz-card flex gap-4 p-5"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"><topic.icon size={20} /></div><div><h3 className="font-semibold text-foodiz-cream">{topic.title}</h3><p className="mt-1 text-xs leading-relaxed text-foodiz-gray">{topic.text}</p></div></article>)}</div>
+    <button onClick={() => navigate("/courier/support")} className="foodiz-btn mt-4 flex w-full items-center justify-center gap-2 py-4">Analyser un problème<ArrowRight size={17}/></button>
   </CourierShell>;
 }
