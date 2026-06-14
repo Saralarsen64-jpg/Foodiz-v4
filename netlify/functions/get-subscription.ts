@@ -1,5 +1,6 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
+import { adminSupabase, authenticatedUser } from "./_lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
@@ -9,6 +10,11 @@ const handler: Handler = async (event) => {
   }
 
   try {
+    const user = await authenticatedUser(event.headers);
+    if (!user) {
+      return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    }
+
     const { id } = event.queryStringParameters || {};
 
     if (!id) {
@@ -16,6 +22,16 @@ const handler: Handler = async (event) => {
         statusCode: 400,
         body: JSON.stringify({ error: "Missing subscription ID" }),
       };
+    }
+
+    const { data: storedSubscription } = await adminSupabase
+      .from("partner_subscriptions")
+      .select("restaurants(owner_id)")
+      .eq("stripe_subscription_id", id)
+      .single();
+
+    if (!storedSubscription || (storedSubscription.restaurants as any)?.owner_id !== user.id) {
+      return { statusCode: 404, body: JSON.stringify({ error: "Subscription not found" }) };
     }
 
     // Récupérer la souscription

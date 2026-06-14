@@ -1,21 +1,35 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Users, Crown, TrendingUp, Star } from "lucide-react";
-
-const TOP_CUSTOMERS = [
-  { name: "Alexandre M.", orders: 18, avgBasket: 29.4, score: "Elite", retention: "Très fidèle" },
-  { name: "Marie L.", orders: 15, avgBasket: 24.1, score: "Gold", retention: "Récurrente" },
-  { name: "Julien P.", orders: 13, avgBasket: 26.8, score: "Gold", retention: "Récurrent" },
-  { name: "Sophie R.", orders: 12, avgBasket: 21.5, score: "Gold", retention: "Récurrente" },
-  { name: "Nora B.", orders: 10, avgBasket: 34.2, score: "Premium", retention: "Panier élevé" },
-  { name: "Karim D.", orders: 9, avgBasket: 19.6, score: "Silver", retention: "Stable" },
-  { name: "Lina K.", orders: 8, avgBasket: 22.8, score: "Silver", retention: "Stable" },
-  { name: "Yanis F.", orders: 8, avgBasket: 17.9, score: "Silver", retention: "Stable" },
-  { name: "Chloé T.", orders: 7, avgBasket: 31.0, score: "Premium", retention: "Panier élevé" },
-  { name: "Marc V.", orders: 6, avgBasket: 18.2, score: "Silver", retention: "Occasionnel" },
-];
+import { supabase } from "../../lib/supabase";
 
 export default function PartnerCustomers() {
   const navigate = useNavigate();
+  const [customers, setCustomers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
+      if (!restaurant) return;
+      const { data } = await supabase.from("orders").select("client_id, final_client_total_cents, client:profiles!orders_client_id_fkey(full_name, first_name, last_name)").eq("restaurant_id", restaurant.id).eq("status", "delivered");
+      const grouped = (data || []).reduce<Record<string, any>>((acc, order: any) => {
+        const current = acc[order.client_id] || { name: order.client?.full_name || [order.client?.first_name, order.client?.last_name].filter(Boolean).join(" ") || "Client", orders: 0, total: 0 };
+        current.orders += 1;
+        current.total += order.final_client_total_cents / 100;
+        acc[order.client_id] = current;
+        return acc;
+      }, {});
+      setCustomers(Object.values(grouped).map((customer: any) => ({
+        ...customer,
+        avgBasket: customer.total / customer.orders,
+        score: customer.orders >= 15 ? "Elite" : customer.orders >= 8 ? "Gold" : customer.orders >= 3 ? "Silver" : "Nouveau",
+        retention: customer.orders >= 10 ? "Très fidèle" : customer.orders >= 4 ? "Récurrent" : "Occasionnel",
+      })).sort((a, b) => b.orders - a.orders).slice(0, 10));
+    };
+    load();
+  }, []);
 
   return (
     <div className="min-h-screen bg-foodiz-black pb-24">
@@ -40,7 +54,8 @@ export default function PartnerCustomers() {
         </div>
 
         <div className="space-y-3">
-          {TOP_CUSTOMERS.map((customer, index) => (
+          {customers.length === 0 && <div className="foodiz-card p-4 text-sm text-foodiz-gray">Aucun client livré pour le moment.</div>}
+          {customers.map((customer, index) => (
             <div key={customer.name} className="foodiz-card p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-foodiz-gold/10 border border-foodiz-gold/15 flex items-center justify-center text-foodiz-gold font-bold shrink-0">
                 {index + 1}

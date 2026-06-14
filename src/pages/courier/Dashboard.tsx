@@ -1,142 +1,54 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Navigation, Wallet, LogOut, Menu, CheckCircle } from "lucide-react";
+import { ArrowUpRight, Bike, CheckCircle2, Clock3, MapPinned, Navigation, Power, Sparkles, WalletCards } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import GoldIcon from "../../components/GoldIcon";
-import Logo from "../../components/Logo";
+import CourierShell from "../../components/CourierShell";
 
 export default function CourierDashboard() {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [courierName, setCourierName] = useState("Livreur");
-  const [isOnline, setIsOnline] = useState(true);
-  const [completedDeliveries, setCompletedDeliveries] = useState(0);
-  const [dailyEarnings, setDailyEarnings] = useState("0,00");
+  const [name, setName] = useState("Livreur");
+  const [online, setOnline] = useState(false);
+  const [todayDeliveries, setTodayDeliveries] = useState(0);
+  const [todayEarnings, setTodayEarnings] = useState(0);
+  const [available, setAvailable] = useState(0);
+  const [activeOrder, setActiveOrder] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
-        if (profileData) setCourierName(profileData.full_name || "Livreur");
-
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('courier_earnings_cents, courier_prime_fund_cents')
-          .eq('courier_id', user.id)
-          .eq('status', 'delivered');
-
-        let totalCents = 0;
-        if (orders) {
-          orders.forEach(order => {
-            totalCents += (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0);
-          });
-        }
-
-        setCompletedDeliveries(orders ? orders.length : 0);
-        setDailyEarnings((totalCents / 100).toFixed(2).replace(".", ","));
-      }
-    };
-    fetchData();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+  const load = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const [{ data: profile }, { data: delivered }, { count }, { data: active }] = await Promise.all([
+      supabase.from("profiles").select("full_name, courier_online").eq("id", user.id).single(),
+      supabase.from("orders").select("courier_earnings_cents, courier_prime_fund_cents").eq("courier_id", user.id).eq("status", "delivered").gte("delivered_at", today.toISOString()),
+      supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "ready").is("courier_id", null),
+      supabase.from("orders").select("id, status, delivery_address, restaurant:restaurants(name)").eq("courier_id", user.id).in("status", ["pickup", "picked_up", "delivering"]).limit(1).maybeSingle(),
+    ]);
+    setName(profile?.full_name?.split(" ")[0] || "Livreur"); setOnline(Boolean(profile?.courier_online));
+    setTodayDeliveries(delivered?.length || 0); setTodayEarnings((delivered || []).reduce((sum, order) => sum + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0), 0) / 100);
+    setAvailable(count || 0); setActiveOrder(active);
   };
 
-  const sidebarItems = [
-    { label: "Dashboard", icon: TrendingUp, path: "/courier" },
-    { label: "Courses disponibles", icon: Navigation, path: "/courier/deliveries/available" },
-    { label: "Paramètres & IBAN", icon: Wallet, path: "/courier/settings" },
-  ];
+  useEffect(() => { load(); const channel = supabase.channel("courier-dashboard").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, load).subscribe(); return () => { supabase.removeChannel(channel); }; }, []);
 
-  return (
-    <div className="min-h-screen bg-foodiz-black pb-24 relative border-x-2 border-foodiz-gold/20">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+  const toggleOnline = async () => { const next = !online; const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { error } = await supabase.from("profiles").update({ courier_online: next }).eq("id", user.id); if (!error) setOnline(next); };
 
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-foodiz-gold">
-            <Menu size={22} />
-          </button>
-          <Logo size="md" />
-          <div className="w-6" />
-        </div>
-      </header>
+  return <CourierShell>
+    <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.18),rgba(17,17,17,0.97)_38%,rgba(5,5,5,1))] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.55)]">
+      <div className="flex justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold flex items-center gap-2"><Sparkles size={12} /> Bonjour {name}</p><h1 className="foodiz-title text-3xl mt-3">Prêt pour la route ?</h1><p className="text-foodiz-gray text-sm mt-2">Votre journée, vos courses, votre rythme.</p></div><button onClick={toggleOnline} className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all ${online ? "bg-foodiz-green text-white border-foodiz-green shadow-[0_0_35px_rgba(63,167,109,0.3)]" : "bg-white/5 text-foodiz-gray border-white/10"}`}><Power size={22} /></button></div>
+      <div className="mt-6 flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${online ? "bg-foodiz-green animate-pulse" : "bg-foodiz-gray"}`} /><span className="text-xs text-foodiz-cream">{online ? "En ligne, visible pour les nouvelles courses" : "Hors ligne"}</span></div>
+    </section>
 
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 flex">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
-          <div className="relative w-64 bg-foodiz-card border-r border-foodiz-gold/10 p-6">
-            <Logo size="md" className="mb-8" />
-            <nav className="space-y-2">
-              {sidebarItems.map((item) => (
-                <button key={item.label} onClick={() => { navigate(item.path); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-gray hover:text-foodiz-cream hover:bg-foodiz-gold/5 transition-all">
-                  <GoldIcon icon={item.icon} size={18} /> {item.label}
-                </button>
-              ))}
-              <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-red hover:bg-foodiz-red/5 transition-all mt-8">
-                <LogOut size={18} /> Déconnexion
-              </button>
-            </nav>
-          </div>
-        </div>
-      )}
+    {activeOrder && <button onClick={() => navigate(`/courier/deliveries/${activeOrder.id}/tracking`)} className="w-full mt-4 rounded-[1.6rem] border border-foodiz-green/25 bg-foodiz-green/[0.08] p-5 text-left flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-foodiz-green/15 flex items-center justify-center"><Navigation size={20} className="text-foodiz-green" /></div><div className="flex-1"><p className="text-[10px] uppercase tracking-widest text-foodiz-green">Course active</p><p className="text-foodiz-cream font-semibold mt-1">{activeOrder.restaurant?.name || "Restaurant"}</p><p className="text-xs text-foodiz-gray mt-1 truncate">{activeOrder.delivery_address}</p></div><ArrowUpRight size={18} className="text-foodiz-green" /></button>}
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="foodiz-title text-2xl mb-1">Bonjour, {courierName}</h1>
-            <p className="text-foodiz-gray text-sm">Prêt à rouler ?</p>
-          </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm bg-foodiz-card px-3 py-2 rounded-xl border border-foodiz-gold/10">
-            <LogOut size={14} />
-          </button>
-        </div>
+    <section className="grid grid-cols-2 gap-3 mt-4">
+      <div className="foodiz-card p-5 bg-white/[0.025]"><WalletCards size={18} className="text-foodiz-green" /><p className="text-2xl font-serif italic text-foodiz-green mt-4">{todayEarnings.toFixed(2)} €</p><p className="text-[10px] uppercase tracking-widest text-foodiz-gray mt-1">Gains aujourd'hui</p></div>
+      <div className="foodiz-card p-5 bg-white/[0.025]"><CheckCircle2 size={18} className="text-foodiz-gold" /><p className="text-2xl font-serif italic text-foodiz-cream mt-4">{todayDeliveries}</p><p className="text-[10px] uppercase tracking-widest text-foodiz-gray mt-1">Courses terminées</p></div>
+    </section>
 
-        {/* Online Toggle */}
-        <div className="foodiz-card p-6 flex items-center justify-between bg-gradient-to-r from-foodiz-gold/10 to-foodiz-card border-foodiz-gold/20">
-          <div>
-            <h3 className="text-foodiz-cream font-bold">Statut : {isOnline ? "En ligne" : "Hors ligne"}</h3>
-            <p className="text-xs text-foodiz-gray mt-1">{isOnline ? "Vous recevez des courses..." : "Reposez-vous bien !"}</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" checked={isOnline} onChange={(e) => setIsOnline(e.target.checked)} className="sr-only peer" />
-            <div className="w-11 h-6 bg-foodiz-black peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-foodiz-gray after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-foodiz-green"></div>
-          </label>
-        </div>
+    <button disabled={!online} onClick={() => navigate("/courier/deliveries/available")} className="w-full mt-4 rounded-[1.6rem] bg-foodiz-gold text-foodiz-black p-5 flex items-center gap-4 disabled:opacity-40"><div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center"><MapPinned size={22} /></div><div className="flex-1 text-left"><p className="font-bold">{available} course{available > 1 ? "s" : ""} disponible{available > 1 ? "s" : ""}</p><p className="text-xs text-black/65 mt-1">Voir les missions autour de vous</p></div><ArrowUpRight size={20} /></button>
 
-        {/* VRAIES Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="foodiz-card p-5 bg-[#0A0A0A] border-foodiz-gold/10">
-            <p className="text-[10px] text-foodiz-gray uppercase font-bold">Gains du jour</p>
-            <p className="text-2xl font-serif italic text-foodiz-green mt-1">{dailyEarnings} €</p>
-          </div>
-          <div className="foodiz-card p-5 bg-[#0A0A0A] border-foodiz-gold/10">
-            <p className="text-[10px] text-foodiz-gray uppercase font-bold">Courses terminées</p>
-            <p className="text-2xl font-serif italic text-foodiz-cream mt-1">{completedDeliveries}</p>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <button onClick={() => navigate("/courier/deliveries/available")} className="w-full foodiz-btn py-4 text-lg flex items-center justify-center gap-2">
-          <Navigation size={20} /> Voir les courses disponibles
-        </button>
-        
-        {/* Rappel IBAN si gains > 0 */}
-        {parseFloat(dailyEarnings.replace(",", ".")) > 0 && (
-          <div className="foodiz-card p-4 bg-foodiz-green/5 border border-foodiz-green/20 flex items-start gap-3">
-            <CheckCircle size={20} className="text-foodiz-green shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-foodiz-green font-bold">Gains en attente de virement</p>
-              <p className="text-xs text-foodiz-gray mt-1">Assure-toi d'avoir renseigné ton IBAN dans les paramètres pour recevoir tes {dailyEarnings} €.</p>
-              <button onClick={() => navigate("/courier/settings")} className="text-xs text-foodiz-gold mt-2 underline">Aller aux paramètres</button>
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
-  );
+    <section className="grid grid-cols-3 gap-3 mt-4">
+      {[{ label: "Historique", icon: Clock3, path: "/courier/deliveries/history" }, { label: "Mes gains", icon: WalletCards, path: "/courier/revenues" }, { label: "Mon profil", icon: Bike, path: "/courier/profile" }].map((item) => <button key={item.path} onClick={() => navigate(item.path)} className="foodiz-card p-4 flex flex-col items-center gap-2 text-foodiz-gray hover:text-foodiz-gold"><item.icon size={19} /><span className="text-[10px]">{item.label}</span></button>)}
+    </section>
+  </CourierShell>;
 }

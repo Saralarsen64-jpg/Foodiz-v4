@@ -43,7 +43,11 @@ export default function RestaurantsPage() {
               }
               return true; // Si le resto n'a pas de GPS, on l'affiche par sécurité (à retirer en prod stricte)
             });
-            setRestaurants(filtered);
+            const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant: any) => restaurant.id));
+            setRestaurants(filtered.map((restaurant: any) => {
+              const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === restaurant.id).map((review: any) => review.restaurant_rating).filter(Boolean);
+              return { ...restaurant, rating: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau" };
+            }));
           }
         }
       }
@@ -90,8 +94,8 @@ export default function RestaurantsPage() {
                   <h3 className="foodiz-title text-base">{r.name}</h3>
                   <p className="text-foodiz-gray text-xs mt-1">{r.cuisine_type || "Gastronomie"}</p>
                   <div className="flex items-center gap-3 mt-2 text-foodiz-gray text-xs">
-                    <span className="flex items-center gap-1"><GoldIcon icon={Star} size={12} /> 4.8</span>
-                    <span className="flex items-center gap-1"><GoldIcon icon={Clock} size={12} /> 20-30 min</span>
+                    <span className="flex items-center gap-1"><GoldIcon icon={Star} size={12} /> {r.rating}</span>
+                    <span className="flex items-center gap-1"><GoldIcon icon={Clock} size={12} /> Délai à confirmer</span>
                   </div>
                 </div>
               </button>

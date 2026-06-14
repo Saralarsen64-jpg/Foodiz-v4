@@ -1,39 +1,77 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Megaphone, Plus, History, Send, CheckCircle2 } from "lucide-react";
-import { loadCampaigns, sendPartnerCampaign, type PartnerCampaign } from "../../utils/marketingStore";
-import { loadPartnerProfile } from "../../utils/partnerStore";
+import { supabase } from "../../lib/supabase";
+
+type PartnerCampaign = { id: string; title: string; message: string; status: string; sentAt: string };
 
 export default function PartnerMarketing() {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<PartnerCampaign[]>([]);
-  const profile = useMemo(() => loadPartnerProfile(), []);
-  const [title, setTitle] = useState(`Nouveauté chez ${profile.name}`);
+  const [restaurant, setRestaurant] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [title, setTitle] = useState("Nouvelle offre Foodiz");
   const [message, setMessage] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState(profile.products[0]?.id || "");
+  const [selectedProductId, setSelectedProductId] = useState("");
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    setCampaigns(loadCampaigns());
-    if (!message) {
-      const defaultProduct = profile.products.find((p) => p.id === selectedProductId) || profile.products[0];
-      setMessage(defaultProduct ? `${defaultProduct.name} vous attend près de chez vous.` : `${profile.name} prépare quelque chose de gourmand pour ce soir.`);
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: restaurantData } = await supabase.from("restaurants").select("id, name").eq("owner_id", user.id).single();
+      if (!restaurantData) return;
+      setRestaurant(restaurantData);
+      setTitle(`Nouveauté chez ${restaurantData.name}`);
+      const [{ data: productData }, { data: campaignData }] = await Promise.all([
+        supabase.from("products").select("id, name").eq("restaurant_id", restaurantData.id).eq("is_active", true),
+        supabase.from("marketing_campaigns").select("id, title, description, is_active, created_at").eq("restaurant_id", restaurantData.id).order("created_at", { ascending: false }),
+      ]);
+      setProducts(productData || []);
+      if (productData?.[0]) {
+        setSelectedProductId(productData[0].id);
+        setMessage(`${productData[0].name} vous attend près de chez vous.`);
+      }
+      setCampaigns((campaignData || []).map((campaign: any) => ({ id: campaign.id, title: campaign.title, message: campaign.description || "", status: campaign.is_active ? "envoyée" : "terminée", sentAt: new Date(campaign.created_at).toLocaleString("fr-FR") })));
+    };
+    load();
+  }, []);
+
+  const selectedProduct = products.find((p) => p.id === selectedProductId);
+
+  const handleSendCampaign = async () => {
+    if (!restaurant || !title.trim() || !message.trim()) return;
+    setSending(true);
+    const now = new Date();
+    const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const { data: campaign, error } = await supabase.from("marketing_campaigns").insert({
+      restaurant_id: restaurant.id,
+      title: title.trim(),
+      description: message.trim(),
+      start_date: now.toISOString(),
+      end_date: end.toISOString(),
+      is_active: true,
+    }).select("id, title, description, created_at").single();
+    if (error || !campaign) {
+      setSending(false);
+      return;
     }
-  }, [profile, selectedProductId, message]);
 
-  const selectedProduct = profile.products.find((p) => p.id === selectedProductId);
-
-  const handleSendCampaign = () => {
-    const campaign = sendPartnerCampaign({
-      partnerId: profile.establishmentId,
-      establishmentId: profile.establishmentId,
-      establishmentName: profile.name,
-      title,
-      message,
-      productIds: selectedProductId ? [selectedProductId] : [],
-    });
-    setCampaigns((prev) => [campaign, ...prev]);
+    const { data: orders } = await supabase.from("orders").select("client_id").eq("restaurant_id", restaurant.id).eq("status", "delivered");
+    const clientIds = [...new Set((orders || []).map((order: any) => order.client_id))];
+    if (clientIds.length) {
+      await supabase.from("notifications").insert(clientIds.map((clientId) => ({
+        user_id: clientId,
+        title: campaign.title,
+        message: campaign.description,
+        type: "marketing",
+        link: `/client/establishments/${restaurant.id}`,
+      })));
+    }
+    setCampaigns((prev) => [{ id: campaign.id, title: campaign.title, message: campaign.description || "", status: "envoyée", sentAt: new Date(campaign.created_at).toLocaleString("fr-FR") }, ...prev]);
     setSent(true);
+    setSending(false);
     window.setTimeout(() => setSent(false), 1600);
   };
 
@@ -70,7 +108,7 @@ export default function PartnerMarketing() {
                 onChange={(e) => setSelectedProductId(e.target.value)}
                 className="w-full mt-2 bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-sm text-foodiz-cream outline-none"
               >
-                {profile.products.map((product) => (
+                {products.map((product) => (
                   <option key={product.id} value={product.id} className="bg-foodiz-card">
                     {product.name}
                   </option>
@@ -109,8 +147,8 @@ export default function PartnerMarketing() {
             </div>
 
             <div className="flex gap-3 flex-wrap">
-              <button onClick={handleSendCampaign} className="foodiz-btn !py-3 !px-4 text-xs flex items-center gap-2">
-                <Send size={14} /> Envoyer cette campagne
+              <button disabled={sending} onClick={handleSendCampaign} className="foodiz-btn !py-3 !px-4 text-xs flex items-center gap-2 disabled:opacity-50">
+                <Send size={14} /> {sending ? "Envoi..." : "Envoyer cette campagne"}
               </button>
               <button onClick={() => navigate("/partner/products/new")} className="foodiz-btn-outline !py-3 !px-4 text-xs flex items-center gap-2">
                 <Plus size={14} /> Créer un nouveau produit à pousser

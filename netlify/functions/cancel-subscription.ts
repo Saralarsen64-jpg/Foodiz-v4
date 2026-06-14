@@ -1,12 +1,8 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { adminSupabase, authenticatedUser } from "./_lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -14,6 +10,11 @@ const handler: Handler = async (event) => {
   }
 
   try {
+    const user = await authenticatedUser(event.headers);
+    if (!user) {
+      return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    }
+
     const { subscriptionId } = JSON.parse(event.body || "{}");
 
     if (!subscriptionId) {
@@ -23,11 +24,21 @@ const handler: Handler = async (event) => {
       };
     }
 
+    const { data: storedSubscription } = await adminSupabase
+      .from("partner_subscriptions")
+      .select("restaurant_id, restaurants(owner_id)")
+      .eq("stripe_subscription_id", subscriptionId)
+      .single();
+
+    if (!storedSubscription || (storedSubscription.restaurants as any)?.owner_id !== user.id) {
+      return { statusCode: 404, body: JSON.stringify({ error: "Subscription not found" }) };
+    }
+
     // Annuler la souscription
-    const canceledSubscription = await stripe.subscriptions.del(subscriptionId);
+    const canceledSubscription = await stripe.subscriptions.cancel(subscriptionId);
 
     // Mettre à jour dans Supabase
-    await supabase
+    await adminSupabase
       .from("partner_subscriptions")
       .update({ status: "canceled", canceled_at: new Date() })
       .eq("stripe_subscription_id", subscriptionId);

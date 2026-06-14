@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email text,
   first_name text,
   last_name text,
+  full_name text,
   phone text,
   address text,
   postal_code text,
@@ -16,6 +17,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   latitude numeric,
   longitude numeric,
   avatar_url text,
+  status text DEFAULT 'active',
+  ref_code text,
+  referral_count integer DEFAULT 0,
   cgu_accepted boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
@@ -162,24 +166,26 @@ CREATE TABLE IF NOT EXISTS reviews (
 -- INDEXES FOR PERFORMANCE
 -- ============================================================
 
-CREATE INDEX idx_profiles_role ON profiles(role);
-CREATE INDEX idx_profiles_ref_code ON profiles(ref_code);
-CREATE INDEX idx_restaurants_owner ON restaurants(owner_id);
-CREATE INDEX idx_restaurants_status ON restaurants(status);
-CREATE INDEX idx_products_restaurant ON products(restaurant_id);
-CREATE INDEX idx_orders_client ON orders(client_id);
-CREATE INDEX idx_orders_restaurant ON orders(restaurant_id);
-CREATE INDEX idx_orders_courier ON orders(courier_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_created ON orders(created_at DESC);
-CREATE INDEX idx_order_items_order ON order_items(order_id);
-CREATE INDEX idx_client_wallets_user ON client_wallets(user_id);
-CREATE INDEX idx_courier_apps_user ON courier_applications(user_id);
-CREATE INDEX idx_support_tickets_user ON support_tickets(user_id);
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(user_id, is_read);
-CREATE INDEX idx_reviews_order ON reviews(order_id);
-CREATE INDEX idx_reviews_client ON reviews(client_id);
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS ref_code text;
+
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_ref_code ON profiles(ref_code);
+CREATE INDEX IF NOT EXISTS idx_restaurants_owner ON restaurants(owner_id);
+CREATE INDEX IF NOT EXISTS idx_restaurants_status ON restaurants(status);
+CREATE INDEX IF NOT EXISTS idx_products_restaurant ON products(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_orders_client ON orders(client_id);
+CREATE INDEX IF NOT EXISTS idx_orders_restaurant ON orders(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_orders_courier ON orders(courier_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_client_wallets_user ON client_wallets(user_id);
+CREATE INDEX IF NOT EXISTS idx_courier_apps_user ON courier_applications(user_id);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_user ON support_tickets(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_reviews_order ON reviews(order_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_client ON reviews(client_id);
 
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS) - BASIC POLICIES
@@ -198,13 +204,16 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Users can view their own, public can view some fields
+DROP POLICY IF EXISTS "Profiles are viewable by user" ON profiles;
 CREATE POLICY "Profiles are viewable by user" ON profiles FOR SELECT
   USING (auth.uid() = id OR role != 'admin');
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
 -- Orders: Clients can view their own, couriers can view assigned, admins all
+DROP POLICY IF EXISTS "Orders viewable by involved parties" ON orders;
 CREATE POLICY "Orders viewable by involved parties" ON orders FOR SELECT
   USING (
     auth.uid() = client_id 
@@ -214,10 +223,12 @@ CREATE POLICY "Orders viewable by involved parties" ON orders FOR SELECT
   );
 
 -- Restaurants: Anyone can view active, owners can view/edit their own
+DROP POLICY IF EXISTS "Active restaurants viewable by all" ON restaurants;
 CREATE POLICY "Active restaurants viewable by all" ON restaurants FOR SELECT
   USING (is_active = true OR auth.uid() = owner_id);
 
 -- Products: Anyone can view from active restaurants
+DROP POLICY IF EXISTS "Products viewable from active restaurants" ON products;
 CREATE POLICY "Products viewable from active restaurants" ON products FOR SELECT
   USING (
     (SELECT is_active FROM restaurants WHERE id = restaurant_id) = true

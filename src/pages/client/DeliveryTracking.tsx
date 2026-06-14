@@ -42,6 +42,7 @@ export default function DeliveryTrackingPage() {
   const [courier, setCourier] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
+  const [deliveryCode, setDeliveryCode] = useState("");
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -101,6 +102,13 @@ export default function DeliveryTrackingPage() {
           .single();
 
         setClient(clientData);
+
+        const { data: codeData } = await supabase
+          .from("client_delivery_codes")
+          .select("code")
+          .eq("order_id", orderId)
+          .maybeSingle();
+        setDeliveryCode(codeData?.code || "");
 
         setLoading(false);
       } catch (err) {
@@ -226,6 +234,13 @@ export default function DeliveryTrackingPage() {
       </div>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6 pb-20">
+        {deliveryCode && tracking?.status !== "delivered" && (
+          <div className="foodiz-card p-5 text-center border-foodiz-gold/30 bg-foodiz-gold/5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold">Code à remettre au livreur</p>
+            <p className="text-3xl font-mono tracking-[0.35em] text-foodiz-cream font-bold mt-3">{deliveryCode}</p>
+            <p className="text-xs text-foodiz-gray mt-3">Ne communiquez ce code qu’une fois la commande reçue.</p>
+          </div>
+        )}
         {/* Status */}
         <div className="foodiz-card p-6 text-center">
           <div className={`inline-block ${getStatusColor(tracking?.status || "pending")} rounded-full px-4 py-2 mb-4`}>

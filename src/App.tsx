@@ -27,6 +27,7 @@ import DeleteAccountPage from "./pages/client/DeleteAccount";
 import AdvantagesPage from "./pages/client/Advantages";
 import ReferralPage from "./pages/client/Referral";
 import DeliveryTrackingPage from "./pages/client/DeliveryTracking";
+import SearchPage from "./pages/client/Search";
 
 // Partner Pages
 import PartnerDashboard from "./pages/partner/Dashboard";
@@ -57,6 +58,8 @@ import CourierSupportPage from "./pages/courier/Support";
 import CourierHelpCenterPage from "./pages/courier/HelpCenter";
 import CourierOnboardingPage from "./pages/courier/Onboarding";
 import CourierValidationStatusPage from "./pages/courier/ValidationStatus";
+import CourierDeliveryTrackingPage from "./pages/courier/DeliveryTracking";
+import CourierSettingsPage from "./pages/courier/Settings";
 
 // Auth Pages
 import RoleSelectPage from "./pages/auth/RoleSelect";
@@ -97,7 +100,7 @@ export default function App() {
           <Route path="/client" element={<ClientHome />} />
           <Route path="/client/restaurants" element={<RestaurantsPage />} />
           <Route path="/client/market" element={<MarketPage />} />
-          <Route path="/client/search" element={<ClientHome />} />
+          <Route path="/client/search" element={<SearchPage />} />
           <Route path="/client/establishments/:id" element={<EstablishmentPage />} />
           <Route path="/client/cart" element={<CartPage />} />
           <Route path="/client/checkout" element={<CheckoutPage />} />
@@ -145,7 +148,9 @@ export default function App() {
         <Route path="/courier/deliveries/current" element={<DeliveryCurrent />} />
         <Route path="/courier/deliveries/history" element={<DeliveriesHistoryPage />} />
         <Route path="/courier/deliveries/:id" element={<DeliveryCurrent />} />
+        <Route path="/courier/deliveries/:id/tracking" element={<CourierDeliveryTrackingPage />} />
         <Route path="/courier/revenues" element={<CourierRevenuesPage />} />
+        <Route path="/courier/settings" element={<CourierSettingsPage />} />
         <Route path="/courier/payouts" element={<CourierPayoutsPage />} />
         <Route path="/courier/profile" element={<CourierProfilePage />} />
         <Route path="/courier/support" element={<CourierSupportPage />} />

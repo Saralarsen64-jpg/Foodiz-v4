@@ -1,7 +1,12 @@
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { supabase } from "./supabase";
 
-export const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "pk_test_demo_foodiz");
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+// Never initialize Stripe with a fake key: checkout can still use server-created sessions.
+export const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : Promise.resolve(null);
 
 export type BillingPeriod = "monthly" | "yearly";
 
@@ -98,18 +103,6 @@ export async function createSubscription(
     }
 
     const data = await response.json();
-    
-    // Sauvegarder dans Supabase
-    await supabase.from("partner_subscriptions").insert({
-      restaurant_id: restaurantId,
-      plan_id: planId,
-      stripe_subscription_id: data.subscription.id,
-      billing_period: billingPeriod,
-      status: data.subscription.status,
-      current_period_start: new Date(data.subscription.current_period_start * 1000),
-      current_period_end: new Date(data.subscription.current_period_end * 1000),
-    });
-
     return data.subscription;
   } catch (error) {
     console.error("Erreur création souscription:", error);
@@ -137,15 +130,7 @@ export async function cancelSubscription(subscriptionId: string) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-    
-    // Mettre à jour dans Supabase
-    await supabase
-      .from("partner_subscriptions")
-      .update({ status: "canceled" })
-      .eq("stripe_subscription_id", subscriptionId);
-
-    return data;
+    return await response.json();
   } catch (error) {
     console.error("Erreur annulation souscription:", error);
     throw error;
@@ -229,16 +214,6 @@ export async function createPayout(
     }
 
     const data = await response.json();
-    
-    // Enregistrer dans Supabase
-    await supabase.from("payouts").insert({
-      user_id: userId,
-      amount_cents: amountCents,
-      currency,
-      stripe_payout_id: data.payout.id,
-      status: data.payout.status,
-    });
-
     return data.payout;
   } catch (error) {
     console.error("Erreur création payout:", error);

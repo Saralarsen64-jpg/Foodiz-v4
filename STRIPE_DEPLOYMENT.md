@@ -111,20 +111,19 @@ Netlify déploiera automatiquement et vos Netlify Functions seront disponibles �
 
 ### 4.1 Lors d'une commande client
 ```
-1. Client crée commande au checkout
-2. createPaymentIntent() crée un PaymentIntent Stripe
-3. Client confirme le paiement avec sa carte
-4. Webhook `payment_intent.succeeded` arrive
+1. Le client valide son panier
+2. `create-checkout-session` recalcule les prix depuis Supabase
+3. Stripe Checkout collecte et confirme le paiement
+4. Le webhook `payment_intent.succeeded` arrive
 5. La commande passe en "preparing"
 6. Le restaurant reçoit une notification
 ```
 
-### 4.2 Payout des partenaires
+### 4.2 Virements des partenaires et livreurs
 ```
-1. Admin va à /admin/payouts
-2. Sélectionne les partenaires à payer
-3. createPayout() envoie l'argent
-4. Partenaire reçoit le virement sous 2-3 jours
+Les virements sont volontairement désactivés pour le moment.
+Stripe Connect doit être configuré avec un compte connecté vérifié pour chaque
+partenaire et livreur avant d'activer `create-payout`.
 ```
 
 ### 4.3 Souscription Foodiz+
@@ -185,7 +184,7 @@ brew install stripe/stripe-cli/stripe
 stripe login
 
 # Écouter les webhooks localement
-stripe listen --forward-to localhost:3000/.netlify/functions/stripe-webhook
+stripe listen --forward-to localhost:8888/.netlify/functions/stripe-webhook
 
 # Dans un autre terminal, déclencher un événement
 stripe trigger payment_intent.succeeded
@@ -204,6 +203,7 @@ stripe trigger payment_intent.succeeded
 - [ ] Test complet d'une commande
 - [ ] Vérification du calcul économique
 - [ ] Support email configuré
+- [ ] Stripe Connect configuré avant d'activer les virements
 
 ### 🔒 Sécurité
 - ✅ Jamais pusher les clés secrètes

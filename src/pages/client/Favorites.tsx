@@ -20,7 +20,11 @@ export default function FavoritesPage() {
         
         if (data) {
           const restos = data.map((item: any) => item.restaurants).filter(Boolean);
-          setFavorites(restos);
+          const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", restos.map((restaurant: any) => restaurant.id));
+          setFavorites(restos.map((restaurant: any) => {
+            const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === restaurant.id).map((review: any) => review.restaurant_rating).filter(Boolean);
+            return { ...restaurant, rating: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau" };
+          }));
         }
       }
       setLoading(false);
@@ -73,7 +77,7 @@ export default function FavoritesPage() {
                 <p className="text-foodiz-gray text-xs">{resto.cuisine_type || "Gastronomie"}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <Star size={10} className="text-foodiz-gold fill-foodiz-gold" />
-                  <span className="text-[10px] text-foodiz-cream">4.8</span>
+                  <span className="text-[10px] text-foodiz-cream">{resto.rating}</span>
                 </div>
               </div>
               <button onClick={() => handleRemove(resto.id)} className="p-2 text-foodiz-red hover:bg-foodiz-red/10 rounded-full transition-colors">

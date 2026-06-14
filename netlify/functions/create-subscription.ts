@@ -1,12 +1,8 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { adminSupabase, authenticatedUser } from "./_lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -14,6 +10,11 @@ const handler: Handler = async (event) => {
   }
 
   try {
+    const user = await authenticatedUser(event.headers);
+    if (!user) {
+      return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    }
+
     const { restaurantId, planId, billingPeriod } = JSON.parse(event.body || "{}");
 
     if (!restaurantId || !planId) {
@@ -24,13 +25,13 @@ const handler: Handler = async (event) => {
     }
 
     // Récupérer le propriétaire du restaurant
-    const { data: restaurant } = await supabase
+    const { data: restaurant } = await adminSupabase
       .from("restaurants")
       .select("owner_id")
       .eq("id", restaurantId)
       .single();
 
-    if (!restaurant) {
+    if (!restaurant || restaurant.owner_id !== user.id) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: "Restaurant not found" }),
@@ -38,7 +39,7 @@ const handler: Handler = async (event) => {
     }
 
     // Récupérer l'email du propriétaire
-    const { data: profile } = await supabase
+    const { data: profile } = await adminSupabase
       .from("profiles")
       .select("email")
       .eq("id", restaurant.owner_id)
@@ -72,11 +73,11 @@ const handler: Handler = async (event) => {
     }
 
     // Plan IDs (à configurer dans votre compte Stripe)
-    const planPrices: Record<string, string> = {
-      basic_monthly: process.env.STRIPE_PLAN_BASIC_MONTHLY || "price_basic_monthly",
-      basic_yearly: process.env.STRIPE_PLAN_BASIC_YEARLY || "price_basic_yearly",
-      pro_monthly: process.env.STRIPE_PLAN_PRO_MONTHLY || "price_pro_monthly",
-      pro_yearly: process.env.STRIPE_PLAN_PRO_YEARLY || "price_pro_yearly",
+    const planPrices: Record<string, string | undefined> = {
+      basic_monthly: process.env.STRIPE_PLAN_BASIC_MONTHLY,
+      basic_yearly: process.env.STRIPE_PLAN_BASIC_YEARLY,
+      pro_monthly: process.env.STRIPE_PLAN_PRO_MONTHLY,
+      pro_yearly: process.env.STRIPE_PLAN_PRO_YEARLY,
     };
 
     const priceId = planPrices[`${planId}_${billingPeriod}`];
@@ -98,6 +99,16 @@ const handler: Handler = async (event) => {
       payment_behavior: "default_incomplete",
       expand: ["latest_invoice.payment_intent"],
     });
+
+    await adminSupabase.from("partner_subscriptions").upsert({
+      restaurant_id: restaurantId,
+      stripe_subscription_id: subscription.id,
+      plan_id: planId,
+      billing_period: billingPeriod,
+      status: subscription.status,
+      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    }, { onConflict: "stripe_subscription_id" });
 
     return {
       statusCode: 200,

@@ -6,9 +6,9 @@ import toast from "react-hot-toast";
 
 export default function PartnerOnboarding() {
   const navigate = useNavigate();
-  const [name, setName] = useState("Maison K");
+  const [name, setName] = useState("");
   const [siret, setSiret] = useState("");
-  const [city, setCity] = useState("Paris");
+  const [city, setCity] = useState("");
   const [iban, setIban] = useState("");
   const [sent, setSent] = useState(false);
 
@@ -22,7 +22,7 @@ export default function PartnerOnboarding() {
         name,
         city,
         siret,
-        status: "pending_admin_review",
+        status: "pending",
         updated_at: new Date().toISOString(),
       });
       if (restaurantError) throw restaurantError;
@@ -32,6 +32,16 @@ export default function PartnerOnboarding() {
         .update({ city, status: "pending", updated_at: new Date().toISOString() })
         .eq("user_id", user.id);
       if (applicationError) throw applicationError;
+
+      if (iban.trim()) {
+        const { error: bankError } = await supabase.from("bank_accounts").upsert({
+          user_id: user.id,
+          holder_name: name,
+          iban: iban.trim().toUpperCase(),
+          bic: null,
+        });
+        if (bankError) throw bankError;
+      }
 
       setSent(true);
       toast.success("Dossier partenaire envoyé.");

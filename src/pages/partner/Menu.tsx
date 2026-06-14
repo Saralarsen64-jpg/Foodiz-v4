@@ -11,30 +11,41 @@ import {
   FolderPlus,
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
-import {
-  addPartnerCategory,
-  getCustomerPrice,
-  loadPartnerProfile,
-  type PartnerProduct,
-} from "../../utils/partnerStore";
+import { supabase } from "../../lib/supabase";
+import { getCustomerPrice } from "../../utils/partnerStore";
+
+type PartnerProduct = { id: string; name: string; desc: string; partnerPrice: number; image: string; category: string };
 
 export default function PartnerMenu() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<PartnerProduct[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState("");
+  const [restaurantId, setRestaurantId] = useState("");
 
   useEffect(() => {
-    const profile = loadPartnerProfile();
-    setProducts(profile.products);
-    setCategories(profile.categories);
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
+      if (!restaurant) return;
+      setRestaurantId(restaurant.id);
+      const [{ data: productData }, { data: categoryData }] = await Promise.all([
+        supabase.from("products").select("id, name, description, partner_price_cents, image_url, category").eq("restaurant_id", restaurant.id),
+        supabase.from("partner_menu_categories").select("name").eq("restaurant_id", restaurant.id).order("created_at"),
+      ]);
+      const mapped = (productData || []).map((product: any) => ({ id: product.id, name: product.name, desc: product.description || "", partnerPrice: product.partner_price_cents / 100, image: product.image_url || "", category: product.category || "Menu" }));
+      setProducts(mapped);
+      setCategories([...new Set([...(categoryData || []).map((category: any) => category.name), ...mapped.map((product) => product.category)])]);
+    };
+    load();
   }, []);
 
-  const handleAddCategory = () => {
-    if (!newCategory.trim()) return;
-    addPartnerCategory(newCategory);
-    const profile = loadPartnerProfile();
-    setCategories(profile.categories);
+  const handleAddCategory = async () => {
+    const name = newCategory.trim();
+    if (!name || !restaurantId) return;
+    const { error } = await supabase.from("partner_menu_categories").insert({ restaurant_id: restaurantId, name });
+    if (!error) setCategories((current) => current.includes(name) ? current : [...current, name]);
     setNewCategory("");
   };
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
@@ -23,77 +23,16 @@ import {
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import Logo from "../../components/Logo";
-import { loadPartnerProfile } from "../../utils/partnerStore";
 import { supabase } from "../../lib/supabase";
 
 type PeriodKey = "day" | "week" | "month" | "year";
 
-const ACTIVE_ORDERS = [
-  { id: "o1", items: "Burger x2, Frites x1", total: 38.4, status: "preparing", time: "12 min", client: "Alexandre" },
-  { id: "o2", items: "Salade Caesar x1, Tiramisu x1", total: 24.5, status: "new", time: "0 min", client: "Marie" },
-  { id: "o3", items: "Poulet Rôti x1, Légumes x2", total: 32.0, status: "ready", time: "Prête", client: "Julien" },
-];
-
-const HISTORY_ORDERS = [
-  { id: "h1", client: "Alexandre", total: 28.6, partnerTotal: 19.0, date: "24 mai 2025" },
-  { id: "h2", client: "Marie", total: 18.2, partnerTotal: 12.0, date: "24 mai 2025" },
-  { id: "h3", client: "Julien", total: 24.0, partnerTotal: 16.0, date: "23 mai 2025" },
-  { id: "h4", client: "Sophie", total: 19.5, partnerTotal: 13.0, date: "23 mai 2025" },
-  { id: "h5", client: "Nora", total: 44.5, partnerTotal: 30.0, date: "22 mai 2025" },
-];
-
-const TOP_CUSTOMERS = [
-  { name: "Alexandre M.", orders: 18, avgBasket: 29.4, score: "Elite" },
-  { name: "Marie L.", orders: 15, avgBasket: 24.1, score: "Gold" },
-  { name: "Julien P.", orders: 13, avgBasket: 26.8, score: "Gold" },
-  { name: "Sophie R.", orders: 12, avgBasket: 21.5, score: "Gold" },
-  { name: "Nora B.", orders: 10, avgBasket: 34.2, score: "Premium" },
-  { name: "Karim D.", orders: 9, avgBasket: 19.6, score: "Silver" },
-  { name: "Lina K.", orders: 8, avgBasket: 22.8, score: "Silver" },
-  { name: "Yanis F.", orders: 8, avgBasket: 17.9, score: "Silver" },
-  { name: "Chloé T.", orders: 7, avgBasket: 31.0, score: "Premium" },
-  { name: "Marc V.", orders: 6, avgBasket: 18.2, score: "Silver" },
-];
-
-const CHART_DATA: Record<PeriodKey, { label: string; value: number }[]> = {
-  day: [
-    { label: "10h", value: 42 },
-    { label: "12h", value: 138 },
-    { label: "14h", value: 96 },
-    { label: "16h", value: 54 },
-    { label: "18h", value: 128 },
-    { label: "20h", value: 164 },
-    { label: "22h", value: 88 },
-  ],
-  week: [
-    { label: "Lun", value: 240 },
-    { label: "Mar", value: 310 },
-    { label: "Mer", value: 280 },
-    { label: "Jeu", value: 420 },
-    { label: "Ven", value: 380 },
-    { label: "Sam", value: 510 },
-    { label: "Dim", value: 450 },
-  ],
-  month: [
-    { label: "S1", value: 1420 },
-    { label: "S2", value: 1580 },
-    { label: "S3", value: 1710 },
-    { label: "S4", value: 1890 },
-  ],
-  year: [
-    { label: "Jan", value: 4200 },
-    { label: "Fév", value: 3900 },
-    { label: "Mar", value: 4700 },
-    { label: "Avr", value: 5100 },
-    { label: "Mai", value: 5600 },
-    { label: "Juin", value: 5900 },
-  ],
-};
+const EMPTY_CHART: Record<PeriodKey, { label: string; value: number }[]> = { day: [], week: [], month: [], year: [] };
 
 export default function PartnerDashboard() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [rating, setRating] = useState("4,8");
+  const [rating, setRating] = useState("-");
   const [period, setPeriod] = useState<PeriodKey>("week");
   const [restaurantName, setRestaurantName] = useState("Mon Établissement");
   const [ownerName, setOwnerName] = useState("Partenaire");
@@ -101,20 +40,10 @@ export default function PartnerDashboard() {
   const [historyOrders, setHistoryOrders] = useState<any[]>([]);
   const [todayRevenue, setTodayRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const profile = useMemo(() => loadPartnerProfile(), []);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("foodiz_reviews_v1");
-    if (saved) {
-      const reviews = JSON.parse(saved);
-      const partnerReviews = reviews.filter((r: any) => r.restaurantRating > 0);
-      if (partnerReviews.length > 0) {
-        const avg = partnerReviews.reduce((sum: number, r: any) => sum + r.restaurantRating, 0) / partnerReviews.length;
-        const finalRating = ((4.8 * 10 + avg) / 11).toFixed(1).replace(".", ",");
-        setRating(finalRating);
-      }
-    }
-  }, []);
+  const [coverImage, setCoverImage] = useState("/images/auth-restaurant.jpg");
+  const [location, setLocation] = useState("Adresse non renseignée");
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
+  const [chartData, setChartData] = useState(EMPTY_CHART);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -156,6 +85,12 @@ export default function PartnerDashboard() {
         if (restaurant.name) {
           setRestaurantName(restaurant.name);
         }
+        setCoverImage(restaurant.cover_image || "/images/auth-restaurant.jpg");
+        setLocation([restaurant.address, restaurant.postal_code, restaurant.city].filter(Boolean).join(", ") || "Adresse non renseignée");
+
+        const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").eq("orders.restaurant_id", restaurant.id);
+        const ratings = (reviews || []).map((review: any) => review.restaurant_rating).filter(Boolean);
+        if (ratings.length) setRating((ratings.reduce((sum: number, value: number) => sum + value, 0) / ratings.length).toFixed(1).replace(".", ","));
 
         // 3. Récupérer les commandes actives
         const { data: activeOrdersData } = await supabase
@@ -186,16 +121,15 @@ export default function PartnerDashboard() {
         // 4. Récupérer les commandes livrées (historique + calcul revenu du jour)
         const { data: deliveredOrders } = await supabase
           .from("orders")
-          .select("*")
+          .select("*, client:profiles!orders_client_id_fkey(full_name, first_name, last_name)")
           .eq("restaurant_id", restaurant.id)
           .eq("status", "delivered")
           .order("created_at", { ascending: false })
-          .limit(10);
 
         if (deliveredOrders) {
           const formattedHistory = deliveredOrders.map((order: any) => ({
             id: order.id,
-            client: `#${order.id.slice(0, 8)}`,
+            client: order.client?.full_name || [order.client?.first_name, order.client?.last_name].filter(Boolean).join(" ") || `#${order.id.slice(0, 8)}`,
             total: (order.final_client_total_cents || 0) / 100,
             partnerTotal: (order.partner_total_cents || 0) / 100,
             date: new Date(order.delivered_at || order.created_at).toLocaleDateString('fr-FR'),
@@ -210,6 +144,24 @@ export default function PartnerDashboard() {
             .reduce((sum, order) => sum + ((order.partner_total_cents || 0) / 100), 0);
           
           setTodayRevenue(todayRevenue);
+
+          const grouped = deliveredOrders.reduce<Record<string, any>>((acc, order: any) => {
+            const key = order.client_id;
+            const item = acc[key] || { name: order.client?.full_name || order.client?.first_name || "Client", orders: 0, total: 0 };
+            item.orders += 1;
+            item.total += (order.final_client_total_cents || 0) / 100;
+            acc[key] = item;
+            return acc;
+          }, {});
+          setTopCustomers(Object.values(grouped).map((customer: any) => ({ ...customer, avgBasket: customer.total / customer.orders, score: customer.orders >= 15 ? "Elite" : customer.orders >= 8 ? "Gold" : customer.orders >= 3 ? "Silver" : "Nouveau" })).sort((a, b) => b.orders - a.orders).slice(0, 10));
+
+          const aggregate = (labels: string[], keyFor: (date: Date) => number) => labels.map((label, index) => ({ label, value: deliveredOrders.filter((order: any) => keyFor(new Date(order.delivered_at || order.created_at)) === index).reduce((sum: number, order: any) => sum + (order.partner_total_cents || 0) / 100, 0) }));
+          setChartData({
+            day: aggregate(["0h", "4h", "8h", "12h", "16h", "20h"], (date) => Math.floor(date.getHours() / 4)),
+            week: aggregate(["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"], (date) => date.getDay()),
+            month: aggregate(["S1", "S2", "S3", "S4", "S5"], (date) => Math.floor((date.getDate() - 1) / 7)),
+            year: aggregate(["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"], (date) => date.getMonth()),
+          });
         }
 
         setLoading(false);
@@ -227,8 +179,8 @@ export default function PartnerDashboard() {
     navigate("/auth");
   };
 
-  const chartPoints = CHART_DATA[period];
-  const chartMax = Math.max(...chartPoints.map((d) => d.value));
+  const chartPoints = chartData[period];
+  const chartMax = Math.max(1, ...chartPoints.map((d) => d.value));
   const currentRevenue = chartPoints.reduce((sum, item) => sum + item.value, 0);
 
   const quickActions = [
@@ -339,13 +291,13 @@ export default function PartnerDashboard() {
               </div>
             </div>
             <div className="relative min-h-[240px] bg-black/15">
-              <img src={profile.coverImage} alt={restaurantName} className="w-full h-full object-cover" />
+              <img src={coverImage} alt={restaurantName} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold font-bold">Fiche établissement</p>
-                  <p className="text-sm text-foodiz-cream mt-1">{profile.hours}</p>
-                  <p className="text-[11px] text-foodiz-gray mt-1">{profile.location}</p>
+                  <p className="text-sm text-foodiz-cream mt-1">Établissement Foodiz</p>
+                  <p className="text-[11px] text-foodiz-gray mt-1">{location}</p>
                 </div>
                 <button
                   onClick={() => navigate("/partner/settings")}
@@ -453,7 +405,7 @@ export default function PartnerDashboard() {
                   className="w-full foodiz-card p-4 flex items-center gap-4 text-left hover:border-foodiz-gold/30 transition-all"
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    order.status === "new" ? "bg-foodiz-gold/20" : order.status === "preparing" ? "bg-foodiz-gold/15" : "bg-foodiz-green/10"
+                    order.status === "pending" ? "bg-foodiz-gold/20" : order.status === "preparing" ? "bg-foodiz-gold/15" : "bg-foodiz-green/10"
                   }`}>
                     <ShoppingBag size={18} className={order.status === "ready" ? "text-foodiz-green" : "text-foodiz-gold"} />
                   </div>
@@ -461,7 +413,7 @@ export default function PartnerDashboard() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-medium text-foodiz-cream">{order.client}</h3>
                       <span className={`text-[10px] font-medium ${order.status === "ready" ? "text-foodiz-green" : "text-foodiz-gold"}`}>
-                        {order.status === "new" ? "Nouvelle" : order.status === "preparing" ? "En préparation" : "Prête"}
+                        {order.status === "pending" ? "Nouvelle" : order.status === "preparing" ? "En préparation" : "Prête"}
                       </span>
                     </div>
                     <p className="text-[11px] text-foodiz-gray mt-0.5">{order.items}</p>
@@ -513,7 +465,8 @@ export default function PartnerDashboard() {
               </button>
             </div>
             <div className="space-y-3">
-              {TOP_CUSTOMERS.map((customer, index) => (
+              {topCustomers.length === 0 && <div className="foodiz-card p-4 text-sm text-foodiz-gray">Aucune donnée client disponible.</div>}
+              {topCustomers.map((customer, index) => (
                 <div key={customer.name} className="foodiz-card p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 border border-foodiz-gold/15 flex items-center justify-center text-foodiz-gold font-bold shrink-0">
                     {index + 1}

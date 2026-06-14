@@ -176,7 +176,7 @@ export async function getOrder(orderId: string) {
     .from('orders')
     .select(`
       *,
-      client:profiles!orders_client_id_fkey(first_name, last_name, email, phone, address),
+      client:profiles!orders_client_id_fkey(full_name, first_name, last_name, email, phone, address, postal_code, city),
       restaurant:restaurants!orders_restaurant_id_fkey(name, address, city),
       order_items(
         *,

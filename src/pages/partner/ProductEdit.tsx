@@ -20,7 +20,7 @@ export default function ProductEditPage() {
     price: "", // En euros pour l'input, converti en centimes pour la BDD
     category: "Plats",
     image_url: "",
-    is_available: true
+    is_active: true
   });
 
   useEffect(() => {
@@ -37,10 +37,10 @@ export default function ProductEditPage() {
               setFormData({
                 name: product.name,
                 description: product.description || "",
-                price: (product.price_cents / 100).toString(),
+                price: (product.partner_price_cents / 100).toString(),
                 category: product.category || "Plats",
                 image_url: product.image_url || "",
-                is_available: product.is_available
+                is_active: product.is_active
               });
             }
             setLoading(false);
@@ -68,10 +68,10 @@ export default function ProductEditPage() {
       restaurant_id: restaurantId,
       name: formData.name,
       description: formData.description,
-      price_cents: priceCents,
+      partner_price_cents: priceCents,
       category: formData.category,
       image_url: formData.image_url,
-      is_available: formData.is_available
+      is_active: formData.is_active
     };
 
     let error;
@@ -174,7 +174,7 @@ export default function ProductEditPage() {
 
             <div className="flex items-center gap-3 pt-2">
               <input 
-                type="checkbox" id="available" checked={formData.is_available} onChange={(e) => setFormData({...formData, is_available: e.target.checked})}
+                type="checkbox" id="available" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
                 className="w-5 h-5 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold"
               />
               <label htmlFor="available" className="text-foodiz-cream text-sm">Produit disponible à la vente</label>

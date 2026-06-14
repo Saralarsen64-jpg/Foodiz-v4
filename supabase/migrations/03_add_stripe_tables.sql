@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS public.order_payments (
   updated_at timestamp with time zone DEFAULT now()
 );
 
-CREATE INDEX idx_order_payments_order ON public.order_payments(order_id);
-CREATE INDEX idx_order_payments_stripe_id ON public.order_payments(stripe_payment_intent_id);
+CREATE INDEX IF NOT EXISTS idx_order_payments_order ON public.order_payments(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_payments_stripe_id ON public.order_payments(stripe_payment_intent_id);
 
 -- 2. PARTNER SUBSCRIPTIONS (Souscriptions Foodiz+ pour partenaires)
 CREATE TABLE IF NOT EXISTS public.partner_subscriptions (
@@ -36,9 +36,9 @@ CREATE TABLE IF NOT EXISTS public.partner_subscriptions (
   updated_at timestamp with time zone DEFAULT now()
 );
 
-CREATE INDEX idx_subscriptions_restaurant ON public.partner_subscriptions(restaurant_id);
-CREATE INDEX idx_subscriptions_stripe_id ON public.partner_subscriptions(stripe_subscription_id);
-CREATE INDEX idx_subscriptions_status ON public.partner_subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_restaurant ON public.partner_subscriptions(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_id ON public.partner_subscriptions(stripe_subscription_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.partner_subscriptions(status);
 
 -- 3. PAYOUTS (Paiements vers les partenaires/livreurs)
 CREATE TABLE IF NOT EXISTS public.payouts (
@@ -55,9 +55,9 @@ CREATE TABLE IF NOT EXISTS public.payouts (
   updated_at timestamp with time zone DEFAULT now()
 );
 
-CREATE INDEX idx_payouts_user ON public.payouts(user_id);
-CREATE INDEX idx_payouts_status ON public.payouts(status);
-CREATE INDEX idx_payouts_stripe_id ON public.payouts(stripe_payout_id);
+CREATE INDEX IF NOT EXISTS idx_payouts_user ON public.payouts(user_id);
+CREATE INDEX IF NOT EXISTS idx_payouts_status ON public.payouts(status);
+CREATE INDEX IF NOT EXISTS idx_payouts_stripe_id ON public.payouts(stripe_payout_id);
 
 -- ============================================================
 -- ENABLE ROW LEVEL SECURITY
@@ -72,6 +72,7 @@ ALTER TABLE public.payouts ENABLE ROW LEVEL SECURITY;
 -- ============================================================
 
 -- ORDER PAYMENTS
+DROP POLICY IF EXISTS "order_payments_select_own" ON public.order_payments;
 CREATE POLICY "order_payments_select_own" ON public.order_payments FOR SELECT
   USING (
     EXISTS (
@@ -82,12 +83,14 @@ CREATE POLICY "order_payments_select_own" ON public.order_payments FOR SELECT
   );
 
 -- PARTNER SUBSCRIPTIONS
+DROP POLICY IF EXISTS "subscriptions_select_own" ON public.partner_subscriptions;
 CREATE POLICY "subscriptions_select_own" ON public.partner_subscriptions FOR SELECT
   USING (
     auth.uid() IN (SELECT owner_id FROM public.restaurants WHERE id = restaurant_id)
   );
 
 -- PAYOUTS
+DROP POLICY IF EXISTS "payouts_select_own" ON public.payouts;
 CREATE POLICY "payouts_select_own" ON public.payouts FOR SELECT
   USING (auth.uid() = user_id);
 

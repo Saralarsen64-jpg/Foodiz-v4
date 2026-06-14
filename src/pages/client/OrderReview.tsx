@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Star, Send, ChefHat, Bike, CheckCircle2 } from "lucide-react";
-
-const STORAGE_REVIEWS = "foodiz_reviews_v1";
+import { supabase } from "../../lib/supabase";
 
 export default function OrderReviewPage() {
   const { id } = useParams();
@@ -12,35 +11,42 @@ export default function OrderReviewPage() {
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [order, setOrder] = useState<any>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("foodiz_client_orders_v1");
-    if (saved) {
-      const orders = JSON.parse(saved);
-      const found = orders.find((o: any) => o.id === id);
-      setOrder(found);
-    }
+    if (!id) return;
+    supabase.from("orders").select("id, client_id, courier_id, status, restaurant:restaurants(name)").eq("id", id).single().then(({ data }) => setOrder(data));
   }, [id]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (restaurantRating === 0 || courierRating === 0) {
-      alert("Veuillez noter le restaurant et le livreur.");
+    if (restaurantRating === 0 || (order?.courier_id && courierRating === 0)) {
+      alert(order?.courier_id ? "Veuillez noter le restaurant et le livreur." : "Veuillez noter le restaurant.");
       return;
     }
 
-    const review = {
-      orderId: id,
-      restaurantId: order?.restaurantId || "r1", // Fallback to Maison K for demo
-      courierId: order?.courierId || "c1",
-      restaurantRating,
-      courierRating,
-      comment,
-      date: new Date().toISOString(),
-    };
+    if (!order || order.status !== "delivered") {
+      setError("Cette commande ne peut pas encore être notée.");
+      return;
+    }
 
-    const existing = JSON.parse(localStorage.getItem(STORAGE_REVIEWS) || "[]");
-    localStorage.setItem(STORAGE_REVIEWS, JSON.stringify([...existing, review]));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== order.client_id) {
+      setError("Commande introuvable.");
+      return;
+    }
+
+    const { error: insertError } = await supabase.from("reviews").insert({
+      order_id: id,
+      client_id: user.id,
+      restaurant_rating: restaurantRating,
+      courier_rating: order.courier_id ? courierRating : null,
+      comment: comment.trim() || null,
+    });
+    if (insertError) {
+      setError(insertError.code === "23505" ? "Vous avez déjà noté cette commande." : "Impossible d'enregistrer votre avis.");
+      return;
+    }
 
     setSubmitted(true);
     setTimeout(() => navigate("/client/orders"), 2000);
@@ -65,11 +71,12 @@ export default function OrderReviewPage() {
       </button>
 
       <h1 className="foodiz-title text-2xl mb-2">Noter ma commande</h1>
-      <p className="text-foodiz-gray text-xs mb-8">{order?.restaurant || "Maison K"}</p>
+      <p className="text-foodiz-gray text-xs mb-8">{order?.restaurant?.name || "Restaurant"}</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {error && <div className="foodiz-card p-3 text-foodiz-red border-foodiz-red/20">{error}</div>}
         {/* Restaurant Rating */}
-        <div className="foodiz-card p-6">
+        {order?.courier_id && <div className="foodiz-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-foodiz-gold/10 flex items-center justify-center">
               <ChefHat size={20} className="text-foodiz-gold" />
@@ -94,7 +101,7 @@ export default function OrderReviewPage() {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Courier Rating */}
         <div className="foodiz-card p-6">

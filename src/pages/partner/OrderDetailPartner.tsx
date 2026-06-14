@@ -1,18 +1,27 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Phone, User } from "lucide-react";
-
-const PRODUCTS = [
-  { name: "Burger Artisanal", qty: 2, partnerPrice: 8.00 },
-  { name: "Frites Maison", qty: 1, partnerPrice: 3.00 },
-];
-
-const totalPartner = PRODUCTS.reduce((s, p) => s + p.partnerPrice * p.qty, 0);
-const totalClient = 28.60;
-const supplement = totalClient - totalPartner;
+import { getOrder } from "../../lib/orders";
 
 export default function PartnerOrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    getOrder(id).then(setOrder).finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gray">Chargement...</div>;
+  if (!order) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gray">Commande introuvable.</div>;
+
+  const products = order.order_items || [];
+  const totalPartner = order.partner_total_cents / 100;
+  const totalClient = order.final_client_total_cents / 100;
+  const supplement = totalClient - totalPartner;
+  const clientName = order.client?.full_name || [order.client?.first_name, order.client?.last_name].filter(Boolean).join(" ") || "Client";
 
   return (
     <div className="min-h-screen bg-foodiz-black">
@@ -27,8 +36,8 @@ export default function PartnerOrderDetail() {
         {/* Status */}
         <div className="foodiz-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-foodiz-gold text-xs font-medium bg-foodiz-gold/10 px-3 py-1 rounded-full">Livrée</span>
-            <span className="text-foodiz-gray text-[10px]">24 mai 2025, 19:30</span>
+            <span className="text-foodiz-gold text-xs font-medium bg-foodiz-gold/10 px-3 py-1 rounded-full">{order.status}</span>
+            <span className="text-foodiz-gray text-[10px]">{new Date(order.created_at).toLocaleString("fr-FR")}</span>
           </div>
 
           <div className="flex items-start gap-3 mb-4">
@@ -36,12 +45,12 @@ export default function PartnerOrderDetail() {
               <User size={18} className="text-foodiz-gold" />
             </div>
             <div>
-              <p className="text-sm text-foodiz-cream">Alexandre</p>
-              <p className="text-[10px] text-foodiz-gray">+33 6 12 34 56 78</p>
+              <p className="text-sm text-foodiz-cream">{clientName}</p>
+              <p className="text-[10px] text-foodiz-gray">{order.client?.phone || "Téléphone non renseigné"}</p>
             </div>
-            <button className="ml-auto w-9 h-9 rounded-xl bg-foodiz-gold/10 border border-foodiz-gold/20 flex items-center justify-center">
+            <a href={order.client?.phone ? `tel:${order.client.phone}` : undefined} className="ml-auto w-9 h-9 rounded-xl bg-foodiz-gold/10 border border-foodiz-gold/20 flex items-center justify-center">
               <Phone size={16} className="text-foodiz-gold" />
-            </button>
+            </a>
           </div>
 
           <div className="flex items-start gap-3">
@@ -49,8 +58,8 @@ export default function PartnerOrderDetail() {
               <MapPin size={18} className="text-foodiz-gold" />
             </div>
             <div>
-              <p className="text-sm text-foodiz-cream">12 Rue Oberkampf</p>
-              <p className="text-[10px] text-foodiz-gray">75011 Paris</p>
+              <p className="text-sm text-foodiz-cream">{order.delivery_address || order.client?.address || "Adresse non renseignée"}</p>
+              <p className="text-[10px] text-foodiz-gray">{[order.client?.postal_code, order.client?.city].filter(Boolean).join(" ")}</p>
             </div>
           </div>
         </div>
@@ -59,13 +68,13 @@ export default function PartnerOrderDetail() {
         <div className="foodiz-card p-5">
           <h3 className="foodiz-title text-sm mb-4">Produits</h3>
           <div className="space-y-3">
-            {PRODUCTS.map((p, i) => (
-              <div key={i} className="flex items-center justify-between">
+            {products.map((p: any) => (
+              <div key={p.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-foodiz-gold text-xs font-medium">x{p.qty}</span>
-                  <span className="text-sm text-foodiz-cream">{p.name}</span>
+                  <span className="text-foodiz-gold text-xs font-medium">x{p.quantity}</span>
+                  <span className="text-sm text-foodiz-cream">{p.product?.name || "Produit"}</span>
                 </div>
-                <span className="text-foodiz-cream text-sm">{(p.partnerPrice * p.qty).toFixed(2).replace(".", ",")} €</span>
+                <span className="text-foodiz-cream text-sm">{(p.total_price_cents / 100).toFixed(2).replace(".", ",")} €</span>
               </div>
             ))}
           </div>
@@ -97,13 +106,7 @@ export default function PartnerOrderDetail() {
         <div className="foodiz-card p-5">
           <h3 className="foodiz-title text-sm mb-4">Suivi</h3>
           <div className="space-y-3">
-            {[
-              { label: "Commande acceptée", time: "19:32" },
-              { label: "En préparation", time: "19:35" },
-              { label: "Prête", time: "19:50" },
-              { label: "Récupérée par le livreur", time: "19:55" },
-              { label: "Livrée", time: "20:10" },
-            ].map((s, i) => (
+            {[{ label: "Commande créée", time: new Date(order.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }, { label: `Statut actuel : ${order.status}`, time: new Date(order.updated_at || order.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }].map((s, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className="w-2 h-2 rounded-full bg-foodiz-green mt-1.5" />
                 <div className="flex-1 flex justify-between">

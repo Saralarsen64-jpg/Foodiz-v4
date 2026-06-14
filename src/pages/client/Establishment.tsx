@@ -10,48 +10,53 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
-
-const DEFAULT_CATEGORIES = [
-  {
-    id: "cat1",
-    name: "Nos Burgers Signature",
-    items: [
-      { id: "p1", name: "Burger Artisanal", desc: "Bœuf Black Angus, cheddar affiné, sauce maison", price: 16.90, points: 30, image: "/images/restaurant-maison-k.jpg" },
-      { id: "p2", name: "Burger Truffe", desc: "Bœuf wagyu, crème de truffe noire, roquette", price: 22.50, points: 40, image: "/images/restaurant-bistrot.jpg" },
-    ]
-  },
-  {
-    id: "cat2",
-    name: "Desserts Gourmands",
-    items: [
-      { id: "d1", name: "Tiramisu Maison", desc: "Mascarpone, café, cacao amer", price: 8.50, points: 20, image: "/images/market-bio.jpg" },
-    ]
-  }
-];
+import { supabase } from "../../lib/supabase";
 
 export default function EstablishmentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { itemCount, subtotal, establishmentId, addItem, replaceCart } = useCart();
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [establishment, setEstablishment] = useState<any>(null);
+  const [rating, setRating] = useState<{ average: number; count: number }>({ average: 0, count: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load dynamic products added by partner
-    const savedProducts = localStorage.getItem('foodiz_products_r1');
-    if (savedProducts) {
-      const products = JSON.parse(savedProducts);
-      // Group by category (simplified for demo)
-      const dynamicCategories = [
-        { id: "cat_dynamic", name: "Nouveautés du Chef", items: products }
-      ];
-      setCategories([...DEFAULT_CATEGORIES, ...dynamicCategories]);
-    }
-  }, []);
+    const fetchEstablishment = async () => {
+      if (!id) return;
+      const [{ data: restaurant }, { data: products }, { data: reviews }] = await Promise.all([
+        supabase.from("restaurants").select("*").eq("id", id).eq("is_active", true).single(),
+        supabase.from("products").select("*").eq("restaurant_id", id).eq("is_active", true).order("category"),
+        supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").eq("orders.restaurant_id", id),
+      ]);
 
-  const establishmentName = id === "r1" ? "Maison K" : 
-    id === "r2" ? "Le Bistrot Parisien" : 
-    id === "r3" ? "Sushi Ko" : 
-    id === "m1" ? "Marché Bio" : "Restaurant";
+      setEstablishment(restaurant);
+      const grouped = (products || []).reduce<Record<string, any[]>>((acc, product) => {
+        const category = product.category || "Menu";
+        acc[category] ||= [];
+        acc[category].push({
+          id: product.id,
+          name: product.name,
+          desc: product.description || "",
+          price: product.partner_price_cents / 100,
+          points: Math.max(0, Math.round(product.partner_price_cents * 0.02)),
+          image: product.image_url || restaurant?.cover_image || "/images/auth-restaurant.jpg",
+        });
+        return acc;
+      }, {});
+      setCategories(Object.entries(grouped).map(([name, items]) => ({ id: name, name, items })));
+
+      const values = (reviews || []).map((review: any) => review.restaurant_rating).filter(Boolean);
+      setRating({
+        average: values.length ? values.reduce((sum: number, value: number) => sum + value, 0) / values.length : 0,
+        count: values.length,
+      });
+      setLoading(false);
+    };
+    fetchEstablishment();
+  }, [id]);
+
+  const establishmentName = establishment?.name || "Restaurant";
 
   const addToCart = (item: { id: string; name: string; price: number; points: number; image: string }) => {
     const establishment = { id: id || "unknown", name: establishmentName };
@@ -85,7 +90,7 @@ export default function EstablishmentPage() {
       {/* Header Image Banner */}
       <div className="relative h-64 -mx-4 -mt-4 overflow-hidden">
         <img 
-          src="/images/auth-restaurant.jpg" 
+          src={establishment?.cover_image || "/images/auth-restaurant.jpg"}
           alt={establishmentName} 
           className="w-full h-full object-cover"
         />
@@ -101,13 +106,13 @@ export default function EstablishmentPage() {
           </div>
           <div className="flex flex-wrap items-center gap-4 text-foodiz-cream/90 text-xs font-medium">
             <span className="flex items-center gap-1.5 bg-foodiz-black/40 backdrop-blur px-3 py-1 rounded-full border border-foodiz-gold/20">
-              <Clock size={12} className="text-foodiz-gold" /> 11:00 - 23:00
+              <Clock size={12} className="text-foodiz-gold" /> Ouvert aux commandes
             </span>
             <span className="flex items-center gap-1.5 bg-foodiz-black/40 backdrop-blur px-3 py-1 rounded-full border border-foodiz-gold/20">
-              <MapPin size={12} className="text-foodiz-gold" /> 15 Rue de la Roquette, 75011 Paris
+              <MapPin size={12} className="text-foodiz-gold" /> {[establishment?.address, establishment?.postal_code, establishment?.city].filter(Boolean).join(", ") || "Adresse non renseignée"}
             </span>
             <span className="flex items-center gap-1.5 bg-foodiz-black/40 backdrop-blur px-3 py-1 rounded-full border border-foodiz-gold/20">
-              <Star size={12} className="text-foodiz-gold fill-foodiz-gold" /> 4.8 (240 avis)
+              <Star size={12} className="text-foodiz-gold fill-foodiz-gold" /> {rating.count ? rating.average.toFixed(1) : "Nouveau"} ({rating.count} avis)
             </span>
           </div>
         </div>
@@ -115,6 +120,8 @@ export default function EstablishmentPage() {
 
       {/* Menu Categories & Black Cards */}
       <div className="mt-8 space-y-10 pb-32 px-2">
+        {loading && <div className="text-center py-10 text-foodiz-gray animate-pulse">Chargement du menu...</div>}
+        {!loading && categories.length === 0 && <div className="foodiz-card p-6 text-center text-foodiz-gray">Aucun produit disponible actuellement.</div>}
         {categories.map((category: any) => (
           <div key={category.id}>
             <h2 className="foodiz-title text-xl text-foodiz-gold mb-4 px-2 border-l-4 border-foodiz-gold pl-3">

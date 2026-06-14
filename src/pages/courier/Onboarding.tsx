@@ -1,51 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, CheckCircle2, FileText } from "lucide-react";
+import { Bike, CheckCircle2, FileText, MapPin, UserRound } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import CourierShell from "../../components/CourierShell";
 import toast from "react-hot-toast";
 
-export default function CourierOnboarding() {
-  const navigate = useNavigate();
-  const [name, setName] = useState("Karim");
-  const [city, setCity] = useState("Paris");
-  const [vehicle, setVehicle] = useState("Scooter");
-  const [iban, setIban] = useState("");
-  const [sent, setSent] = useState(false);
-
-  const submit = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Utilisateur non connecté.");
-
-      const { error } = await supabase
-        .from("courier_applications")
-        .update({ city, vehicle_type: vehicle, status: "pending", updated_at: new Date().toISOString() })
-        .eq("user_id", user.id);
-      if (error) throw error;
-
-      setSent(true);
-      toast.success("Dossier livreur envoyé.");
-      window.setTimeout(() => navigate("/courier/validation-status"), 900);
-    } catch (err: any) {
-      toast.error(err.message || "Impossible d'envoyer le dossier.");
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-foodiz-black pb-24">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/courier")} className="text-foodiz-gold"><ChevronLeft size={20} /></button>
-          <h1 className="foodiz-title text-lg">Onboarding livreur</h1>
-        </div>
-      </header>
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-        <div className="foodiz-card p-5"><input value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-foodiz-cream outline-none" /></div>
-        <div className="foodiz-card p-5"><input value={city} onChange={(e) => setCity(e.target.value)} className="w-full bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-foodiz-cream outline-none" /></div>
-        <div className="foodiz-card p-5"><input value={vehicle} onChange={(e) => setVehicle(e.target.value)} className="w-full bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-foodiz-cream outline-none" /></div>
-        <div className="foodiz-card p-5"><input value={iban} onChange={(e) => setIban(e.target.value)} className="w-full bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-foodiz-cream outline-none" /></div>
-        <button onClick={submit} className="w-full foodiz-btn py-4 flex items-center justify-center gap-2">{sent ? <CheckCircle2 size={18} /> : <FileText size={18} />} Envoyer mon dossier</button>
-      </main>
-    </div>
-  );
-}
+export default function CourierOnboarding(){const navigate=useNavigate();const[name,setName]=useState("");const[city,setCity]=useState("");const[vehicle,setVehicle]=useState("bike");const[iban,setIban]=useState("");const[sent,setSent]=useState(false);const submit=async()=>{try{const{data:{user}}=await supabase.auth.getUser();if(!user)throw new Error("Utilisateur non connecté.");const results=await Promise.all([supabase.from("profiles").update({full_name:name.trim(),city}).eq("id",user.id),supabase.from("courier_applications").update({city,vehicle_type:vehicle,status:"pending",updated_at:new Date().toISOString()}).eq("user_id",user.id),iban.trim()?supabase.from("bank_accounts").upsert({user_id:user.id,holder_name:name.trim(),iban:iban.trim().toUpperCase(),bic:null}):Promise.resolve({error:null})]);const error=results.find((result:any)=>result.error)?.error;if(error)throw error;setSent(true);toast.success("Dossier livreur envoyé.");setTimeout(()=>navigate("/courier/validation-status"),900);}catch(err:any){toast.error(err.message||"Impossible d'envoyer le dossier.");}};return <CourierShell title="Rejoindre la flotte" back="/courier"><section className="rounded-[2rem] border border-foodiz-gold/20 bg-foodiz-gold/[0.06] p-6"><FileText size={25} className="text-foodiz-gold"/><h2 className="foodiz-title text-2xl mt-4">Votre dossier livreur</h2><p className="text-sm text-foodiz-gray mt-2">Quelques informations pour préparer votre validation Foodiz.</p></section><section className="foodiz-card p-5 mt-4 space-y-4">{[{icon:UserRound,value:name,set:setName,placeholder:"Nom complet"},{icon:MapPin,value:city,set:setCity,placeholder:"Ville"}].map((field)=><div key={field.placeholder} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><field.icon size={17} className="text-foodiz-gold"/><input value={field.value} onChange={e=>field.set(e.target.value)} placeholder={field.placeholder} className="w-full bg-transparent py-4 text-foodiz-cream outline-none"/></div>)}<div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><Bike size={17} className="text-foodiz-gold"/><select value={vehicle} onChange={e=>setVehicle(e.target.value)} className="w-full bg-transparent py-4 text-foodiz-cream outline-none"><option className="bg-foodiz-card" value="bike">Vélo</option><option className="bg-foodiz-card" value="scooter">Scooter</option><option className="bg-foodiz-card" value="motorcycle">Moto</option><option className="bg-foodiz-card" value="car">Voiture</option></select></div><input value={iban} onChange={e=>setIban(e.target.value)} placeholder="IBAN (facultatif à cette étape)" className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-foodiz-cream outline-none"/><button onClick={submit} className="foodiz-btn w-full py-4 flex items-center justify-center gap-2">{sent?<CheckCircle2 size={18}/>:<FileText size={18}/>}Envoyer mon dossier</button></section></CourierShell>}

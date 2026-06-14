@@ -69,7 +69,11 @@ export default function ClientHome() {
         if (r.latitude && r.longitude) return getDistanceFromLatLonInKm(lat, lng, r.latitude, r.longitude) <= 10;
         return true;
       });
-      setRestaurants(filteredRestos.map((r: any) => ({ id: r.id, name: r.name, note: 4.8, temps: "20-30 min", image: r.cover_image, emoji: "🍽️" })));
+      const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filteredRestos.map((restaurant: any) => restaurant.id));
+      setRestaurants(filteredRestos.map((r: any) => {
+        const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === r.id).map((review: any) => review.restaurant_rating).filter(Boolean);
+        return { id: r.id, name: r.name, note: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau", temps: "Délai à confirmer", image: r.cover_image, emoji: "🍽️", cuisine: r.cuisine_type || "Restaurant" };
+      }));
     }
     setLoadingRestos(false);
   };
@@ -227,7 +231,7 @@ export default function ClientHome() {
                   <div className="flex-1 flex flex-col justify-center text-left">
                     <h3 className="text-foodiz-cream font-bold text-base font-serif italic group-hover:text-foodiz-gold transition-colors">{r.name}</h3>
                     <p className="text-[10px] text-foodiz-gray mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-foodiz-green"></span> Gastronomie • {r.temps}
+                      <span className="w-1.5 h-1.5 rounded-full bg-foodiz-green"></span> {r.cuisine} • {r.temps}
                     </p>
                     <div className="flex items-center gap-1 mt-2">
                       <Star size={10} className="text-foodiz-gold fill-foodiz-gold" />

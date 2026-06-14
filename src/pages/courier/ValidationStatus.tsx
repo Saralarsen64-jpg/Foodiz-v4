@@ -1,22 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Clock3 } from "lucide-react";
-
-export default function CourierValidationStatus() {
-  const navigate = useNavigate();
-  return (
-    <div className="min-h-screen bg-foodiz-black pb-24">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/courier")} className="text-foodiz-gold"><ChevronLeft size={20} /></button>
-          <h1 className="foodiz-title text-lg">État de validation</h1>
-        </div>
-      </header>
-      <main className="max-w-3xl mx-auto px-4 py-6">
-        <div className="foodiz-card p-6">
-          <div className="flex items-center gap-3 mb-3"><Clock3 size={18} className="text-foodiz-gold" /><h2 className="foodiz-title text-lg">Dossier en attente</h2></div>
-          <p className="text-sm text-foodiz-gray">Votre profil livreur est en cours de vérification.</p>
-        </div>
-      </main>
-    </div>
-  );
-}
+import { useEffect, useState } from "react";
+import { CheckCircle2, Clock3, FileWarning, ShieldX } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import CourierShell from "../../components/CourierShell";
+const STATES:any={pending:{title:"Dossier en attente",text:"Votre profil est en cours de vérification.",icon:Clock3,color:"text-foodiz-gold"},validated:{title:"Vous êtes validé",text:"Votre compte peut recevoir des courses Foodiz.",icon:CheckCircle2,color:"text-foodiz-green"},missing_documents:{title:"Documents nécessaires",text:"Complétez votre dossier pour poursuivre la validation.",icon:FileWarning,color:"text-foodiz-gold"},rejected:{title:"Dossier non retenu",text:"Contactez le support pour obtenir plus d'informations.",icon:ShieldX,color:"text-foodiz-red"},suspended:{title:"Compte suspendu",text:"Votre accès aux courses est temporairement suspendu.",icon:ShieldX,color:"text-foodiz-red"}};
+export default function CourierValidationStatus(){const[status,setStatus]=useState("pending");useEffect(()=>{(async()=>{const{data:{user}}=await supabase.auth.getUser();if(!user)return;const{data}=await supabase.from("courier_applications").select("status").eq("user_id",user.id).single();if(data?.status)setStatus(data.status);})();},[]);const state=STATES[status]||STATES.pending;return <CourierShell title="Validation" back="/courier"><section className="rounded-[2rem] border border-foodiz-gold/20 bg-white/[0.025] p-8 text-center"><div className="w-20 h-20 mx-auto rounded-[1.8rem] bg-foodiz-gold/10 border border-foodiz-gold/20 flex items-center justify-center"><state.icon size={34} className={state.color}/></div><h2 className="foodiz-title text-2xl mt-5">{state.title}</h2><p className="text-foodiz-gray text-sm mt-3">{state.text}</p><p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold mt-6">Statut : {status}</p></section></CourierShell>}

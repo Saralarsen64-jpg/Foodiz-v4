@@ -34,6 +34,18 @@ const handler: Handler = async (event) => {
       };
     }
 
+    const siteUrl = process.env.URL;
+    if (siteUrl) {
+      const requestedUrl = new URL(returnUrl);
+      const allowedUrl = new URL(siteUrl);
+      if (requestedUrl.origin !== allowedUrl.origin) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: "Invalid returnUrl" }),
+        };
+      }
+    }
+
     // Récupérer l'email pour retrouver le customer Stripe
     const customers = await stripe.customers.list({
       email: data.user.email,

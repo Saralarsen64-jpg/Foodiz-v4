@@ -1,6 +1,7 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { createHash, randomInt } from "node:crypto";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const supabase = createClient(
@@ -232,6 +233,8 @@ const handler: Handler = async (event) => {
       ? Math.min(pointsBalance, totals.finalClientTotalCents)
       : 0;
     const amountToPayCents = Math.max(0, totals.finalClientTotalCents - pointsRedeemedCents);
+    const deliveryCode = randomInt(100000, 1000000).toString();
+    const deliveryCodeHash = createHash("sha256").update(deliveryCode).digest("hex");
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -278,6 +281,23 @@ const handler: Handler = async (event) => {
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     if (itemsError) {
       throw new Error(itemsError.message);
+    }
+
+    const { error: codeError } = await supabase.from("client_delivery_codes").insert({
+      order_id: order.id,
+      client_id: authData.user.id,
+      code: deliveryCode,
+    });
+    if (codeError) {
+      throw new Error(codeError.message);
+    }
+
+    const { error: verificationError } = await supabase.from("delivery_code_verifications").insert({
+      order_id: order.id,
+      code_hash: deliveryCodeHash,
+    });
+    if (verificationError) {
+      throw new Error(verificationError.message);
     }
 
     if (pointsRedeemedCents > 0) {

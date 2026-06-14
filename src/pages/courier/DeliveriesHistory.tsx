@@ -1,43 +1,12 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, CheckCircle } from "lucide-react";
-
-const HISTORY = [
-  { id: "d1", restaurant: "Maison K", gain: 4.5, date: "Aujourd'hui · 18:20", km: "2.1 km", status: "Livrée" },
-  { id: "d2", restaurant: "Sushi Ko", gain: 5.0, date: "Aujourd'hui · 16:50", km: "3.4 km", status: "Livrée" },
-  { id: "d3", restaurant: "Marché Bio", gain: 3.5, date: "Hier · 20:10", km: "1.8 km", status: "Livrée" },
-];
+import { CheckCircle2, MapPin, ReceiptText } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import CourierShell from "../../components/CourierShell";
 
 export default function DeliveriesHistoryPage() {
   const navigate = useNavigate();
-
-  return (
-    <div className="min-h-screen bg-foodiz-black">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/courier")} className="text-foodiz-gold"><ChevronLeft size={20} /></button>
-          <h1 className="foodiz-title text-lg">Historique des livraisons</h1>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
-        {HISTORY.map((delivery) => (
-          <button key={delivery.id} onClick={() => navigate(`/courier/deliveries/${delivery.id}`)} className="w-full foodiz-card p-4 text-left hover:border-foodiz-gold/30 transition-all">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-foodiz-green/10 border border-foodiz-green/20 flex items-center justify-center shrink-0">
-                <CheckCircle size={16} className="text-foodiz-green" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-foodiz-cream font-medium">{delivery.restaurant}</p>
-                <p className="text-[10px] text-foodiz-gray mt-1">{delivery.date} · {delivery.km}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-foodiz-gold font-semibold">+{delivery.gain.toFixed(2).replace(".", ",")} €</p>
-                <p className="text-[10px] text-foodiz-gray">{delivery.status}</p>
-              </div>
-            </div>
-          </button>
-        ))}
-      </main>
-    </div>
-  );
+  const [deliveries, setDeliveries] = useState<any[]>([]);
+  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data } = await supabase.from("orders").select("id, delivered_at, delivery_address, courier_earnings_cents, courier_prime_fund_cents, restaurant:restaurants(name)").eq("courier_id", user.id).eq("status", "delivered").order("delivered_at", { ascending: false }); setDeliveries(data || []); })(); }, []);
+  return <CourierShell title="Historique" back="/courier"><div className="space-y-3">{deliveries.length === 0 && <div className="foodiz-card p-10 text-center"><ReceiptText size={38} className="text-foodiz-gold/30 mx-auto" /><p className="text-foodiz-gray text-sm mt-4">Votre première livraison apparaîtra ici.</p></div>}{deliveries.map((delivery) => <button key={delivery.id} onClick={() => navigate(`/courier/deliveries/${delivery.id}/tracking`)} className="w-full foodiz-card p-5 text-left bg-white/[0.025] flex gap-4"><div className="w-12 h-12 rounded-2xl bg-foodiz-green/10 border border-foodiz-green/20 flex items-center justify-center"><CheckCircle2 size={19} className="text-foodiz-green" /></div><div className="flex-1 min-w-0"><p className="text-foodiz-cream font-semibold">{delivery.restaurant?.name || "Restaurant"}</p><p className="text-xs text-foodiz-gray mt-1 flex items-center gap-1 truncate"><MapPin size={11} /> {delivery.delivery_address}</p><p className="text-[10px] text-foodiz-gray mt-2">{new Date(delivery.delivered_at).toLocaleString("fr-FR")}</p></div><p className="text-foodiz-green font-serif text-lg">+{(((delivery.courier_earnings_cents || 0) + (delivery.courier_prime_fund_cents || 0)) / 100).toFixed(2)} €</p></button>)}</div></CourierShell>;
 }

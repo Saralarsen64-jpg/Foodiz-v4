@@ -1,12 +1,8 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { adminSupabase, authenticatedUser } from "./_lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -14,13 +10,41 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const { orderId, amountCents, email, metadata } = JSON.parse(event.body || "{}");
+    const user = await authenticatedUser(event.headers);
+    if (!user) {
+      return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    }
 
-    if (!orderId || !amountCents || !email) {
+    const { orderId, metadata } = JSON.parse(event.body || "{}");
+
+    if (!orderId) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Missing required fields" }),
+        body: JSON.stringify({ error: "Missing orderId" }),
       };
+    }
+
+    const { data: order } = await adminSupabase
+      .from("orders")
+      .select("client_id, final_client_total_cents, points_redeemed_cents, payment_status")
+      .eq("id", orderId)
+      .single();
+
+    if (!order || order.client_id !== user.id) {
+      return { statusCode: 404, body: JSON.stringify({ error: "Order not found" }) };
+    }
+
+    if (order.payment_status === "completed") {
+      return { statusCode: 409, body: JSON.stringify({ error: "Order already paid" }) };
+    }
+
+    const amountCents = Math.max(
+      0,
+      order.final_client_total_cents - (order.points_redeemed_cents || 0)
+    );
+    const email = user.email;
+    if (!email || amountCents <= 0) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Invalid payment data" }) };
     }
 
     // Créer ou récupérer le customer Stripe
@@ -55,13 +79,13 @@ const handler: Handler = async (event) => {
     });
 
     // Sauvegarder dans Supabase
-    await supabase.from("order_payments").insert({
+    await adminSupabase.from("order_payments").upsert({
       order_id: orderId,
       stripe_payment_intent_id: paymentIntent.id,
       amount_cents: amountCents,
       status: paymentIntent.status,
       client_secret: paymentIntent.client_secret,
-    });
+    }, { onConflict: "order_id" });
 
     return {
       statusCode: 200,

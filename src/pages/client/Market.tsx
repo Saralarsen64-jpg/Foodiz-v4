@@ -30,7 +30,7 @@ export default function MarketPage() {
           } catch(e) {}
 
           // On récupère les établissements (ici on prend tous les actifs, tu pourras filtrer par catégorie plus tard si besoin)
-          const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
+          const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true).or('cuisine_type.ilike.%market%,cuisine_type.ilike.%épicerie%');
           if (restos) {
             const filtered = restos.filter((r: any) => {
               if (r.latitude && r.longitude) {
@@ -38,7 +38,11 @@ export default function MarketPage() {
               }
               return true;
             });
-            setMarkets(filtered);
+            const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant: any) => restaurant.id));
+            setMarkets(filtered.map((market: any) => {
+              const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === market.id).map((review: any) => review.restaurant_rating).filter(Boolean);
+              return { ...market, rating: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau" };
+            }));
           }
         }
       }
@@ -83,8 +87,8 @@ export default function MarketPage() {
                 </div>
                 <h3 className="foodiz-title text-sm">{m.name}</h3>
                 <div className="flex items-center gap-2 mt-1 text-foodiz-gray text-[10px]">
-                  <span className="flex items-center gap-0.5"><Star size={9} className="text-foodiz-gold" /> 4.8</span>
-                  <span>• 20-30 min</span>
+                  <span className="flex items-center gap-0.5"><Star size={9} className="text-foodiz-gold" /> {m.rating}</span>
+                  <span>• Délai à confirmer</span>
                 </div>
               </button>
             ))}

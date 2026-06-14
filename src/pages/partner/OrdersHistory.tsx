@@ -1,18 +1,27 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, Clock, ChevronRight } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
-
-const HISTORICAL = [
-  { id: "h1", client: "Alexandre", items: "Burger x2, Frites", total: 28.60, partnerTotal: 19.00, date: "24 mai 2025", status: "Livrée" },
-  { id: "h2", client: "Marie", items: "Salade Caesar, Tiramisu", total: 18.20, partnerTotal: 12.00, date: "24 mai 2025", status: "Livrée" },
-  { id: "h3", client: "Julien", items: "Poulet Rôti, Légumes", total: 24.00, partnerTotal: 16.00, date: "23 mai 2025", status: "Livrée" },
-  { id: "h4", client: "Sophie", items: "Bowl Buddha, Limonade", total: 19.50, partnerTotal: 13.00, date: "23 mai 2025", status: "Annulée" },
-];
+import { supabase } from "../../lib/supabase";
 
 export default function PartnerOrdersHistory() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
+      if (!restaurant) return;
+      const { data } = await supabase.from("orders").select("id, status, final_client_total_cents, partner_total_cents, created_at, client:profiles!orders_client_id_fkey(full_name, first_name), order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).in("status", ["delivered", "cancelled"]).order("created_at", { ascending: false });
+      setOrders(data || []);
+    };
+    load();
+  }, []);
+
+  const filtered = useMemo(() => orders.filter((order) => `${order.id} ${order.client?.full_name || order.client?.first_name || ""}`.toLowerCase().includes(search.toLowerCase())), [orders, search]);
 
   return (
     <div className="min-h-screen bg-foodiz-black">
@@ -33,7 +42,7 @@ export default function PartnerOrdersHistory() {
         </div>
 
         <div className="space-y-2">
-          {HISTORICAL.map((h) => (
+          {filtered.map((h) => (
             <button key={h.id} onClick={() => navigate(`/partner/orders/${h.id}`)}
               className="w-full foodiz-card p-4 flex items-center gap-4 text-left hover:border-foodiz-gold/30 transition-all"
             >
@@ -42,20 +51,20 @@ export default function PartnerOrdersHistory() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-foodiz-cream">{h.client}</h3>
-                  <span className={`text-[10px] font-medium ${h.status === "Livrée" ? "text-foodiz-green" : "text-foodiz-red"}`}>
-                    {h.status}
+                  <h3 className="text-sm font-medium text-foodiz-cream">{h.client?.full_name || h.client?.first_name || "Client"}</h3>
+                  <span className={`text-[10px] font-medium ${h.status === "delivered" ? "text-foodiz-green" : "text-foodiz-red"}`}>
+                    {h.status === "delivered" ? "Livrée" : "Annulée"}
                   </span>
                 </div>
-                <p className="text-[11px] text-foodiz-gray mt-0.5">{h.items}</p>
+                <p className="text-[11px] text-foodiz-gray mt-0.5">{(h.order_items || []).map((item: any) => `${item.product?.name || "Produit"} x${item.quantity}`).join(", ")}</p>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-foodiz-gold text-xs font-semibold">{h.total.toFixed(2).replace(".", ",")} €</span>
+                  <span className="text-foodiz-gold text-xs font-semibold">{(h.final_client_total_cents / 100).toFixed(2).replace(".", ",")} €</span>
                   <span className="text-[10px] text-foodiz-gray">Client</span>
                   <span className="text-[10px] text-foodiz-gray">•</span>
-                  <span className="text-foodiz-green text-xs font-semibold">{h.partnerTotal.toFixed(2).replace(".", ",")} €</span>
+                  <span className="text-foodiz-green text-xs font-semibold">{(h.partner_total_cents / 100).toFixed(2).replace(".", ",")} €</span>
                   <span className="text-[10px] text-foodiz-gray">Reçu</span>
                 </div>
-                <p className="text-[10px] text-foodiz-gray/50 mt-1">{h.date}</p>
+                <p className="text-[10px] text-foodiz-gray/50 mt-1">{new Date(h.created_at).toLocaleDateString("fr-FR")}</p>
               </div>
               <ChevronRight size={16} className="text-foodiz-gold/30 shrink-0" />
             </button>

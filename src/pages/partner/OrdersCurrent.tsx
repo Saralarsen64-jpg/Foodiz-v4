@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Clock, CheckCircle, XCircle } from "lucide-react";
+import { supabase } from "../../lib/supabase";
 
-type OrderStatus = "new" | "preparing" | "ready";
+type OrderStatus = "pending" | "preparing" | "ready";
 
 type PartnerOrder = {
   id: string;
@@ -14,35 +15,55 @@ type PartnerOrder = {
   table: string;
 };
 
-const INITIAL_ORDERS: PartnerOrder[] = [
-  { id: "o1", client: "Alexandre", items: "Burger Artisanal x2, Frites x1", total: 28.6, status: "new", time: "Il y a 2 min", table: "Livraison" },
-  { id: "o2", client: "Marie", items: "Salade Caesar x1, Tiramisu x1", total: 18.2, status: "preparing", time: "12 min", table: "Livraison" },
-  { id: "o3", client: "Julien", items: "Poulet Rôti x1, Légumes x2", total: 24.0, status: "ready", time: "Prête", table: "Livraison" },
-  { id: "o4", client: "Sophie", items: "Bowl Buddha x1, Limonade x1", total: 19.5, status: "preparing", time: "8 min", table: "Livraison" },
-];
-
 export default function PartnerOrdersCurrent() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Nouvelles");
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [orders, setOrders] = useState<PartnerOrder[]>([]);
+
+  useEffect(() => {
+    let restaurantId = "";
+    const fetchOrders = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
+      if (!restaurant) return;
+      restaurantId = restaurant.id;
+      const { data } = await supabase.from("orders").select("id, status, final_client_total_cents, created_at, client:profiles!orders_client_id_fkey(full_name, first_name), order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).in("status", ["pending", "preparing", "ready"]).order("created_at");
+      setOrders((data || []).map((order: any) => ({
+        id: order.id,
+        client: order.client?.full_name || order.client?.first_name || "Client",
+        items: (order.order_items || []).map((item: any) => `${item.product?.name || "Produit"} x${item.quantity}`).join(", "),
+        total: order.final_client_total_cents / 100,
+        status: order.status,
+        time: new Date(order.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+        table: "Livraison",
+      })));
+    };
+    fetchOrders();
+    const channel = supabase.channel("partner-current-orders").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchOrders()).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const visibleOrders = useMemo(() => {
     if (activeTab === "Toutes") return orders;
-    if (activeTab === "Nouvelles") return orders.filter((o) => o.status === "new");
+    if (activeTab === "Nouvelles") return orders.filter((o) => o.status === "pending");
     if (activeTab === "En préparation") return orders.filter((o) => o.status === "preparing");
     return orders.filter((o) => o.status === "ready");
   }, [activeTab, orders]);
 
-  const acceptOrder = (id: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "preparing", time: "10 min" } : o)));
+  const acceptOrder = async (id: string) => {
+    const { error } = await supabase.from("orders").update({ status: "preparing" }).eq("id", id).eq("status", "pending");
+    if (!error) setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "preparing" } : o)));
   };
 
-  const refuseOrder = (id: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== id));
+  const refuseOrder = async (id: string) => {
+    const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", id).eq("status", "pending");
+    if (!error) setOrders((prev) => prev.filter((o) => o.id !== id));
   };
 
-  const markReady = (id: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "ready", time: "Prête" } : o)));
+  const markReady = async (id: string) => {
+    const { error } = await supabase.from("orders").update({ status: "ready" }).eq("id", id).eq("status", "preparing");
+    if (!error) setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "ready", time: "Prête" } : o)));
   };
 
   return (
@@ -79,13 +100,13 @@ export default function PartnerOrdersCurrent() {
                     <p className="text-[11px] text-foodiz-gray mt-0.5">{order.items}</p>
                   </div>
                   <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${
-                    order.status === "new"
+                    order.status === "pending"
                       ? "bg-foodiz-gold/20 text-foodiz-gold"
                       : order.status === "preparing"
                       ? "bg-foodiz-gold/10 text-foodiz-gold/70"
                       : "bg-foodiz-green/10 text-foodiz-green"
                   }`}>
-                    {order.status === "new" ? "Nouvelle" : order.status === "preparing" ? "En préparation" : "Prête"}
+                    {order.status === "pending" ? "Nouvelle" : order.status === "preparing" ? "En préparation" : "Prête"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-foodiz-gray mb-3">
@@ -95,7 +116,7 @@ export default function PartnerOrdersCurrent() {
               </button>
 
               <div className="flex gap-2">
-                {order.status === "new" && (
+                {order.status === "pending" && (
                   <>
                     <button onClick={() => acceptOrder(order.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-foodiz-green text-white text-xs font-medium hover:bg-foodiz-green/90 transition-all">
                       <CheckCircle size={14} /> Accepter

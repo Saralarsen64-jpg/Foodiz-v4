@@ -104,10 +104,10 @@ export default function PartnerProducts() {
                   <div>
                     <h3 className="text-foodiz-cream font-bold text-lg flex items-center gap-2">
                       {product.name}
-                      {!product.is_available && <span className="text-[10px] px-2 py-0.5 rounded bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 uppercase">Rupture</span>}
+                      {!product.is_active && <span className="text-[10px] px-2 py-0.5 rounded bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 uppercase">Rupture</span>}
                     </h3>
                     <p className="text-foodiz-gray text-xs mb-1">{product.category}</p>
-                    <p className="text-foodiz-gold font-serif italic text-lg">{(product.price_cents / 100).toFixed(2)} €</p>
+                    <p className="text-foodiz-gold font-serif italic text-lg">{(product.partner_price_cents / 100).toFixed(2)} €</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
