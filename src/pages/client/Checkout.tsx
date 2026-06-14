@@ -128,7 +128,7 @@ export default function CheckoutPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Utilisateur non trouvé");
 
-      const response = await fetch("/.netlify/functions/create-checkout-session", {
+      const response = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

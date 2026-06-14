@@ -34,7 +34,10 @@ const handler: Handler = async (event) => {
       };
     }
 
-    const siteUrl = process.env.URL;
+    const siteUrl = process.env.APP_URL
+      || (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : undefined);
     if (siteUrl) {
       const requestedUrl = new URL(returnUrl);
       const allowedUrl = new URL(siteUrl);

@@ -20,7 +20,7 @@ export async function createPaymentIntent(
   metadata: Record<string, string> = {}
 ) {
   try {
-    const response = await fetch("/.netlify/functions/create-payment-intent", {
+    const response = await fetch("/api/create-payment-intent", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -85,7 +85,7 @@ export async function createSubscription(
   billingPeriod: BillingPeriod = "monthly"
 ) {
   try {
-    const response = await fetch("/.netlify/functions/create-subscription", {
+    const response = await fetch("/api/create-subscription", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -115,7 +115,7 @@ export async function createSubscription(
  */
 export async function cancelSubscription(subscriptionId: string) {
   try {
-    const response = await fetch("/.netlify/functions/cancel-subscription", {
+    const response = await fetch("/api/cancel-subscription", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -142,7 +142,7 @@ export async function cancelSubscription(subscriptionId: string) {
  */
 export async function getSubscription(subscriptionId: string) {
   try {
-    const response = await fetch(`/.netlify/functions/get-subscription?id=${subscriptionId}`, {
+    const response = await fetch(`/api/get-subscription?id=${subscriptionId}`, {
       headers: {
         Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
       },
@@ -164,7 +164,7 @@ export async function getSubscription(subscriptionId: string) {
  */
 export async function createBillingPortalSession(returnUrl: string) {
   try {
-    const response = await fetch("/.netlify/functions/create-billing-portal", {
+    const response = await fetch("/api/create-billing-portal", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -196,7 +196,7 @@ export async function createPayout(
   currency: string = "EUR"
 ) {
   try {
-    const response = await fetch("/.netlify/functions/create-payout", {
+    const response = await fetch("/api/create-payout", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

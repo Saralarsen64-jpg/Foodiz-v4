@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["netlify/functions/**/*.ts", "src/lib/engines/**/*.ts"]
+  "include": ["api/**/*.ts", "netlify/functions/**/*.ts", "src/lib/engines/**/*.ts"]
 }

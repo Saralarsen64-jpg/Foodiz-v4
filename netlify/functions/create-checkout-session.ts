@@ -134,6 +134,17 @@ function bearerToken(event: Parameters<Handler>[0]) {
   return header?.replace(/^Bearer\s+/i, "");
 }
 
+function appOrigin(event: Parameters<Handler>[0]) {
+  const configuredUrl = process.env.APP_URL?.replace(/\/$/, "");
+  if (configuredUrl) return configuredUrl;
+
+  const requestOrigin = event.headers.origin?.replace(/\/$/, "");
+  if (requestOrigin) return requestOrigin;
+
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return vercelUrl ? `https://${vercelUrl}` : "http://localhost:5173";
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -233,6 +244,7 @@ const handler: Handler = async (event) => {
       ? Math.min(pointsBalance, totals.finalClientTotalCents)
       : 0;
     const amountToPayCents = Math.max(0, totals.finalClientTotalCents - pointsRedeemedCents);
+    const siteUrl = appOrigin(event);
     const deliveryCode = randomInt(100000, 1000000).toString();
     const deliveryCodeHash = createHash("sha256").update(deliveryCode).digest("hex");
 
@@ -312,7 +324,7 @@ const handler: Handler = async (event) => {
         statusCode: 200,
         body: JSON.stringify({
           orderId: order.id,
-          url: `${process.env.URL || "http://localhost:5173"}/client/orders/${order.id}`,
+          url: `${siteUrl}/client/orders/${order.id}`,
         }),
       };
     }
@@ -333,8 +345,8 @@ const handler: Handler = async (event) => {
           },
         },
       ],
-      success_url: `${process.env.URL || event.headers.origin || "http://localhost:5173"}/client/orders/${order.id}?payment=success`,
-      cancel_url: `${process.env.URL || event.headers.origin || "http://localhost:5173"}/client/checkout?payment=cancelled`,
+      success_url: `${siteUrl}/client/orders/${order.id}?payment=success`,
+      cancel_url: `${siteUrl}/client/checkout?payment=cancelled`,
       metadata: {
         orderId: order.id,
         clientId: authData.user.id,

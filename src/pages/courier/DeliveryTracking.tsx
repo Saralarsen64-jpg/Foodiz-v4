@@ -101,7 +101,7 @@ export default function DeliveryTrackingPage() {
     if (!id) return;
     setBusy(true);
     const token = (await supabase.auth.getSession()).data.session?.access_token;
-    const response = await fetch("/.netlify/functions/verify-delivery-code", {
+    const response = await fetch("/api/verify-delivery-code", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ orderId: id, code }),
