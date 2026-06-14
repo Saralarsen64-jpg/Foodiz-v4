@@ -55,6 +55,18 @@ CREATE TABLE IF NOT EXISTS public.payouts (
   updated_at timestamp with time zone DEFAULT now()
 );
 
+ALTER TABLE public.payouts
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS amount_cents integer,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR',
+  ADD COLUMN IF NOT EXISTS stripe_payout_id text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending',
+  ADD COLUMN IF NOT EXISTS failure_reason text,
+  ADD COLUMN IF NOT EXISTS requested_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS paid_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
+
 CREATE INDEX IF NOT EXISTS idx_payouts_user ON public.payouts(user_id);
 CREATE INDEX IF NOT EXISTS idx_payouts_status ON public.payouts(status);
 CREATE INDEX IF NOT EXISTS idx_payouts_stripe_id ON public.payouts(stripe_payout_id);

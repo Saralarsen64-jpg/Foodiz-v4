@@ -138,6 +138,15 @@ CREATE TABLE IF NOT EXISTS public.advantage_catalog (
   created_at timestamp with time zone DEFAULT now()
 );
 
+ALTER TABLE public.advantage_catalog
+  ADD COLUMN IF NOT EXISTS value_euros numeric NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS valid_until timestamp with time zone DEFAULT (now() + interval '7 days'),
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+
+ALTER TABLE public.advantage_catalog
+  ALTER COLUMN valid_until SET DEFAULT (now() + interval '7 days');
+
 CREATE TABLE IF NOT EXISTS public.client_locked_advantages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -159,16 +168,16 @@ ALTER TABLE public.client_payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.advantage_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.client_locked_advantages ENABLE ROW LEVEL SECURITY;
 
-INSERT INTO public.advantage_catalog (title, description, points_cost)
-SELECT '-10 % sur votre commande', 'Une remise immédiate sur votre prochaine commande.', 200
+INSERT INTO public.advantage_catalog (title, description, points_cost, value_euros, valid_until, is_active)
+SELECT '-10 % sur votre commande', 'Une remise immédiate sur votre prochaine commande.', 200, 10, now() + interval '7 days', true
 WHERE NOT EXISTS (SELECT 1 FROM public.advantage_catalog);
 
-INSERT INTO public.advantage_catalog (title, description, points_cost)
-SELECT 'Livraison offerte', 'Les frais de livraison sont offerts sur votre prochaine commande.', 150
+INSERT INTO public.advantage_catalog (title, description, points_cost, value_euros, valid_until, is_active)
+SELECT 'Livraison offerte', 'Les frais de livraison sont offerts sur votre prochaine commande.', 150, 0, now() + interval '7 days', true
 WHERE NOT EXISTS (SELECT 1 FROM public.advantage_catalog WHERE title = 'Livraison offerte');
 
-INSERT INTO public.advantage_catalog (title, description, points_cost)
-SELECT 'Dessert offert max 8€', 'Un dessert offert dans la limite de 8 euros.', 800
+INSERT INTO public.advantage_catalog (title, description, points_cost, value_euros, valid_until, is_active)
+SELECT 'Dessert offert max 8€', 'Un dessert offert dans la limite de 8 euros.', 800, 8, now() + interval '7 days', true
 WHERE NOT EXISTS (SELECT 1 FROM public.advantage_catalog WHERE title = 'Dessert offert max 8€');
 
 -- ---------- RLS policies required by the MVP app ----------
