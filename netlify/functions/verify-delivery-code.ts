@@ -1,6 +1,6 @@
 import { Handler } from "@netlify/functions";
 import { createHash, timingSafeEqual } from "node:crypto";
-import { adminSupabase, authenticatedUser } from "./_lib/auth";
+import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {

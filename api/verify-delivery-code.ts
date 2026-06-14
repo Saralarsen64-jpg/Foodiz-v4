@@ -1,4 +1,4 @@
-import { adaptNetlifyHandler } from "./_adapter";
-import { handler } from "../netlify/functions/verify-delivery-code";
+import { adaptNetlifyHandler } from "./_adapter.js";
+import { handler } from "../netlify/functions/verify-delivery-code.js";
 
 export default adaptNetlifyHandler(handler);

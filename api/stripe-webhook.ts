@@ -1,4 +1,4 @@
-import { adaptNetlifyHandler } from "./_adapter";
-import { handler } from "../netlify/functions/stripe-webhook";
+import { adaptNetlifyHandler } from "./_adapter.js";
+import { handler } from "../netlify/functions/stripe-webhook.js";
 
 export default adaptNetlifyHandler(handler);

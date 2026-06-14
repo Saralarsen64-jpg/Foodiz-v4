@@ -1,5 +1,5 @@
 import { Handler } from "@netlify/functions";
-import { authenticatedUser } from "./_lib/auth";
+import { authenticatedUser } from "./_lib/auth.js";
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
