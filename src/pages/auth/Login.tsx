@@ -15,6 +15,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      toast.error("Saisissez d'abord votre adresse e-mail.");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success("Un lien de réinitialisation vient de vous être envoyé.");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -92,7 +104,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button type="button" className="text-foodiz-gold text-xs font-medium block ml-auto">Mot de passe oublié ?</button>
+          <button type="button" onClick={handleForgotPassword} className="text-foodiz-gold text-xs font-medium block ml-auto">Mot de passe oublié ?</button>
 
           <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4">
             {loading ? "Connexion..." : "Se connecter"}

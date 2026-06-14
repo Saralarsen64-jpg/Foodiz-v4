@@ -23,7 +23,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
-  const isPro = role === 'partner' || role === 'courier';
+  const isPartner = role === 'partner';
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +41,20 @@ export default function SignupPage() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            role,
+            first_name: firstName,
+            last_name: lastName,
+            full_name: `${firstName} ${lastName}`.trim(),
+            phone,
+            address,
+            postal_code: postalCode,
+            city,
+            siret: role === "partner" ? siret : null,
+            business_name: role === "partner" ? `${firstName} ${lastName}`.trim() : null,
+            ref_code: role === "client" ? refCode : null,
+            cgu_accepted: cguAccepted,
+          },
         },
       });
 
@@ -50,81 +64,6 @@ export default function SignupPage() {
 
       if (!authData.user) {
         throw new Error("Erreur lors de la création du compte");
-      }
-
-      // 2. Créer le profil dans la table profiles
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        role: role,
-        email: email,
-        full_name: `${firstName} ${lastName}`.trim(),
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone,
-        address: address,
-        postal_code: postalCode,
-        city: city,
-        cgu_accepted: cguAccepted,
-      });
-
-      if (profileError) {
-        throw new Error(`Erreur création profil: ${profileError.message}`);
-      }
-
-      // 3. Si client, créer la wallet
-      if (role === 'client') {
-        const { error: walletError } = await supabase.from('client_wallets').insert({
-          user_id: authData.user.id,
-          points_balance: 0,
-          loyalty_tier: 'bronze',
-        });
-
-        if (walletError) {
-          console.warn('Avertissement wallet:', walletError);
-        }
-      }
-
-      // 4. Si partenaire ou livreur, créer les enregistrements spécifiques
-      if (role === 'partner' && siret) {
-        const { error: restaurantError } = await supabase.from('restaurants').insert({
-          owner_id: authData.user.id,
-          name: `${firstName} ${lastName}`,
-          status: 'pending',
-          siret: siret,
-          city: city,
-          postal_code: postalCode,
-          address: address,
-        });
-
-        if (restaurantError) {
-          console.warn('Avertissement restaurant:', restaurantError);
-        }
-
-        const { error: applicationError } = await supabase.from('partner_applications').insert({
-          user_id: authData.user.id,
-          business_name: `${firstName} ${lastName}`.trim(),
-          siret,
-          phone,
-          email,
-          address,
-          postal_code: postalCode,
-          city,
-          status: 'pending',
-        });
-
-        if (applicationError) {
-          console.warn('Avertissement candidature partenaire:', applicationError);
-        }
-      } else if (role === 'courier') {
-        const { error: courierError } = await supabase.from('courier_applications').insert({
-          user_id: authData.user.id,
-          status: 'pending',
-          city: city,
-        });
-
-        if (courierError) {
-          console.warn('Avertissement application livreur:', courierError);
-        }
       }
 
       setLoading(false);
@@ -195,7 +134,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {isPro && (
+          {isPartner && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
               <Briefcase size={18} className="text-foodiz-gold" />
               <input type="text" required value={siret} onChange={(e) => setSiret(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Numéro SIRET" />

@@ -66,6 +66,7 @@ import RoleSelectPage from "./pages/auth/RoleSelect";
 import LoginPage from "./pages/auth/Login";
 import SignupPage from "./pages/auth/Signup";
 import AuthCallback from "./pages/auth/Callback"; // NOUVEL IMPORT
+import ResetPasswordPage from "./pages/auth/ResetPassword";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/Dashboard";
@@ -91,6 +92,7 @@ export default function App() {
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
       <Route path="/auth/callback" element={<AuthCallback />} /> {/* NOUVELLE ROUTE */}
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route path="/admin/auth" element={<AdminAuth />} />
       <Route path="/admin-auth" element={<AdminAuth />} />
 

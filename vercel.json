@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/rotate-advantages",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "routes": [
     {
       "handle": "filesystem"

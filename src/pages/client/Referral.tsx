@@ -14,8 +14,8 @@ export default function ReferralPage() {
     const getLink = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('referral_code, referral_count').eq('id', user.id).single();
-        const realCode = profile?.referral_code || "FDZ-ERROR";
+        const { data: profile } = await supabase.from('profiles').select('ref_code, referral_count').eq('id', user.id).single();
+        const realCode = profile?.ref_code || "";
         const count = profile?.referral_count || 0;
         
         setCode(realCode);
