@@ -22,7 +22,7 @@ export default function DeliveryTrackingPage() {
   const [tracking, setTracking] = useState<any>(null);
   const [step, setStep] = useState<DeliveryStep>("accepted");
   const [enteredCode, setEnteredCode] = useState(["", "", "", "", "", ""]);
-  const [codeError, setCodeError] = useState(false);
+  const [codeError, setCodeError] = useState("");
   const [busy, setBusy] = useState(false);
   const [locationError, setLocationError] = useState("");
   const lastLocationUpdate = useRef(0);
@@ -117,10 +117,17 @@ export default function DeliveryTrackingPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ orderId: id, code }),
       });
-      if (!response.ok) throw new Error("Invalid delivery code");
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 429) {
+          const minutes = Math.max(1, Math.ceil(Number(payload.retryAfterSeconds || 900) / 60));
+          throw new Error(`Trop de tentatives. Réessayez dans ${minutes} min.`);
+        }
+        throw new Error(payload.remainingAttempts !== undefined ? `Code incorrect. ${payload.remainingAttempts} essai(s) restant(s).` : "Code incorrect.");
+      }
       setStep("delivered");
-    } catch {
-      setCodeError(true);
+    } catch (error: any) {
+      setCodeError(error.message || "Code incorrect.");
       setEnteredCode(["", "", "", "", "", ""]);
       document.getElementById("delivery-code-0")?.focus();
     } finally {
@@ -133,7 +140,7 @@ export default function DeliveryTrackingPage() {
     const next = [...enteredCode];
     next[index] = digit;
     setEnteredCode(next);
-    setCodeError(false);
+    setCodeError("");
     if (digit && index < 5) document.getElementById(`delivery-code-${index + 1}`)?.focus();
     if (index === 5 && digit && next.every(Boolean)) verifyCode(next.join(""));
   };
@@ -189,7 +196,7 @@ export default function DeliveryTrackingPage() {
             <div className="w-14 h-14 mx-auto rounded-2xl bg-foodiz-gold/10 border border-foodiz-gold/20 flex items-center justify-center mb-4"><ShieldCheck size={24} className="text-foodiz-gold" /></div>
             <h3 className="foodiz-title text-xl">Code de remise</h3><p className="text-xs text-foodiz-gray mt-2">Demandez au client son code personnel à 6 chiffres.</p>
             <div className="flex justify-center gap-2 mt-6">{enteredCode.map((digit, index) => <input key={index} id={`delivery-code-${index}`} value={digit} onChange={(event) => handleCodeChange(index, event.target.value)} inputMode="numeric" maxLength={1} className={`w-10 h-13 rounded-xl bg-foodiz-black border text-center text-lg font-bold text-foodiz-cream outline-none ${codeError ? "border-foodiz-red" : "border-foodiz-gold/30 focus:border-foodiz-gold"}`} />)}</div>
-            {codeError && <p className="text-foodiz-red text-xs mt-4 flex items-center justify-center gap-1"><X size={13} /> Code incorrect, réessayez.</p>}
+            {codeError && <p className="text-foodiz-red text-xs mt-4 flex items-center justify-center gap-1"><X size={13} /> {codeError}</p>}
           </section>
         )}
 

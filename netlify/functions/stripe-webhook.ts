@@ -195,6 +195,11 @@ const handler: Handler = async (event) => {
             .update({ status: "failed" })
             .eq("order_id", orderId);
 
+          await Promise.all([
+            supabase.from("client_delivery_codes").delete().eq("order_id", orderId),
+            supabase.from("delivery_code_verifications").delete().eq("order_id", orderId),
+          ]);
+
           if (order?.points_redeemed_cents) {
             const { data: wallet } = await supabase
               .from("client_wallets")

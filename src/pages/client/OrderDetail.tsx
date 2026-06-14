@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, MapPin, Clock, ShoppingBag } from "lucide-react";
+import { ChevronLeft, MapPin, Navigation, ShieldCheck } from "lucide-react";
 import { getOrder } from "../../lib/orders";
 
 export default function OrderDetailPage() {
@@ -46,6 +46,16 @@ export default function OrderDetailPage() {
         </div>
         <p className="text-sm text-foodiz-cream">{order.delivery_address || "Adresse non renseignée"}</p>
       </div>
+
+      {!['delivered', 'cancelled'].includes(order.status) && order.payment_status === 'completed' && (
+        <button onClick={() => navigate(`/client/orders/${id}/tracking`)} className="w-full foodiz-btn py-4 text-base mb-3 flex items-center justify-center gap-2">
+          <Navigation size={18} /> Suivre la commande et voir mon code
+        </button>
+      )}
+
+      {!['delivered', 'cancelled'].includes(order.status) && order.payment_status === 'completed' && (
+        <p className="mb-5 flex items-center justify-center gap-2 text-center text-xs text-foodiz-gray"><ShieldCheck size={14} className="text-foodiz-gold" />Le code à 6 chiffres est personnel. Donnez-le uniquement après réception.</p>
+      )}
 
       {order.status === "delivered" && <button onClick={() => navigate(`/client/orders/${id}/review`)} className="w-full foodiz-btn py-4 text-base">Noter cette commande</button>}
     </div>

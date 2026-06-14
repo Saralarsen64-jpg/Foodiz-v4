@@ -76,6 +76,10 @@ const handler: Handler = async (event) => {
     const { error: updateError } = await adminSupabase.from("orders").update({ payment_status: paymentIntentId ? "refunded" : "completed", refunded_at: paymentIntentId ? now : null, updated_at: now }).eq("id", orderId).eq("status", "cancelled");
     if (updateError) throw updateError;
     if (paymentIntentId) await adminSupabase.from("order_payments").update({ status: "refunded", updated_at: now }).eq("order_id", orderId);
+    await Promise.all([
+      adminSupabase.from("client_delivery_codes").delete().eq("order_id", orderId),
+      adminSupabase.from("delivery_code_verifications").delete().eq("order_id", orderId),
+    ]);
     await adminSupabase.from("notifications").insert({ user_id: order.client_id, title: paymentIntentId ? "Commande refusée et remboursée" : "Commande refusée", message: paymentIntentId ? `La commande #${orderId.slice(0, 8)} a été refusée. Stripe traite son remboursement.` : `La commande #${orderId.slice(0, 8)} a été refusée et vos points ont été restitués.`, type: "payment", related_order_id: orderId });
     return reply(200, { status: "cancelled", refunded: Boolean(paymentIntentId) });
   } catch (error) {
