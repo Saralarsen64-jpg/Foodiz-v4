@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Crown, History, Landmark, Megaphone, RefreshCw, Send, Sparkles, Target } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronLeft, Crown, ExternalLink, History, Landmark, Megaphone, RefreshCw, Send, Sparkles, Target } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
+import { createBillingPortalSession, createSubscription } from "../../lib/stripe";
 
 const AUDIENCES = [
   { id: "all_customers", label: "Tous mes anciens clients" },
@@ -25,6 +26,7 @@ async function foodizPlusRequest(method = "GET", body?: unknown) {
 
 export default function PartnerMarketing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -36,6 +38,8 @@ export default function PartnerMarketing() {
   const [templateKey, setTemplateKey] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [estimatedRecipients, setEstimatedRecipients] = useState<number | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
+  const [subscribingPlan, setSubscribingPlan] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -50,9 +54,53 @@ export default function PartnerMarketing() {
     setLoading(false);
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (checkout === "cancelled") {
+      toast("Paiement annulé. Aucun abonnement n'a été créé.");
+      navigate("/partner/marketing", { replace: true });
+      void load();
+      return;
+    }
+    if (checkout === "success") {
+      toast.success("Paiement reçu. Activation de Foodiz+ en cours...");
+      navigate("/partner/marketing", { replace: true });
+      let attempts = 0;
+      const refresh = async () => {
+        attempts += 1;
+        await load();
+        if (attempts < 5) window.setTimeout(refresh, 1500);
+      };
+      void refresh();
+      return;
+    }
+    void load();
+  }, []);
   const activePlan = data?.subscription?.plan;
   const selectedProduct = useMemo(() => data?.products?.find((product: any) => product.id === productId), [data?.products, productId]);
+
+  const subscribe = async (planId: string) => {
+    if (!data?.restaurant?.id) return;
+    setSubscribingPlan(planId);
+    try {
+      const checkoutUrl = await createSubscription(data.restaurant.id, planId, billingPeriod);
+      window.location.assign(checkoutUrl);
+    } catch (error: any) {
+      toast.error(error.code === "SUBSCRIPTION_ALREADY_EXISTS" ? "Un abonnement existe déjà. Gérez-le depuis votre espace de facturation." : "Impossible d'ouvrir le paiement Stripe.");
+      setSubscribingPlan("");
+    }
+  };
+
+  const openBillingPortal = async () => {
+    setWorking(true);
+    try {
+      const url = await createBillingPortalSession(`${window.location.origin}/partner/marketing`);
+      window.location.assign(url);
+    } catch {
+      toast.error("Impossible d'ouvrir l'espace de facturation.");
+      setWorking(false);
+    }
+  };
 
   const generate = async () => {
     if (!productId) return toast.error("Ajoutez ou choisissez un produit actif.");
@@ -95,8 +143,8 @@ export default function PartnerMarketing() {
 
       {loading ? <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement de Foodiz+...</div> : <>
         <section><div className="mb-4 flex items-center justify-between"><h2 className="foodiz-title text-xl">Votre forfait</h2>{activePlan && <span className="rounded-full border border-foodiz-green/20 bg-foodiz-green/5 px-3 py-1 text-[10px] uppercase text-foodiz-green">Actif</span>}</div>
-          {activePlan ? <div className="foodiz-card grid gap-4 border-foodiz-gold/20 p-5 md:grid-cols-3"><div><p className="text-xs text-foodiz-gray">Forfait</p><p className="mt-1 font-semibold text-foodiz-cream">{activePlan.name}</p></div><div><p className="text-xs text-foodiz-gray">Ce mois</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.monthly} / {activePlan.monthly_campaign_limit} campagnes</p></div><div><p className="text-xs text-foodiz-gray">Cette semaine</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.weekly} / {activePlan.weekly_campaign_limit} campagnes</p></div></div> : <div className="foodiz-card border-foodiz-gold/20 p-5"><p className="text-sm font-semibold text-foodiz-cream">Aucun abonnement actif</p><p className="mt-2 text-xs text-foodiz-gray">Vous pouvez préparer et prévisualiser une campagne. L'envoi sera disponible après la création des tarifs Stripe Foodiz+.</p></div>}
-          <div className="mt-4 grid gap-3 md:grid-cols-3">{(data.plans || []).map((plan: any) => <article key={plan.id} className={`foodiz-card p-5 ${plan.id === "boost" ? "border-foodiz-gold/40 bg-foodiz-gold/5" : "border-foodiz-gold/10"}`}><div className="flex items-center justify-between"><p className="font-semibold text-foodiz-cream">{plan.name}</p>{plan.id === "boost" ? <Crown size={17} className="text-foodiz-gold"/> : <Landmark size={17} className="text-foodiz-gold"/>}</div><p className="mt-4 text-2xl font-serif italic text-foodiz-gold">{(plan.monthly_price_cents / 100).toFixed(2)} €<span className="text-xs not-italic text-foodiz-gray"> / mois</span></p><p className="mt-2 text-xs text-foodiz-gray">{plan.monthly_campaign_limit} campagnes/mois · {plan.weekly_campaign_limit}/semaine</p><p className="mt-3 text-[10px] text-foodiz-gray">Annuel : {(plan.yearly_price_cents / 100).toFixed(2)} €</p><button disabled className="foodiz-btn-outline mt-4 w-full py-2 text-xs opacity-50">Bientôt disponible</button></article>)}</div>
+          {activePlan ? <div className="foodiz-card border-foodiz-gold/20 p-5"><div className="grid gap-4 md:grid-cols-3"><div><p className="text-xs text-foodiz-gray">Forfait</p><p className="mt-1 font-semibold text-foodiz-cream">{activePlan.name} · {data.subscription.billing_period === "yearly" ? "annuel" : "mensuel"}</p></div><div><p className="text-xs text-foodiz-gray">Ce mois</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.monthly} / {activePlan.monthly_campaign_limit} campagnes</p></div><div><p className="text-xs text-foodiz-gray">Cette semaine</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.weekly} / {activePlan.weekly_campaign_limit} campagnes</p></div></div><button onClick={openBillingPortal} disabled={working} className="foodiz-btn-outline mt-5 flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-40"><ExternalLink size={14}/>Gérer mon abonnement</button></div> : <div className="foodiz-card border-foodiz-gold/20 p-5"><p className="text-sm font-semibold text-foodiz-cream">Choisissez votre formule</p><p className="mt-2 text-xs text-foodiz-gray">Le paiement et la gestion de l'abonnement sont sécurisés par Stripe.</p><div className="mt-4 inline-flex rounded-full border border-foodiz-gold/20 bg-foodiz-black p-1"><button onClick={() => setBillingPeriod("monthly")} className={`rounded-full px-4 py-2 text-xs ${billingPeriod === "monthly" ? "bg-foodiz-gold text-foodiz-black" : "text-foodiz-gray"}`}>Mensuel</button><button onClick={() => setBillingPeriod("yearly")} className={`rounded-full px-4 py-2 text-xs ${billingPeriod === "yearly" ? "bg-foodiz-gold text-foodiz-black" : "text-foodiz-gray"}`}>Annuel · -15 %</button></div></div>}
+          <div className="mt-4 grid gap-3 md:grid-cols-3">{(data.plans || []).map((plan: any) => { const isCurrent = activePlan?.id === plan.id; const price = billingPeriod === "yearly" ? plan.yearly_price_cents : plan.monthly_price_cents; return <article key={plan.id} className={`foodiz-card p-5 ${plan.id === "boost" ? "border-foodiz-gold/40 bg-foodiz-gold/5" : "border-foodiz-gold/10"}`}><div className="flex items-center justify-between"><p className="font-semibold text-foodiz-cream">{plan.name}</p>{plan.id === "boost" ? <Crown size={17} className="text-foodiz-gold"/> : <Landmark size={17} className="text-foodiz-gold"/>}</div><p className="mt-4 text-2xl font-serif italic text-foodiz-gold">{(price / 100).toFixed(2)} €<span className="text-xs not-italic text-foodiz-gray"> / {billingPeriod === "yearly" ? "an" : "mois"}</span></p><p className="mt-2 text-xs text-foodiz-gray">{plan.monthly_campaign_limit} campagnes/mois · {plan.weekly_campaign_limit}/semaine</p>{billingPeriod === "yearly" && <p className="mt-3 text-[10px] text-foodiz-green">Deux mois environ économisés</p>}<button onClick={() => subscribe(plan.id)} disabled={Boolean(activePlan) || Boolean(subscribingPlan)} className={`${plan.id === "boost" ? "foodiz-btn" : "foodiz-btn-outline"} mt-4 w-full py-2 text-xs disabled:opacity-40`}>{isCurrent ? "Forfait actuel" : subscribingPlan === plan.id ? "Ouverture de Stripe..." : activePlan ? "Gérer pour changer" : "Choisir ce forfait"}</button></article>; })}</div>
         </section>
 
         <section className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]"><div className="foodiz-card space-y-4 p-5"><div className="flex items-center gap-2"><Target size={18} className="text-foodiz-gold"/><h2 className="foodiz-title text-lg">Préparer une campagne</h2></div>

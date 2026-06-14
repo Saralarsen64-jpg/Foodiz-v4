@@ -42,13 +42,16 @@ Plan Pro (Annuel)
 ### 1.4 Configurer le Webhook
 1. Allez à https://dashboard.stripe.com/webhooks
 2. Cliquez sur "Add endpoint"
-3. URL: `https://your-domain.netlify.app/.netlify/functions/stripe-webhook`
+3. URL: `https://www.foodiz.co/api/stripe-webhook`
 4. Sélectionnez les événements:
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
+   - `checkout.session.completed`
+   - `customer.subscription.created`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
    - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
 5. Copiez le **Webhook Secret** (whsec_*) → `STRIPE_WEBHOOK_SECRET`
 
 ---
@@ -186,7 +189,7 @@ brew install stripe/stripe-cli/stripe
 stripe login
 
 # Écouter les webhooks localement
-stripe listen --forward-to localhost:8888/.netlify/functions/stripe-webhook
+stripe listen --forward-to localhost:5173/api/stripe-webhook
 
 # Dans un autre terminal, déclencher un événement
 stripe trigger payment_intent.succeeded

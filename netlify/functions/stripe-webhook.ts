@@ -10,6 +10,45 @@ const supabase = createClient(
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
+function stripeId(value: string | Stripe.Customer | Stripe.DeletedCustomer | Stripe.Subscription | null) {
+  if (!value) return null;
+  return typeof value === "string" ? value : value.id;
+}
+
+async function syncPartnerSubscription(subscription: Stripe.Subscription, checkoutSessionId?: string | null) {
+  const restaurantId = subscription.metadata?.restaurantId;
+  const planId = subscription.metadata?.planId;
+  const billingPeriod = subscription.metadata?.billingPeriod;
+  if (!restaurantId || !planId || !billingPeriod) return;
+
+  const subscriptionData = subscription as any;
+  const firstItem = subscriptionData.items?.data?.[0];
+  const periodStart = subscriptionData.current_period_start ?? firstItem?.current_period_start;
+  const periodEnd = subscriptionData.current_period_end ?? firstItem?.current_period_end;
+  if (!periodStart || !periodEnd) throw new Error(`Missing billing period for subscription ${subscription.id}`);
+
+  const payload = {
+    restaurant_id: restaurantId,
+    stripe_subscription_id: subscription.id,
+    stripe_customer_id: stripeId(subscription.customer),
+    stripe_checkout_session_id: checkoutSessionId || undefined,
+    plan_id: planId,
+    billing_period: billingPeriod,
+    status: subscription.status,
+    current_period_start: new Date(periodStart * 1000).toISOString(),
+    current_period_end: new Date(periodEnd * 1000).toISOString(),
+    cancel_at_period_end: subscription.cancel_at_period_end,
+    canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+    updated_at: new Date().toISOString(),
+  };
+  await supabase.from("partner_subscriptions").upsert(payload, { onConflict: "stripe_subscription_id" });
+}
+
+function invoiceSubscriptionId(invoice: Stripe.Invoice) {
+  const invoiceData = invoice as any;
+  return stripeId(invoiceData.subscription || invoiceData.parent?.subscription_details?.subscription || null);
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -29,6 +68,15 @@ const handler: Handler = async (event) => {
 
     // Gérer les événements
     switch (stripeEvent.type) {
+      case "checkout.session.completed": {
+        const session = stripeEvent.data.object as Stripe.Checkout.Session;
+        if (session.mode === "subscription" && session.subscription) {
+          const subscription = await stripe.subscriptions.retrieve(stripeId(session.subscription) || "");
+          await syncPartnerSubscription(subscription, session.id);
+        }
+        break;
+      }
+
       case "payment_intent.succeeded": {
         const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
         const orderId = paymentIntent.metadata?.orderId;
@@ -139,20 +187,10 @@ const handler: Handler = async (event) => {
         break;
       }
 
+      case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = stripeEvent.data.object as Stripe.Subscription;
-        const restaurantId = subscription.metadata?.restaurantId;
-
-        if (restaurantId) {
-          await supabase
-            .from("partner_subscriptions")
-            .update({
-              status: subscription.status,
-              current_period_start: new Date(subscription.current_period_start * 1000),
-              current_period_end: new Date(subscription.current_period_end * 1000),
-            })
-            .eq("stripe_subscription_id", subscription.id);
-        }
+        await syncPartnerSubscription(subscription);
         break;
       }
 
@@ -163,7 +201,9 @@ const handler: Handler = async (event) => {
           .from("partner_subscriptions")
           .update({
             status: "canceled",
-            canceled_at: new Date(),
+            canceled_at: new Date().toISOString(),
+            cancel_at_period_end: false,
+            updated_at: new Date().toISOString(),
           })
           .eq("stripe_subscription_id", subscription.id);
         break;
@@ -171,7 +211,7 @@ const handler: Handler = async (event) => {
 
       case "invoice.payment_succeeded": {
         const invoice = stripeEvent.data.object as Stripe.Invoice;
-        const subscriptionId = invoice.subscription as string;
+        const subscriptionId = invoiceSubscriptionId(invoice);
 
         if (subscriptionId) {
           // Renouvellement de souscription confirmé
@@ -179,9 +219,19 @@ const handler: Handler = async (event) => {
             .from("partner_subscriptions")
             .update({
               status: "active",
-              last_payment_date: new Date(),
+              last_payment_date: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             })
             .eq("stripe_subscription_id", subscriptionId);
+        }
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = stripeEvent.data.object as Stripe.Invoice;
+        const subscriptionId = invoiceSubscriptionId(invoice);
+        if (subscriptionId) {
+          await supabase.from("partner_subscriptions").update({ status: "past_due", updated_at: new Date().toISOString() }).eq("stripe_subscription_id", subscriptionId);
         }
         break;
       }

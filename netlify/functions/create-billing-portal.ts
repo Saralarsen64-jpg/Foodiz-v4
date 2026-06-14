@@ -1,85 +1,38 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
 
 const handler: Handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
-  }
-
+  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
   try {
+    const user = await authenticatedUser(event.headers);
+    if (!user) return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
     const { returnUrl } = JSON.parse(event.body || "{}");
-    const auth = event.headers["authorization"];
-    const token = auth?.split(" ")[1];
+    if (!returnUrl) return { statusCode: 400, body: JSON.stringify({ error: "Missing returnUrl" }) };
 
-    if (!token || !returnUrl) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing token or returnUrl" }),
-      };
+    const configuredOrigin = process.env.APP_URL
+      || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined);
+    if (configuredOrigin && new URL(returnUrl).origin !== new URL(configuredOrigin).origin) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Invalid returnUrl" }) };
     }
 
-    // Récupérer l'utilisateur depuis le token
-    const { data } = await supabase.auth.getUser(token);
-    if (!data.user) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
-    }
+    const { data: subscription } = await adminSupabase
+      .from("partner_subscriptions")
+      .select("stripe_customer_id,restaurant:restaurants!inner(owner_id)")
+      .eq("restaurant.owner_id", user.id)
+      .not("stripe_customer_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!subscription?.stripe_customer_id) return { statusCode: 404, body: JSON.stringify({ error: "Stripe customer not found" }) };
 
-    const siteUrl = process.env.APP_URL
-      || (process.env.VERCEL_PROJECT_PRODUCTION_URL
-        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-        : undefined);
-    if (siteUrl) {
-      const requestedUrl = new URL(returnUrl);
-      const allowedUrl = new URL(siteUrl);
-      if (requestedUrl.origin !== allowedUrl.origin) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: "Invalid returnUrl" }),
-        };
-      }
-    }
-
-    // Récupérer l'email pour retrouver le customer Stripe
-    const customers = await stripe.customers.list({
-      email: data.user.email,
-      limit: 1,
-    });
-
-    if (customers.data.length === 0) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "No Stripe customer found" }),
-      };
-    }
-
-    // Créer une session du portail de facturation
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customers.data[0].id,
-      return_url: returnUrl,
-    });
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        url: session.url,
-      }),
-    };
+    const session = await stripe.billingPortal.sessions.create({ customer: subscription.stripe_customer_id, return_url: returnUrl });
+    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: session.url }) };
   } catch (error: any) {
-    console.error("Error creating billing portal session:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
-    };
+    console.error("Billing portal creation failed", error);
+    return { statusCode: 500, body: JSON.stringify({ error: "BILLING_PORTAL_FAILED" }) };
   }
 };
 

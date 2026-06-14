@@ -98,12 +98,9 @@ export async function createSubscription(
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
     const data = await response.json();
-    return data.subscription;
+    if (!response.ok) throw Object.assign(new Error(data.error || `HTTP error! status: ${response.status}`), { code: data.error });
+    return data.checkoutUrl as string;
   } catch (error) {
     console.error("Erreur création souscription:", error);
     throw error;

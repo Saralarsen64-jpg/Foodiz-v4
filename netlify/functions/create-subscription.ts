@@ -4,76 +4,46 @@ import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
+function appOrigin(event: Parameters<Handler>[0]) {
+  const configured = process.env.APP_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  const origin = event.headers.origin?.replace(/\/$/, "");
+  if (origin) return origin;
+  const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return productionUrl ? `https://${productionUrl}` : "http://localhost:5173";
+}
+
 const handler: Handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
-  }
+  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
   try {
     const user = await authenticatedUser(event.headers);
-    if (!user) {
-      return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
-    }
+    if (!user) return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
 
-    const { restaurantId, planId, billingPeriod } = JSON.parse(event.body || "{}");
+    const { restaurantId, planId, billingPeriod } = JSON.parse(event.body || "{}") as {
+      restaurantId?: string;
+      planId?: "discovery" | "boost" | "domination";
+      billingPeriod?: "monthly" | "yearly";
+    };
+    if (!restaurantId || !planId || !billingPeriod) return { statusCode: 400, body: JSON.stringify({ error: "Missing required fields" }) };
 
-    if (!restaurantId || !planId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing required fields" }),
-      };
-    }
+    const [{ data: restaurant }, { data: plan }] = await Promise.all([
+      adminSupabase.from("restaurants").select("id,name,owner_id").eq("id", restaurantId).maybeSingle(),
+      adminSupabase.from("foodiz_plus_plans").select("id,name,is_active").eq("id", planId).eq("is_active", true).maybeSingle(),
+    ]);
+    if (!restaurant || restaurant.owner_id !== user.id) return { statusCode: 404, body: JSON.stringify({ error: "Restaurant not found" }) };
+    if (!plan) return { statusCode: 400, body: JSON.stringify({ error: "Invalid plan" }) };
 
-    // Récupérer le propriétaire du restaurant
-    const { data: restaurant } = await adminSupabase
-      .from("restaurants")
-      .select("owner_id")
-      .eq("id", restaurantId)
-      .single();
+    const { data: activeSubscription } = await adminSupabase
+      .from("partner_subscriptions")
+      .select("id,stripe_subscription_id")
+      .eq("restaurant_id", restaurantId)
+      .in("status", ["active", "trialing", "past_due"])
+      .limit(1)
+      .maybeSingle();
+    if (activeSubscription) return { statusCode: 409, body: JSON.stringify({ error: "SUBSCRIPTION_ALREADY_EXISTS" }) };
 
-    if (!restaurant || restaurant.owner_id !== user.id) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Restaurant not found" }),
-      };
-    }
-
-    // Récupérer l'email du propriétaire
-    const { data: profile } = await adminSupabase
-      .from("profiles")
-      .select("email")
-      .eq("id", restaurant.owner_id)
-      .single();
-
-    if (!profile?.email) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Owner email not found" }),
-      };
-    }
-
-    // Créer ou récupérer le customer Stripe
-    const customers = await stripe.customers.list({
-      email: profile.email,
-      limit: 1,
-    });
-
-    let customerId: string;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    } else {
-      const customer = await stripe.customers.create({
-        email: profile.email,
-        metadata: {
-          restaurantId,
-          type: "partner",
-        },
-      });
-      customerId = customer.id;
-    }
-
-    // Plan IDs (à configurer dans votre compte Stripe)
-    const planPrices: Record<string, string | undefined> = {
+    const prices: Record<string, string | undefined> = {
       discovery_monthly: process.env.STRIPE_PLAN_DISCOVERY_MONTHLY,
       discovery_yearly: process.env.STRIPE_PLAN_DISCOVERY_YEARLY,
       boost_monthly: process.env.STRIPE_PLAN_BOOST_MONTHLY,
@@ -81,49 +51,46 @@ const handler: Handler = async (event) => {
       domination_monthly: process.env.STRIPE_PLAN_DOMINATION_MONTHLY,
       domination_yearly: process.env.STRIPE_PLAN_DOMINATION_YEARLY,
     };
+    const priceId = prices[`${planId}_${billingPeriod}`];
+    if (!priceId) return { statusCode: 503, body: JSON.stringify({ error: "PRICE_NOT_CONFIGURED" }) };
 
-    const priceId = planPrices[`${planId}_${billingPeriod}`];
-    if (!priceId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid plan or billing period" }),
-      };
+    const { data: previousSubscription } = await adminSupabase
+      .from("partner_subscriptions")
+      .select("stripe_customer_id")
+      .eq("restaurant_id", restaurantId)
+      .not("stripe_customer_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let customerId = previousSubscription?.stripe_customer_id || null;
+    if (!customerId && user.email) {
+      const existingCustomers = await stripe.customers.list({ email: user.email, limit: 1 });
+      customerId = existingCustomers.data[0]?.id || null;
+    }
+    if (!customerId) {
+      const customer = await stripe.customers.create({ email: user.email, name: restaurant.name, metadata: { restaurantId, ownerId: user.id, type: "foodiz_plus" } });
+      customerId = customer.id;
     }
 
-    // Créer la souscription
-    const subscription = await stripe.subscriptions.create({
+    const origin = appOrigin(event);
+    const metadata = { restaurantId, planId, billingPeriod, ownerId: user.id };
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
       customer: customerId,
-      items: [{ price: priceId }],
-      metadata: {
-        restaurantId,
-        planId,
-      },
-      payment_behavior: "default_incomplete",
-      expand: ["latest_invoice.payment_intent"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${origin}/partner/marketing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/partner/marketing?checkout=cancelled`,
+      allow_promotion_codes: false,
+      billing_address_collection: "auto",
+      metadata,
+      subscription_data: { metadata },
     });
 
-    await adminSupabase.from("partner_subscriptions").upsert({
-      restaurant_id: restaurantId,
-      stripe_subscription_id: subscription.id,
-      plan_id: planId,
-      billing_period: billingPeriod,
-      status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-    }, { onConflict: "stripe_subscription_id" });
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        subscription,
-      }),
-    };
+    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ checkoutUrl: session.url }) };
   } catch (error: any) {
-    console.error("Error creating subscription:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
-    };
+    console.error("Foodiz+ Checkout creation failed", error);
+    return { statusCode: 500, body: JSON.stringify({ error: "CHECKOUT_CREATION_FAILED" }) };
   }
 };
 
