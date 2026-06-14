@@ -17,20 +17,27 @@ export default function CourierDashboard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const [{ data: profile }, { data: delivered }, { count }, { data: active }] = await Promise.all([
+    const [{ data: profile }, { data: delivered }, { data: active }] = await Promise.all([
       supabase.from("profiles").select("full_name, courier_online").eq("id", user.id).single(),
       supabase.from("orders").select("courier_earnings_cents, courier_prime_fund_cents").eq("courier_id", user.id).eq("status", "delivered").gte("delivered_at", today.toISOString()),
-      supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "ready").is("courier_id", null),
       supabase.from("orders").select("id, status, delivery_address, restaurant:restaurants(name)").eq("courier_id", user.id).in("status", ["pickup", "picked_up", "delivering"]).limit(1).maybeSingle(),
     ]);
     setName(profile?.full_name?.split(" ")[0] || "Livreur"); setOnline(Boolean(profile?.courier_online));
     setTodayDeliveries(delivered?.length || 0); setTodayEarnings((delivered || []).reduce((sum, order) => sum + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0), 0) / 100);
-    setAvailable(count || 0); setActiveOrder(active);
+    setActiveOrder(active);
+    if (profile?.courier_online) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch("/api/courier-deliveries", { headers: { Authorization: `Bearer ${session?.access_token || ""}` } });
+      const payload = await response.json().catch(() => ({}));
+      setAvailable(response.ok ? payload.deliveries?.length || 0 : 0);
+    } else {
+      setAvailable(0);
+    }
   };
 
-  useEffect(() => { load(); const channel = supabase.channel("courier-dashboard").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, load).subscribe(); return () => { supabase.removeChannel(channel); }; }, []);
+  useEffect(() => { void load(); const interval = window.setInterval(() => void load(), 20000); return () => window.clearInterval(interval); }, []);
 
-  const toggleOnline = async () => { const next = !online; const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { error } = await supabase.from("profiles").update({ courier_online: next }).eq("id", user.id); if (!error) setOnline(next); };
+  const toggleOnline = async () => { const next = !online; const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { error } = await supabase.from("profiles").update({ courier_online: next }).eq("id", user.id); if (!error) { setOnline(next); if (!next) setAvailable(0); else void load(); } };
 
   return <CourierShell>
     <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.18),rgba(17,17,17,0.97)_38%,rgba(5,5,5,1))] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.55)]">

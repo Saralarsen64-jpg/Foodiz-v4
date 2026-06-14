@@ -194,7 +194,7 @@ const handler: Handler = async (event) => {
           .eq("is_active", true),
         supabase
           .from("restaurants")
-          .select("id, name, cuisine_type, latitude, longitude, is_active")
+          .select("id, name, owner_id, cuisine_type, latitude, longitude, is_active")
           .eq("id", restaurantId)
           .single(),
         supabase
@@ -318,7 +318,7 @@ const handler: Handler = async (event) => {
       .insert({
         client_id: authData.user.id,
         restaurant_id: restaurantId,
-        status: amountToPayCents === 0 ? "preparing" : "pending",
+        status: "pending",
         payment_status: amountToPayCents === 0 ? "completed" : "pending",
         delivery_address: deliveryAddress,
         client_latitude: client.latitude,
@@ -395,6 +395,17 @@ const handler: Handler = async (event) => {
       if (lockedAdvantage) {
         const { error: applyError } = await supabase.rpc("apply_order_advantage", { target_order_id: order.id });
         if (applyError) throw applyError;
+      }
+      const { error: loyaltyError } = await supabase.rpc("credit_order_loyalty", { target_order_id: order.id });
+      if (loyaltyError) throw loyaltyError;
+      if (restaurant.owner_id) {
+        await supabase.from("notifications").insert({
+          user_id: restaurant.owner_id,
+          type: "order",
+          title: "Nouvelle commande à confirmer",
+          message: `La commande #${order.id.slice(0, 8)} est réglée et attend votre confirmation.`,
+          data: { order_id: order.id },
+        });
       }
       return {
         statusCode: 200,

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bike, CheckCircle2, ChevronLeft, CircleUserRound, MapPin, MessageCircle, Navigation, Phone, ShieldCheck, Store, X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
 
 type DeliveryStep = "accepted" | "at_restaurant" | "picked_up" | "in_transit" | "at_customer" | "delivered";
 
@@ -80,16 +81,25 @@ export default function DeliveryTrackingPage() {
   const updateStep = async (next: DeliveryStep) => {
     if (!id) return;
     setBusy(true);
-    const now = new Date().toISOString();
-    const orderStatus = next === "picked_up" ? "picked_up" : next === "in_transit" || next === "at_customer" ? "delivering" : undefined;
-    if (orderStatus) await supabase.from("orders").update({ status: orderStatus }).eq("id", id);
-    await supabase.from("delivery_tracking").update({
-      status: next,
-      ...(next === "picked_up" ? { pickup_at: now } : {}),
-      ...(next === "at_customer" ? { estimated_arrival_at: now } : {}),
-    }).eq("order_id", id);
-    setStep(next);
-    setBusy(false);
+    try {
+      const now = new Date().toISOString();
+      const orderStatus = next === "picked_up" ? "picked_up" : next === "in_transit" || next === "at_customer" ? "delivering" : undefined;
+      if (orderStatus) {
+        const { error } = await supabase.from("orders").update({ status: orderStatus }).eq("id", id);
+        if (error) throw error;
+      }
+      const { error } = await supabase.from("delivery_tracking").update({
+        status: next,
+        ...(next === "picked_up" ? { pickup_at: now } : {}),
+        ...(next === "at_customer" ? { estimated_arrival_at: now } : {}),
+      }).eq("order_id", id);
+      if (error) throw error;
+      setStep(next);
+    } catch {
+      toast.error("Impossible de valider cette étape. Réessayez.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const nextStep = () => {
@@ -101,20 +111,21 @@ export default function DeliveryTrackingPage() {
     if (!id) return;
     setBusy(true);
     const token = (await supabase.auth.getSession()).data.session?.access_token;
-    const response = await fetch("/api/verify-delivery-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ orderId: id, code }),
-    });
-    if (!response.ok) {
+    try {
+      const response = await fetch("/api/verify-delivery-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId: id, code }),
+      });
+      if (!response.ok) throw new Error("Invalid delivery code");
+      setStep("delivered");
+    } catch {
       setCodeError(true);
       setEnteredCode(["", "", "", "", "", ""]);
       document.getElementById("delivery-code-0")?.focus();
+    } finally {
       setBusy(false);
-      return;
     }
-    setStep("delivered");
-    setBusy(false);
   };
 
   const handleCodeChange = (index: number, value: string) => {

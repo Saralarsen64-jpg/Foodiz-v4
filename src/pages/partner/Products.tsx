@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Plus, Edit, Trash2, Menu, LogOut, Activity, UserCheck, CreditCard, Megaphone } from "lucide-react";
+import { Plus, Edit, EyeOff, Menu, LogOut, Activity, UserCheck, CreditCard, Megaphone } from "lucide-react";
+import toast from "react-hot-toast";
 import Logo from "../../components/Logo";
 
 export default function PartnerProducts() {
@@ -26,11 +27,11 @@ export default function PartnerProducts() {
     fetchData();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Supprimer ce produit ?")) {
-      await supabase.from('products').delete().eq('id', id);
-      setProducts(products.filter(p => p.id !== id));
-    }
+  const handleArchive = async (id: string) => {
+    if (!window.confirm("Retirer ce produit de la vente ? Son historique sera conservé.")) return;
+    const { error } = await supabase.from('products').update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) toast.error("Impossible d'archiver ce produit.");
+    else { setProducts((current) => current.map((product) => product.id === id ? { ...product, is_active: false } : product)); toast.success("Produit retiré de la vente."); }
   };
 
   const menuItems = [
@@ -114,8 +115,8 @@ export default function PartnerProducts() {
                   <button onClick={() => navigate(`/partner/products/${product.id}/edit`)} className="p-3 rounded-xl bg-foodiz-gold/10 text-foodiz-gold hover:bg-foodiz-gold/20 transition-all">
                     <Edit size={18} />
                   </button>
-                  <button onClick={() => handleDelete(product.id)} className="p-3 rounded-xl bg-foodiz-red/10 text-foodiz-red hover:bg-foodiz-red/20 transition-all">
-                    <Trash2 size={18} />
+                  <button onClick={() => handleArchive(product.id)} disabled={!product.is_active} className="p-3 rounded-xl bg-foodiz-red/10 text-foodiz-red hover:bg-foodiz-red/20 transition-all disabled:opacity-30">
+                    <EyeOff size={18} />
                   </button>
                 </div>
               </div>

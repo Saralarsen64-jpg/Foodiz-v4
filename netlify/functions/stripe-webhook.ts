@@ -49,6 +49,46 @@ function invoiceSubscriptionId(invoice: Stripe.Invoice) {
   return stripeId(invoiceData.subscription || invoiceData.parent?.subscription_details?.subscription || null);
 }
 
+async function attributeCampaignConversion(orderId: string, clientId: string, restaurantId: string) {
+  const attributionStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: campaigns } = await supabase
+    .from("marketing_campaigns")
+    .select("id")
+    .eq("restaurant_id", restaurantId)
+    .eq("status", "sent")
+    .gte("sent_at", attributionStart);
+  const campaignIds = (campaigns || []).map((campaign) => campaign.id);
+  if (!campaignIds.length) return;
+
+  const { data: delivery } = await supabase
+    .from("marketing_campaign_deliveries")
+    .select("id,campaign_id")
+    .eq("user_id", clientId)
+    .in("campaign_id", campaignIds)
+    .not("clicked_at", "is", null)
+    .is("converted_order_id", null)
+    .order("clicked_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!delivery) return;
+
+  const { data: attributed } = await supabase
+    .from("marketing_campaign_deliveries")
+    .update({ converted_order_id: orderId })
+    .eq("id", delivery.id)
+    .is("converted_order_id", null)
+    .select("id")
+    .maybeSingle();
+  if (!attributed) return;
+
+  const { count } = await supabase
+    .from("marketing_campaign_deliveries")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", delivery.campaign_id)
+    .not("converted_order_id", "is", null);
+  await supabase.from("marketing_campaigns").update({ converted_orders_count: count || 0 }).eq("id", delivery.campaign_id);
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -84,61 +124,47 @@ const handler: Handler = async (event) => {
         if (orderId) {
           const { error: advantageError } = await supabase.rpc("apply_order_advantage", { target_order_id: orderId });
           if (advantageError) throw advantageError;
-          await supabase
+          const { data: order, error: orderError } = await supabase
             .from("orders")
             .update({
-              status: "preparing",
+              status: "pending",
               payment_status: "completed",
               stripe_payment_intent_id: paymentIntent.id,
             })
-            .eq("id", orderId);
+            .eq("id", orderId)
+            .eq("payment_status", "pending")
+            .select("client_id, restaurant_id, restaurants(owner_id)")
+            .maybeSingle();
+          if (orderError) throw orderError;
+          if (!order) break;
 
           await supabase
             .from("order_payments")
             .update({ status: "succeeded", stripe_payment_intent_id: paymentIntent.id })
             .eq("order_id", orderId);
 
-          const { data: order } = await supabase
-            .from("orders")
-            .select("client_id, restaurant_id, loyalty_fund_cents, restaurants(owner_id)")
-            .eq("id", orderId)
-            .single();
+          const { data: pointsEarned, error: loyaltyError } = await supabase.rpc("credit_order_loyalty", { target_order_id: orderId });
+          if (loyaltyError) throw loyaltyError;
+          const ownerId = (order.restaurants as any)?.owner_id;
+          await attributeCampaignConversion(orderId, order.client_id, order.restaurant_id);
 
-          if (order) {
-            const ownerId = (order.restaurants as any)?.owner_id;
-            const pointsEarned = Math.max(0, order.loyalty_fund_cents || 0);
-
-            const { data: wallet } = await supabase
-              .from("client_wallets")
-              .select("points_balance")
-              .eq("user_id", order.client_id)
-              .single();
-
-            if (wallet) {
-              await supabase
-                .from("client_wallets")
-                .update({ points_balance: (wallet.points_balance || 0) + pointsEarned })
-                .eq("user_id", order.client_id);
-            }
-
-            if (ownerId) {
-              await supabase.from("notifications").insert({
-                user_id: ownerId,
-                title: "Paiement reçu",
-                message: `Commande #${orderId.slice(0, 8)} - Paiement confirmé`,
-                type: "payment",
-                related_order_id: orderId,
-              });
-            }
-
+          if (ownerId) {
             await supabase.from("notifications").insert({
-              user_id: order.client_id,
-              title: "Commande confirmée",
-              message: `Votre commande #${orderId.slice(0, 8)} est en préparation. ${pointsEarned} point(s) Foodiz ont été ajoutés à votre compte.`,
-              type: "order",
+              user_id: ownerId,
+              title: "Paiement reçu",
+              message: `Commande #${orderId.slice(0, 8)} - Paiement confirmé`,
+              type: "payment",
               related_order_id: orderId,
             });
           }
+
+          await supabase.from("notifications").insert({
+            user_id: order.client_id,
+            title: "Commande confirmée",
+            message: `Votre commande #${orderId.slice(0, 8)} est payée et attend la confirmation du restaurant. ${pointsEarned || 0} point(s) Foodiz ont été ajoutés à votre compte.`,
+            type: "order",
+            related_order_id: orderId,
+          });
         }
         break;
       }

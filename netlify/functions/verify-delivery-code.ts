@@ -19,7 +19,7 @@ const handler: Handler = async (event) => {
 
   const { data: order } = await adminSupabase
     .from("orders")
-    .select("courier_id, status")
+    .select("client_id, courier_id, status")
     .eq("id", orderId)
     .single();
 
@@ -63,6 +63,13 @@ const handler: Handler = async (event) => {
     }).eq("order_id", orderId).eq("courier_id", user.id),
     adminSupabase.from("client_delivery_codes").delete().eq("order_id", orderId),
     adminSupabase.from("delivery_code_verifications").delete().eq("order_id", orderId),
+    adminSupabase.from("notifications").insert({
+      user_id: order.client_id,
+      title: "Commande livrée",
+      message: `La remise de votre commande #${orderId.slice(0, 8)} a été confirmée.`,
+      type: "order",
+      related_order_id: orderId,
+    }),
   ]);
 
   return { statusCode: 200, body: JSON.stringify({ delivered: true }) };

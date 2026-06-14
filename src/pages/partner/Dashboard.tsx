@@ -39,6 +39,8 @@ export default function PartnerDashboard() {
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [historyOrders, setHistoryOrders] = useState<any[]>([]);
   const [todayRevenue, setTodayRevenue] = useState(0);
+  const [todayOrdersCount, setTodayOrdersCount] = useState(0);
+  const [averageDeliveryMinutes, setAverageDeliveryMinutes] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [coverImage, setCoverImage] = useState("/images/auth-restaurant.jpg");
   const [location, setLocation] = useState("Adresse non renseignée");
@@ -104,7 +106,8 @@ export default function PartnerDashboard() {
             order_items(quantity)
           `)
           .eq("restaurant_id", restaurant.id)
-          .in("status", ["pending", "preparing", "ready", "pickup"])
+          .eq("payment_status", "completed")
+          .in("status", ["pending", "preparing", "ready"])
           .order("created_at", { ascending: true });
 
         const formattedActive = (activeOrdersData || []).map((order: any) => ({
@@ -139,11 +142,13 @@ export default function PartnerDashboard() {
 
           // Calculer le revenu du jour
           const today = new Date().toDateString();
-          const todayRevenue = deliveredOrders
-            .filter(order => new Date(order.created_at).toDateString() === today)
+          const todayOrders = deliveredOrders.filter(order => new Date(order.delivered_at || order.created_at).toDateString() === today);
+          const todayRevenue = todayOrders
             .reduce((sum, order) => sum + ((order.partner_total_cents || 0) / 100), 0);
-          
+          setTodayOrdersCount(todayOrders.length);
           setTodayRevenue(todayRevenue);
+          const timedOrders = deliveredOrders.filter((order: any) => order.delivered_at && order.created_at);
+          if (timedOrders.length) setAverageDeliveryMinutes(Math.round(timedOrders.reduce((sum: number, order: any) => sum + (new Date(order.delivered_at).getTime() - new Date(order.created_at).getTime()) / 60000, 0) / timedOrders.length));
 
           const grouped = deliveredOrders.reduce<Record<string, any>>((acc, order: any) => {
             const key = order.client_id;
@@ -218,7 +223,7 @@ export default function PartnerDashboard() {
           <button onClick={() => navigate("/partner/orders/current")} className="relative">
             <Bell size={20} className="text-foodiz-gold" />
             <span className="absolute -top-1 -right-1 bg-foodiz-gold text-foodiz-black text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-              3
+              {activeOrders.length}
             </span>
           </button>
         </div>
@@ -274,10 +279,10 @@ export default function PartnerDashboard() {
               </p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
                 {[
-                  { label: "Commandes aujourd'hui", value: 24, icon: ShoppingBag, change: "+12 %" },
-                  { label: "CA du jour", value: "386,50 €", icon: DollarSign, change: "+8 %" },
-                  { label: "Note moyenne", value: rating, icon: Star, change: "▲ 0,2" },
-                  { label: "Temps moyen", value: "22 min", icon: Clock, change: "-3 min" },
+                  { label: "Commandes livrées aujourd'hui", value: todayOrdersCount, icon: ShoppingBag, change: "Réel" },
+                  { label: "Revenus du jour", value: `${todayRevenue.toFixed(2)} €`, icon: DollarSign, change: "Réel" },
+                  { label: "Note moyenne", value: rating, icon: Star, change: "Avis clients" },
+                  { label: "Délai moyen complet", value: averageDeliveryMinutes === null ? "-" : `${averageDeliveryMinutes} min`, icon: Clock, change: "Création à livraison" },
                 ].map((stat) => (
                   <div key={stat.label} className="rounded-[1.2rem] border border-foodiz-gold/10 bg-white/[0.03] p-4">
                     <div className="flex items-center justify-between mb-2">

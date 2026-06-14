@@ -5,7 +5,7 @@ import {
   Plus,
   GripVertical,
   Edit2,
-  Eye,
+  EyeOff,
   Info,
   ArrowRight,
   FolderPlus,
@@ -47,6 +47,13 @@ export default function PartnerMenu() {
     const { error } = await supabase.from("partner_menu_categories").insert({ restaurant_id: restaurantId, name });
     if (!error) setCategories((current) => current.includes(name) ? current : [...current, name]);
     setNewCategory("");
+  };
+
+  const toggleAvailability = async (productId: string) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
+    const { error } = await supabase.from("products").update({ is_active: false, updated_at: new Date().toISOString() }).eq("id", productId).eq("restaurant_id", restaurantId);
+    if (!error) setProducts((current) => current.filter((item) => item.id !== productId));
   };
 
   return (
@@ -137,8 +144,8 @@ export default function PartnerMenu() {
                         >
                           <Edit2 size={16} />
                         </button>
-                        <button className="p-2 rounded-lg bg-foodiz-card border border-foodiz-gold/10 text-foodiz-cream hover:bg-foodiz-card/80">
-                          <Eye size={16} />
+                        <button onClick={() => toggleAvailability(product.id)} title="Retirer de la vente" className="p-2 rounded-lg bg-foodiz-card border border-foodiz-gold/10 text-foodiz-cream hover:bg-foodiz-card/80">
+                          <EyeOff size={16} />
                         </button>
                       </div>
                     </div>

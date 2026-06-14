@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Clock, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
 
 type OrderStatus = "pending" | "preparing" | "ready";
 
@@ -28,7 +29,7 @@ export default function PartnerOrdersCurrent() {
       const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
       if (!restaurant) return;
       restaurantId = restaurant.id;
-      const { data } = await supabase.from("orders").select("id, status, final_client_total_cents, created_at, client:profiles!orders_client_id_fkey(full_name, first_name), order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).in("status", ["pending", "preparing", "ready"]).order("created_at");
+      const { data } = await supabase.from("orders").select("id, status, final_client_total_cents, created_at, client:profiles!orders_client_id_fkey(full_name, first_name), order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).eq("payment_status", "completed").in("status", ["pending", "preparing", "ready"]).order("created_at");
       setOrders((data || []).map((order: any) => ({
         id: order.id,
         client: order.client?.full_name || order.client?.first_name || "Client",
@@ -51,19 +52,29 @@ export default function PartnerOrdersCurrent() {
     return orders.filter((o) => o.status === "ready");
   }, [activeTab, orders]);
 
+  const runAction = async (id: string, action: "accept" | "ready" | "refuse", reason?: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch("/api/partner-order-action", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` }, body: JSON.stringify({ orderId: id, action, reason }) });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "Action impossible");
+    return payload;
+  };
+
   const acceptOrder = async (id: string) => {
-    const { error } = await supabase.from("orders").update({ status: "preparing" }).eq("id", id).eq("status", "pending");
-    if (!error) setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "preparing" } : o)));
+    try { await runAction(id, "accept"); setOrders((prev) => prev.map((order) => order.id === id ? { ...order, status: "preparing" } : order)); toast.success("Commande acceptée."); }
+    catch { toast.error("Impossible d'accepter cette commande."); }
   };
 
   const refuseOrder = async (id: string) => {
-    const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", id).eq("status", "pending");
-    if (!error) setOrders((prev) => prev.filter((o) => o.id !== id));
+    const reason = window.prompt("Indiquez brièvement pourquoi la commande est refusée :");
+    if (reason === null) return;
+    try { const result = await runAction(id, "refuse", reason || "Indisponibilité exceptionnelle"); setOrders((prev) => prev.filter((order) => order.id !== id)); toast.success(result.refunded ? "Commande refusée, remboursement lancé." : "Commande refusée, points restitués."); }
+    catch { toast.error("Le refus n'a pas pu être finalisé. Aucun changement n'a été appliqué."); }
   };
 
   const markReady = async (id: string) => {
-    const { error } = await supabase.from("orders").update({ status: "ready" }).eq("id", id).eq("status", "preparing");
-    if (!error) setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "ready", time: "Prête" } : o)));
+    try { await runAction(id, "ready"); setOrders((prev) => prev.map((order) => order.id === id ? { ...order, status: "ready", time: "Prête" } : order)); toast.success("Commande prête pour le livreur."); }
+    catch { toast.error("Impossible de déclarer cette commande prête."); }
   };
 
   return (
