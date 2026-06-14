@@ -74,10 +74,12 @@ const handler: Handler = async (event) => {
 
     // Plan IDs (à configurer dans votre compte Stripe)
     const planPrices: Record<string, string | undefined> = {
-      basic_monthly: process.env.STRIPE_PLAN_BASIC_MONTHLY,
-      basic_yearly: process.env.STRIPE_PLAN_BASIC_YEARLY,
-      pro_monthly: process.env.STRIPE_PLAN_PRO_MONTHLY,
-      pro_yearly: process.env.STRIPE_PLAN_PRO_YEARLY,
+      discovery_monthly: process.env.STRIPE_PLAN_DISCOVERY_MONTHLY,
+      discovery_yearly: process.env.STRIPE_PLAN_DISCOVERY_YEARLY,
+      boost_monthly: process.env.STRIPE_PLAN_BOOST_MONTHLY,
+      boost_yearly: process.env.STRIPE_PLAN_BOOST_YEARLY,
+      domination_monthly: process.env.STRIPE_PLAN_DOMINATION_MONTHLY,
+      domination_yearly: process.env.STRIPE_PLAN_DOMINATION_YEARLY,
     };
 
     const priceId = planPrices[`${planId}_${billingPeriod}`];

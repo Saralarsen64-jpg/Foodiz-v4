@@ -1,194 +1,114 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Megaphone, Plus, History, Send, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Crown, History, Landmark, Megaphone, RefreshCw, Send, Sparkles, Target } from "lucide-react";
+import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
 
-type PartnerCampaign = { id: string; title: string; message: string; status: string; sentAt: string };
+const AUDIENCES = [
+  { id: "all_customers", label: "Tous mes anciens clients" },
+  { id: "new_customers", label: "Nouveaux clients (1 commande)" },
+  { id: "loyal_customers", label: "Clients fidèles (3 commandes ou plus)" },
+  { id: "inactive_customers", label: "Clients inactifs depuis 30 jours" },
+];
+
+async function foodizPlusRequest(method = "GET", body?: unknown) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const response = await fetch("/api/foodiz-plus", {
+    method,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(payload.error || "Foodiz+ indisponible"), { code: payload.error });
+  return payload;
+}
 
 export default function PartnerMarketing() {
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState<PartnerCampaign[]>([]);
-  const [restaurant, setRestaurant] = useState<any>(null);
-  const [products, setProducts] = useState<any[]>([]);
-  const [title, setTitle] = useState("Nouvelle offre Foodiz");
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
+  const [productId, setProductId] = useState("");
+  const [city, setCity] = useState("");
+  const [audience, setAudience] = useState("all_customers");
+  const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [sent, setSent] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [templateKey, setTemplateKey] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [estimatedRecipients, setEstimatedRecipients] = useState<number | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: restaurantData } = await supabase.from("restaurants").select("id, name").eq("owner_id", user.id).single();
-      if (!restaurantData) return;
-      setRestaurant(restaurantData);
-      setTitle(`Nouveauté chez ${restaurantData.name}`);
-      const [{ data: productData }, { data: campaignData }] = await Promise.all([
-        supabase.from("products").select("id, name").eq("restaurant_id", restaurantData.id).eq("is_active", true),
-        supabase.from("marketing_campaigns").select("id, title, description, is_active, created_at").eq("restaurant_id", restaurantData.id).order("created_at", { ascending: false }),
-      ]);
-      setProducts(productData || []);
-      if (productData?.[0]) {
-        setSelectedProductId(productData[0].id);
-        setMessage(`${productData[0].name} vous attend près de chez vous.`);
-      }
-      setCampaigns((campaignData || []).map((campaign: any) => ({ id: campaign.id, title: campaign.title, message: campaign.description || "", status: campaign.is_active ? "envoyée" : "terminée", sentAt: new Date(campaign.created_at).toLocaleString("fr-FR") })));
-    };
-    load();
-  }, []);
-
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
-
-  const handleSendCampaign = async () => {
-    if (!restaurant || !title.trim() || !message.trim()) return;
-    setSending(true);
-    const now = new Date();
-    const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const { data: campaign, error } = await supabase.from("marketing_campaigns").insert({
-      restaurant_id: restaurant.id,
-      title: title.trim(),
-      description: message.trim(),
-      start_date: now.toISOString(),
-      end_date: end.toISOString(),
-      is_active: true,
-    }).select("id, title, description, created_at").single();
-    if (error || !campaign) {
-      setSending(false);
-      return;
+  const load = async () => {
+    setLoading(true);
+    try {
+      const payload = await foodizPlusRequest();
+      setData(payload);
+      setProductId((current) => current || payload.products?.[0]?.id || "");
+      setCity((current) => current || payload.restaurant?.city || "");
+    } catch {
+      toast.error("Impossible de charger Foodiz+.");
     }
-
-    const { data: orders } = await supabase.from("orders").select("client_id").eq("restaurant_id", restaurant.id).eq("status", "delivered");
-    const clientIds = [...new Set((orders || []).map((order: any) => order.client_id))];
-    if (clientIds.length) {
-      await supabase.from("notifications").insert(clientIds.map((clientId) => ({
-        user_id: clientId,
-        title: campaign.title,
-        message: campaign.description,
-        type: "marketing",
-        link: `/client/establishments/${restaurant.id}`,
-      })));
-    }
-    setCampaigns((prev) => [{ id: campaign.id, title: campaign.title, message: campaign.description || "", status: "envoyée", sentAt: new Date(campaign.created_at).toLocaleString("fr-FR") }, ...prev]);
-    setSent(true);
-    setSending(false);
-    window.setTimeout(() => setSent(false), 1600);
+    setLoading(false);
   };
 
-  return (
-    <div className="min-h-screen bg-foodiz-black pb-24">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate("/partner")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-          <h1 className="foodiz-title text-lg">Foodiz+</h1>
-          <div className="w-6" />
+  useEffect(() => { void load(); }, []);
+  const activePlan = data?.subscription?.plan;
+  const selectedProduct = useMemo(() => data?.products?.find((product: any) => product.id === productId), [data?.products, productId]);
+
+  const generate = async () => {
+    if (!productId) return toast.error("Ajoutez ou choisissez un produit actif.");
+    setWorking(true);
+    try {
+      const payload = await foodizPlusRequest("POST", { action: "generate", productId, city, audience });
+      setSuggestions(payload.suggestions || []);
+      setEstimatedRecipients(payload.estimatedRecipientCount || 0);
+      if (payload.suggestions?.[0]) {
+        setTitle(payload.suggestions[0].title);
+        setMessage(payload.suggestions[0].message);
+        setTemplateKey(payload.suggestions[0].key);
+      }
+    } catch {
+      toast.error("La génération automatique a échoué.");
+    }
+    setWorking(false);
+  };
+
+  const send = async () => {
+    if (!activePlan) return toast.error("Un abonnement Foodiz+ actif est nécessaire.");
+    if (!title.trim() || !message.trim()) return toast.error("Choisissez ou rédigez un message.");
+    setWorking(true);
+    try {
+      const payload = await foodizPlusRequest("POST", { action: "send", productId, city, audience, title, message, templateKey });
+      toast.success(`Campagne envoyée à ${payload.recipientCount} client(s).`);
+      setSuggestions([]); setEstimatedRecipients(null); setTitle(""); setMessage(""); setTemplateKey("");
+      await load();
+    } catch (error: any) {
+      const labels: Record<string, string> = { ACTIVE_SUBSCRIPTION_REQUIRED: "Abonnement actif requis.", MONTHLY_QUOTA_REACHED: "Quota mensuel atteint.", WEEKLY_QUOTA_REACHED: "Quota hebdomadaire atteint." };
+      toast.error(labels[error.code] || "Impossible d'envoyer la campagne.");
+    }
+    setWorking(false);
+  };
+
+  return <div className="min-h-screen bg-foodiz-black pb-24">
+    <header className="sticky top-0 z-30 border-b border-foodiz-gold/10 bg-foodiz-card px-4 py-3"><div className="mx-auto flex max-w-5xl items-center justify-between"><button onClick={() => navigate("/partner")} className="text-foodiz-gold"><ChevronLeft size={24}/></button><h1 className="foodiz-title text-lg">Foodiz+</h1><div className="w-6"/></div></header>
+    <main className="mx-auto max-w-5xl space-y-8 px-4 py-6">
+      <section className="foodiz-card border-foodiz-gold/20 bg-[linear-gradient(135deg,rgba(216,168,79,0.14),rgba(17,17,17,0.97)_38%,#050505)] p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-foodiz-gold">Marketing local intelligent</p><h2 className="foodiz-title mt-2 text-3xl">Créez l'envie, sans coût d'IA</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-foodiz-gray">Foodiz compose vos messages à partir du produit, de la ville et de votre audience. Une campagne consomme une unité, quel que soit le nombre de clients éligibles.</p></div><Sparkles className="shrink-0 text-foodiz-gold" size={28}/></div></section>
+
+      {loading ? <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement de Foodiz+...</div> : <>
+        <section><div className="mb-4 flex items-center justify-between"><h2 className="foodiz-title text-xl">Votre forfait</h2>{activePlan && <span className="rounded-full border border-foodiz-green/20 bg-foodiz-green/5 px-3 py-1 text-[10px] uppercase text-foodiz-green">Actif</span>}</div>
+          {activePlan ? <div className="foodiz-card grid gap-4 border-foodiz-gold/20 p-5 md:grid-cols-3"><div><p className="text-xs text-foodiz-gray">Forfait</p><p className="mt-1 font-semibold text-foodiz-cream">{activePlan.name}</p></div><div><p className="text-xs text-foodiz-gray">Ce mois</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.monthly} / {activePlan.monthly_campaign_limit} campagnes</p></div><div><p className="text-xs text-foodiz-gray">Cette semaine</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.weekly} / {activePlan.weekly_campaign_limit} campagnes</p></div></div> : <div className="foodiz-card border-foodiz-gold/20 p-5"><p className="text-sm font-semibold text-foodiz-cream">Aucun abonnement actif</p><p className="mt-2 text-xs text-foodiz-gray">Vous pouvez préparer et prévisualiser une campagne. L'envoi sera disponible après la création des tarifs Stripe Foodiz+.</p></div>}
+          <div className="mt-4 grid gap-3 md:grid-cols-3">{(data.plans || []).map((plan: any) => <article key={plan.id} className={`foodiz-card p-5 ${plan.id === "boost" ? "border-foodiz-gold/40 bg-foodiz-gold/5" : "border-foodiz-gold/10"}`}><div className="flex items-center justify-between"><p className="font-semibold text-foodiz-cream">{plan.name}</p>{plan.id === "boost" ? <Crown size={17} className="text-foodiz-gold"/> : <Landmark size={17} className="text-foodiz-gold"/>}</div><p className="mt-4 text-2xl font-serif italic text-foodiz-gold">{(plan.monthly_price_cents / 100).toFixed(2)} €<span className="text-xs not-italic text-foodiz-gray"> / mois</span></p><p className="mt-2 text-xs text-foodiz-gray">{plan.monthly_campaign_limit} campagnes/mois · {plan.weekly_campaign_limit}/semaine</p><p className="mt-3 text-[10px] text-foodiz-gray">Annuel : {(plan.yearly_price_cents / 100).toFixed(2)} €</p><button disabled className="foodiz-btn-outline mt-4 w-full py-2 text-xs opacity-50">Bientôt disponible</button></article>)}</div>
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]"><div className="foodiz-card space-y-4 p-5"><div className="flex items-center gap-2"><Target size={18} className="text-foodiz-gold"/><h2 className="foodiz-title text-lg">Préparer une campagne</h2></div>
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Produit<select value={productId} onChange={(event) => setProductId(event.target.value)} className="mt-2 w-full rounded-xl border border-foodiz-gold/15 bg-foodiz-black p-3 text-sm normal-case text-foodiz-cream"><option value="">Choisir un produit</option>{(data.products || []).map((product: any) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Ville<input value={city} onChange={(event) => setCity(event.target.value)} className="mt-2 w-full rounded-xl border border-foodiz-gold/15 bg-foodiz-black p-3 text-sm normal-case text-foodiz-cream"/></label>
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Audience<select value={audience} onChange={(event) => setAudience(event.target.value)} className="mt-2 w-full rounded-xl border border-foodiz-gold/15 bg-foodiz-black p-3 text-sm normal-case text-foodiz-cream">{AUDIENCES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+          <button onClick={generate} disabled={working || !productId} className="foodiz-btn flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40"><RefreshCw size={15} className={working ? "animate-spin" : ""}/>Générer gratuitement</button>{estimatedRecipients !== null && <p className="text-center text-xs text-foodiz-gray">Audience estimée après anti-spam : <span className="text-foodiz-gold">{estimatedRecipients} client(s)</span></p>}
         </div>
-      </header>
+        <div className="foodiz-card space-y-4 p-5"><div className="flex items-center gap-2"><Megaphone size={18} className="text-foodiz-gold"/><h2 className="foodiz-title text-lg">Message</h2></div>{suggestions.length > 0 && <div className="flex gap-2 overflow-x-auto pb-1">{suggestions.map((suggestion) => <button key={suggestion.key} onClick={() => { setTitle(suggestion.title); setMessage(suggestion.message); setTemplateKey(suggestion.key); }} className={`shrink-0 rounded-full border px-3 py-2 text-[10px] ${templateKey === suggestion.key ? "border-foodiz-gold bg-foodiz-gold/10 text-foodiz-gold" : "border-white/10 text-foodiz-gray"}`}>{suggestion.title}</button>)}</div>}<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={90} placeholder="Titre de la notification" className="w-full rounded-xl border border-foodiz-gold/15 bg-foodiz-black p-3 text-sm text-foodiz-cream"/><textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={240} placeholder="Message de campagne" className="h-28 w-full resize-none rounded-xl border border-foodiz-gold/15 bg-foodiz-black p-3 text-sm text-foodiz-cream"/><div className="rounded-xl border border-foodiz-gold/10 bg-foodiz-gold/5 p-4"><p className="text-[9px] uppercase text-foodiz-gold">Aperçu client</p><p className="mt-2 text-sm font-semibold text-foodiz-cream">{title || "Titre de notification"}</p><p className="mt-1 text-xs text-foodiz-gray">{message || `${selectedProduct?.name || "Votre produit"} apparaîtra ici.`}</p></div><button onClick={send} disabled={working || !activePlan || !title.trim() || !message.trim()} className="foodiz-btn flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40"><Send size={15}/>Envoyer maintenant</button></div></section>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        <div className="foodiz-card p-6 bg-[linear-gradient(135deg,rgba(216,168,79,0.12),rgba(17,17,17,0.96)_28%,rgba(5,5,5,1)_100%)] border-foodiz-gold/20">
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold font-bold mb-2">Foodiz+</p>
-              <h2 className="foodiz-title text-2xl mb-2">Créer une campagne locale</h2>
-              <p className="text-foodiz-gray text-sm max-w-lg">
-                C’est vous, partenaire Foodiz, qui choisissez le message, le produit mis en avant et l’angle de la notification reçue par vos clients.
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-foodiz-gold/10 border border-foodiz-gold/15 flex items-center justify-center shrink-0">
-              <Megaphone size={20} className="text-foodiz-gold" />
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            <div className="foodiz-card p-4 bg-white/[0.02] border-foodiz-gold/10">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Produit mis en avant</label>
-              <select
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                className="w-full mt-2 bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-sm text-foodiz-cream outline-none"
-              >
-                {products.map((product) => (
-                  <option key={product.id} value={product.id} className="bg-foodiz-card">
-                    {product.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="foodiz-card p-4 bg-white/[0.02] border-foodiz-gold/10">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Titre de notification</label>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full mt-2 bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-sm text-foodiz-cream outline-none"
-              />
-            </div>
-
-            <div className="foodiz-card p-4 bg-white/[0.02] border-foodiz-gold/10">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Message envoyé au client</label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ex: Le burger fond déjà… ce soir, il vous attend chez Maison K."
-                className="w-full mt-2 min-h-[110px] resize-none bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl px-4 py-3 text-sm text-foodiz-cream outline-none"
-              />
-            </div>
-
-            <div className="foodiz-card p-4 bg-foodiz-gold/5 border-foodiz-gold/15">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-foodiz-gold mb-2">Aperçu client</p>
-              <div className="rounded-2xl border border-foodiz-gold/10 bg-black/30 p-4">
-                <p className="text-sm font-medium text-foodiz-cream">{title || "Titre de notification"}</p>
-                <p className="text-xs text-foodiz-gray mt-1">{message || "Votre message apparaîtra ici."}</p>
-                {selectedProduct && (
-                  <p className="text-[10px] text-foodiz-gold mt-3">Produit lié : {selectedProduct.name}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-3 flex-wrap">
-              <button disabled={sending} onClick={handleSendCampaign} className="foodiz-btn !py-3 !px-4 text-xs flex items-center gap-2 disabled:opacity-50">
-                <Send size={14} /> {sending ? "Envoi..." : "Envoyer cette campagne"}
-              </button>
-              <button onClick={() => navigate("/partner/products/new")} className="foodiz-btn-outline !py-3 !px-4 text-xs flex items-center gap-2">
-                <Plus size={14} /> Créer un nouveau produit à pousser
-              </button>
-            </div>
-
-            {sent && (
-              <div className="foodiz-card p-3 text-xs text-foodiz-green border-foodiz-green/20 bg-foodiz-green/5 flex items-center gap-2">
-                <CheckCircle2 size={14} /> Campagne envoyée. Elle est maintenant visible côté client ciblé dans les notifications.
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <History size={16} className="text-foodiz-gold" />
-            <h3 className="foodiz-title text-sm">Historique des campagnes envoyées</h3>
-          </div>
-          <div className="space-y-3">
-            {campaigns.length === 0 && (
-              <div className="foodiz-card p-4 text-sm text-foodiz-gray">Aucune campagne envoyée pour le moment.</div>
-            )}
-            {campaigns.map((campaign) => (
-              <div key={campaign.id} className="foodiz-card p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-foodiz-cream font-medium">{campaign.title}</p>
-                    <p className="text-[10px] text-foodiz-gray mt-1">{campaign.message}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-foodiz-gold uppercase">{campaign.status}</p>
-                    <p className="text-[10px] text-foodiz-gray mt-1">{campaign.sentAt}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+        <section><div className="mb-4 flex items-center gap-2"><History size={18} className="text-foodiz-gold"/><h2 className="foodiz-title text-lg">Historique réel</h2></div>{data.campaigns.length === 0 ? <div className="foodiz-card p-5 text-center text-sm text-foodiz-gray">Aucune campagne envoyée.</div> : <div className="space-y-3">{data.campaigns.map((campaign: any) => <article key={campaign.id} className="foodiz-card p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-foodiz-cream">{campaign.title}</p><p className="mt-1 text-xs text-foodiz-gray">{campaign.description}</p></div><span className="rounded-full border border-foodiz-gold/20 px-2 py-1 text-[9px] uppercase text-foodiz-gold">{campaign.status}</span></div><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-white/[0.03] p-2"><p className="text-sm text-foodiz-cream">{campaign.recipient_count}</p><p className="text-[9px] text-foodiz-gray">Reçues</p></div><div className="rounded-xl bg-white/[0.03] p-2"><p className="text-sm text-foodiz-cream">{campaign.opened_count}</p><p className="text-[9px] text-foodiz-gray">Ouvertes</p></div><div className="rounded-xl bg-white/[0.03] p-2"><p className="text-sm text-foodiz-cream">{campaign.converted_orders_count}</p><p className="text-[9px] text-foodiz-gray">Commandes</p></div></div></article>)}</div>}</section>
+      </>}
+    </main>
+  </div>;
 }
