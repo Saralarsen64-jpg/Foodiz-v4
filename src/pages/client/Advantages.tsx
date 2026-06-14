@@ -84,23 +84,6 @@ export default function AdvantagesPage() {
     }
   };
 
-  const redeemAdvantage = async () => {
-    if (!lockedAdvantage || busy) return;
-    setBusy(true);
-    const { data, error } = await supabase.rpc('redeem_locked_advantage');
-    if (error || !data) {
-      toast.error(error?.message.includes("Insufficient") ? "Votre solde de points est insuffisant." : "Cet avantage n'est plus disponible.");
-      setBusy(false);
-      return;
-    }
-    const reward = Array.isArray(data) ? data[0] : data;
-    setPoints((current) => current - lockedAdvantage.points_cost);
-    setRewards((current) => [reward, ...current]);
-    setLockedAdvantage(null);
-    toast.success("Votre récompense Foodiz est débloquée.");
-    setBusy(false);
-  };
-
   const currentTier = points >= 5000 ? { name: "Platinum", icon: Crown, color: "text-foodiz-cream" } : points >= 1500 ? { name: "Gold", icon: Trophy, color: "text-foodiz-gold" } : { name: "Membre", icon: Star, color: "text-gray-400" };
 
   return (
@@ -151,7 +134,7 @@ export default function AdvantagesPage() {
               <div className="text-right flex flex-col items-end gap-2">
                 <p className="text-foodiz-gold font-bold text-sm">{lockedAdvantage.points_cost} pts</p>
                 {points >= lockedAdvantage.points_cost ? (
-                  <button disabled={busy} onClick={redeemAdvantage} className="px-3 py-1 rounded-lg bg-foodiz-green text-foodiz-black text-[10px] font-bold disabled:opacity-50">{busy ? "Patientez..." : "Débloquer"}</button>
+                  <button onClick={() => navigate('/client/cart')} className="px-3 py-1 rounded-lg bg-foodiz-green text-foodiz-black text-[10px] font-bold">Utiliser au paiement</button>
                 ) : (
                   <button onClick={handleUnlock} className="px-3 py-1 rounded-lg bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 text-[10px] font-bold">Déverrouiller</button>
                 )}

@@ -161,11 +161,11 @@ const handler: Handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ error: "Invalid session" }) };
     }
 
-    const { restaurantId, items, deliveryAddress, usePoints } = JSON.parse(event.body || "{}") as {
+    const { restaurantId, items, deliveryAddress, useAdvantage } = JSON.parse(event.body || "{}") as {
       restaurantId?: string;
       items?: CheckoutItem[];
       deliveryAddress?: string;
-      usePoints?: boolean;
+      useAdvantage?: boolean;
     };
 
     if (!restaurantId || !Array.isArray(items) || items.length === 0 || !deliveryAddress) {
@@ -188,13 +188,13 @@ const handler: Handler = async (event) => {
       await Promise.all([
         supabase
           .from("products")
-          .select("id, name, partner_price_cents, restaurant_id")
+          .select("id, name, category, partner_price_cents, restaurant_id")
           .in("id", productIds)
           .eq("restaurant_id", restaurantId)
           .eq("is_active", true),
         supabase
           .from("restaurants")
-          .select("id, name, latitude, longitude, is_active")
+          .select("id, name, cuisine_type, latitude, longitude, is_active")
           .eq("id", restaurantId)
           .single(),
         supabase
@@ -239,11 +239,76 @@ const handler: Handler = async (event) => {
     }
 
     const totals = calculateFoodizOrder(calculationItems, distanceKm);
-    const pointsBalance = wallet?.points_balance || 0;
-    const pointsRedeemedCents = usePoints
-      ? Math.min(pointsBalance, totals.finalClientTotalCents)
-      : 0;
-    const amountToPayCents = Math.max(0, totals.finalClientTotalCents - pointsRedeemedCents);
+    const { data: reservedRows } = await supabase
+      .from("order_advantage_redemptions")
+      .select("points_cost")
+      .eq("user_id", authData.user.id)
+      .eq("status", "reserved");
+    const reservedPoints = (reservedRows || []).reduce((sum, row) => sum + Number(row.points_cost || 0), 0);
+    const availablePoints = Math.max(0, (wallet?.points_balance || 0) - reservedPoints);
+
+    let lockedAdvantage: any = null;
+    let advantageDiscountCents = 0;
+    if (useAdvantage) {
+      const { data: locked } = await supabase
+        .from("client_locked_advantages")
+        .select("id,catalog_id,title,points_cost")
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
+      if (!locked) return { statusCode: 409, body: JSON.stringify({ error: "Avantage verrouillé introuvable" }) };
+
+      const { data: catalog } = await supabase.from("advantage_catalog").select("*").eq("id", locked.catalog_id).single();
+      if (!catalog || availablePoints < catalog.points_cost) {
+        return { statusCode: 409, body: JSON.stringify({ error: "Solde insuffisant pour cet avantage" }) };
+      }
+
+      const isMarket = /market|épicerie/i.test(restaurant.cuisine_type || "");
+      if ((catalog.category === "market" && !isMarket) || (catalog.category === "restaurant" && isMarket)) {
+        return { statusCode: 409, body: JSON.stringify({ error: "Cet avantage n'est pas compatible avec cet établissement" }) };
+      }
+      if ((catalog.eligible_establishments || []).length && !catalog.eligible_establishments.includes(restaurantId)) {
+        return { statusCode: 409, body: JSON.stringify({ error: "Établissement non éligible à cet avantage" }) };
+      }
+      if (totals.partnerTotalCents < Number(catalog.minimum_order_cents || 0)) {
+        return { statusCode: 409, body: JSON.stringify({ error: "Le minimum d'achat de cet avantage n'est pas atteint" }) };
+      }
+
+      const faceValue = Number(catalog.face_value_cents || catalog.points_cost || 0);
+      if (catalog.reward_type === "free_delivery") {
+        advantageDiscountCents = Math.min(faceValue, totals.deliveryFeeCents);
+      } else if (catalog.reward_type === "free_item") {
+        const key = String(catalog.template_key || "");
+        const keywords: Record<string, RegExp> = {
+          "250-drink": /boisson|soda|jus|eau|café|thé/i,
+          "250-dessert": /dessert|gâteau|tarte|glace|cookie|brownie/i,
+          "500-starter": /entrée|starter|soupe|nems|bruschetta/i,
+          "500-dessert": /dessert|gâteau|tarte|glace|cookie|brownie/i,
+          "500-kids": /enfant|kids/i,
+          "800-dessert": /dessert|gâteau|tarte|glace|cookie|brownie/i,
+          "800-pizza": /pizza/i,
+          "800-salad": /salade/i,
+          "1000-menu": /menu|formule/i,
+          "1500-menu": /menu|formule/i,
+          "1500-fruit": /fruit/i,
+          "1500-treats": /gourmand|confiserie|chocolat|bonbon|biscuit/i,
+          "2000-premium": /premium|menu|formule/i,
+        };
+        const matcher = keywords[key];
+        const eligibleIds: string[] = catalog.eligible_products || [];
+        const eligibleProduct = products.find((product) =>
+          eligibleIds.length ? eligibleIds.includes(product.id) : matcher ? matcher.test(`${product.name} ${product.category}`) : true
+        );
+        if (!eligibleProduct) {
+          return { statusCode: 409, body: JSON.stringify({ error: "Ajoutez un produit éligible au panier pour utiliser cet avantage" }) };
+        }
+        advantageDiscountCents = Math.min(faceValue, eligibleProduct.partner_price_cents);
+      } else {
+        advantageDiscountCents = Math.min(faceValue, totals.finalClientTotalCents);
+      }
+      lockedAdvantage = { ...locked, catalog };
+    }
+
+    const amountToPayCents = Math.max(0, totals.finalClientTotalCents - advantageDiscountCents);
     const siteUrl = appOrigin(event);
     const deliveryCode = randomInt(100000, 1000000).toString();
     const deliveryCodeHash = createHash("sha256").update(deliveryCode).digest("hex");
@@ -258,7 +323,7 @@ const handler: Handler = async (event) => {
         delivery_address: deliveryAddress,
         client_latitude: client.latitude,
         client_longitude: client.longitude,
-        final_client_total_cents: totals.finalClientTotalCents,
+        final_client_total_cents: amountToPayCents,
         partner_total_cents: totals.partnerTotalCents,
         service_fee_cents: totals.serviceFeeCents,
         internal_fees_cents: totals.internalFeesCents,
@@ -269,7 +334,8 @@ const handler: Handler = async (event) => {
         referral_fund_cents: totals.referralFundCents,
         foodiz_revenue_cents: totals.foodizRevenueCents,
         system_reserve_cents: totals.systemReserveCents,
-        points_redeemed_cents: pointsRedeemedCents,
+        points_redeemed_cents: 0,
+        advantage_discount_cents: advantageDiscountCents,
         estimated_time_mins: 30,
       })
       .select("id")
@@ -277,6 +343,19 @@ const handler: Handler = async (event) => {
 
     if (orderError || !order) {
       throw new Error(orderError?.message || "Order creation failed");
+    }
+
+    if (lockedAdvantage && advantageDiscountCents > 0) {
+      const { error: reserveError } = await supabase.rpc("reserve_order_advantage", {
+        target_order_id: order.id,
+        target_user_id: authData.user.id,
+        target_locked_id: lockedAdvantage.id,
+        expected_discount_cents: advantageDiscountCents,
+      });
+      if (reserveError) {
+        await supabase.from("orders").delete().eq("id", order.id);
+        throw new Error(reserveError.message);
+      }
     }
 
     const orderItems = normalizedItems.map((cartItem) => {
@@ -312,14 +391,11 @@ const handler: Handler = async (event) => {
       throw new Error(verificationError.message);
     }
 
-    if (pointsRedeemedCents > 0) {
-      await supabase
-        .from("client_wallets")
-        .update({ points_balance: pointsBalance - pointsRedeemedCents })
-        .eq("user_id", authData.user.id);
-    }
-
     if (amountToPayCents === 0) {
+      if (lockedAdvantage) {
+        const { error: applyError } = await supabase.rpc("apply_order_advantage", { target_order_id: order.id });
+        if (applyError) throw applyError;
+      }
       return {
         statusCode: 200,
         body: JSON.stringify({

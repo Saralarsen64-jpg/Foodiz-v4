@@ -13,17 +13,13 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'review' | 'success'>('review');
   const [userPoints, setUserPoints] = useState(0);
-  const [usePoints, setUsePoints] = useState(false);
+  const [useAdvantage, setUseAdvantage] = useState(false);
+  const [lockedAdvantage, setLockedAdvantage] = useState<any>(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [distanceKm, setDistanceKm] = useState(2.0);
   const [orderBreakdown, setOrderBreakdown] = useState<any>(null);
   const [restaurantData, setRestaurantData] = useState<any>(null);
-  const pointsReductionCents =
-    orderBreakdown && usePoints
-      ? Math.min(userPoints, orderBreakdown.finalClientTotalCents)
-      : 0;
-
   // Charger les données et calculer les montants
   useEffect(() => {
     const loadData = async () => {
@@ -42,6 +38,13 @@ export default function CheckoutPage() {
           .eq('user_id', user.id)
           .single();
         setUserPoints(wallet?.points_balance || 0);
+
+        const { data: locked } = await supabase
+          .from('client_locked_advantages')
+          .select('id,title,description,points_cost,catalog_id,advantage_catalog(category,minimum_order_cents,reward_type,face_value_cents)')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        setLockedAdvantage(locked || null);
 
         // Récupérer l'adresse de livraison
         const { data: profile } = await supabase
@@ -137,7 +140,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           restaurantId: establishmentId,
           deliveryAddress,
-          usePoints,
+          useAdvantage,
           items: items.map((item) => ({
             productId: item.id,
             quantity: item.quantity,
@@ -240,37 +243,35 @@ export default function CheckoutPage() {
                 <span className="text-foodiz-cream">{(orderBreakdown.deliveryFeeCents / 100).toFixed(2)}€</span>
               </div>
 
-              {usePoints && userPoints > 0 && (
+              {useAdvantage && lockedAdvantage && (
                 <div className="flex justify-between text-xs text-foodiz-green">
-                  <span>Réduction points</span>
-                  <span>-{Math.min(userPoints, orderBreakdown.finalClientTotalCents) / 100}€</span>
+                  <span>Avantage Foodiz Club</span>
+                  <span>Appliqué au paiement</span>
                 </div>
               )}
 
               <div className="flex justify-between text-sm font-bold pt-2 border-t border-foodiz-gold/20">
                 <span className="text-foodiz-cream">TOTAL</span>
                 <span className="text-foodiz-gold">
-                  {((orderBreakdown.finalClientTotalCents - pointsReductionCents) / 100).toFixed(2)}€
+                  {(orderBreakdown.finalClientTotalCents / 100).toFixed(2)}€
                 </span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Points */}
-        {userPoints > 0 && (
-          <div className="foodiz-card p-4 flex items-center gap-3">
-            <input 
-              type="checkbox" 
-              checked={usePoints}
-              onChange={(e) => setUsePoints(e.target.checked)}
+        {lockedAdvantage && (
+          <div className="foodiz-card p-4 flex items-center gap-3 border-foodiz-gold/20">
+            <input
+              type="checkbox"
+              checked={useAdvantage}
+              disabled={userPoints < lockedAdvantage.points_cost}
+              onChange={(e) => setUseAdvantage(e.target.checked)}
               className="w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold"
             />
             <div className="flex-1">
-              <p className="text-xs text-foodiz-cream">Utiliser mes points ({userPoints} points)</p>
-              <p className="text-[10px] text-foodiz-gray mt-1">
-                Réduction disponible: {(pointsReductionCents / 100).toFixed(2)}€
-              </p>
+              <p className="text-xs text-foodiz-cream">Utiliser : {lockedAdvantage.title}</p>
+              <p className="text-[10px] text-foodiz-gray mt-1">{lockedAdvantage.points_cost} points seront débités uniquement après confirmation du paiement.</p>
             </div>
           </div>
         )}
@@ -287,7 +288,7 @@ export default function CheckoutPage() {
               Paiement en cours...
             </>
           ) : orderBreakdown ? (
-            `Payer ma commande ${((orderBreakdown.finalClientTotalCents - pointsReductionCents) / 100).toFixed(2)}€`
+            `Payer ma commande ${(orderBreakdown.finalClientTotalCents / 100).toFixed(2)}€`
           ) : (
             'Chargement...'
           )}

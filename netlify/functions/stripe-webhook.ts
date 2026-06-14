@@ -34,6 +34,8 @@ const handler: Handler = async (event) => {
         const orderId = paymentIntent.metadata?.orderId;
 
         if (orderId) {
+          const { error: advantageError } = await supabase.rpc("apply_order_advantage", { target_order_id: orderId });
+          if (advantageError) throw advantageError;
           await supabase
             .from("orders")
             .update({
@@ -98,6 +100,8 @@ const handler: Handler = async (event) => {
         const orderId = paymentIntent.metadata?.orderId;
 
         if (orderId) {
+          const { error: releaseError } = await supabase.rpc("release_order_advantage", { target_order_id: orderId });
+          if (releaseError) throw releaseError;
           const { data: order } = await supabase
             .from("orders")
             .select("client_id, points_redeemed_cents")

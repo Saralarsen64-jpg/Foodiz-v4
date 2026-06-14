@@ -1,129 +1,99 @@
 import { Handler } from "@netlify/functions";
 import { adminSupabase } from "./_lib/auth.js";
 
-type Offer = {
+type OfferTemplate = {
+  template_key: string;
   title: string;
   description: string;
-  reward_type: "fixed_discount" | "percent_discount" | "free_delivery" | "free_item";
+  points_cost: number;
   face_value_cents: number;
   minimum_order_cents: number;
-  discount_percent: number;
+  category: "all" | "restaurant" | "market";
+  reward_type: "fixed_discount" | "free_delivery" | "free_item";
+  eligible_products: string[];
+  eligible_establishments: string[];
 };
 
-function responseText(payload: any): string {
-  if (typeof payload?.output_text === "string") return payload.output_text;
-  for (const item of payload?.output || []) {
-    for (const content of item?.content || []) {
-      if (typeof content?.text === "string") return content.text;
-    }
-  }
-  throw new Error("OpenAI returned no structured output");
-}
+const templates: Record<number, Omit<OfferTemplate, "points_cost" | "face_value_cents" | "eligible_products" | "eligible_establishments">[]> = {
+  250: [
+    { template_key: "250-drink", title: "Boisson offerte", description: "Une boisson offerte dans la limite de 2,50 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "250-produce", title: "2,50 € sur vos fruits et légumes", description: "Une réduction sur votre sélection de fruits et légumes dès 10 € d'achat.", minimum_order_cents: 1000, category: "market", reward_type: "fixed_discount" },
+    { template_key: "250-groceries", title: "2,50 € sur vos courses", description: "Une réduction sur vos courses dès 15 € d'achat.", minimum_order_cents: 1500, category: "market", reward_type: "fixed_discount" },
+    { template_key: "250-service", title: "Frais de service offerts", description: "Vos frais de service sont offerts dans la limite de 2,50 €.", minimum_order_cents: 0, category: "all", reward_type: "fixed_discount" },
+    { template_key: "250-dessert", title: "Dessert offert", description: "Un dessert offert dans la limite de 2,50 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+  ],
+  500: [
+    { template_key: "500-groceries", title: "5 € sur vos courses", description: "Une réduction sur vos courses dès 12 € d'achat.", minimum_order_cents: 1200, category: "market", reward_type: "fixed_discount" },
+    { template_key: "500-market", title: "5 € sur le Market", description: "Une réduction sur votre commande Market dès 15 € d'achat.", minimum_order_cents: 1500, category: "market", reward_type: "fixed_discount" },
+    { template_key: "500-restaurant", title: "5 € sur votre commande restaurant", description: "Une réduction sur votre commande restaurant dès 20 € d'achat.", minimum_order_cents: 2000, category: "restaurant", reward_type: "fixed_discount" },
+    { template_key: "500-starter", title: "Entrée offerte", description: "Une entrée offerte dans la limite de 5 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "500-dessert", title: "Dessert offert", description: "Un dessert offert dans la limite de 5 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "500-kids", title: "Menu enfant offert", description: "Un menu enfant offert dans la limite de 5 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "500-delivery", title: "Livraison offerte", description: "Vos frais de livraison sont offerts dans la limite de 5 €.", minimum_order_cents: 0, category: "all", reward_type: "free_delivery" },
+  ],
+  800: [
+    { template_key: "800-dessert", title: "Dessert offert", description: "Un dessert offert dans la limite de 8 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "800-groceries", title: "8 € sur vos courses", description: "Une réduction sur vos courses dès 25 € d'achat.", minimum_order_cents: 2500, category: "market", reward_type: "fixed_discount" },
+    { template_key: "800-restaurant", title: "8 € sur votre commande restaurant", description: "Une réduction sur votre commande restaurant dès 30 € d'achat.", minimum_order_cents: 3000, category: "restaurant", reward_type: "fixed_discount" },
+    { template_key: "800-market-item", title: "Produit Market offert", description: "Un produit Market offert dans la limite de 8 €.", minimum_order_cents: 0, category: "market", reward_type: "free_item" },
+    { template_key: "800-pizza", title: "Pizza offerte", description: "Une pizza offerte dans la limite de 8 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "800-salad", title: "Salade offerte", description: "Une salade offerte dans la limite de 8 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+  ],
+  1000: [
+    { template_key: "1000-groceries", title: "10 € sur vos courses", description: "Une réduction sur vos courses dès 35 € d'achat.", minimum_order_cents: 3500, category: "market", reward_type: "fixed_discount" },
+    { template_key: "1000-restaurant", title: "10 € sur votre commande restaurant", description: "Une réduction sur votre commande restaurant dès 40 € d'achat.", minimum_order_cents: 4000, category: "restaurant", reward_type: "fixed_discount" },
+    { template_key: "1000-menu", title: "Menu offert", description: "Un menu offert dans la limite de 10 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "1000-market-item", title: "Produit Market offert", description: "Un produit Market offert dans la limite de 10 €.", minimum_order_cents: 0, category: "market", reward_type: "free_item" },
+    { template_key: "1000-delivery-48h", title: "Livraison gratuite pendant 48 h", description: "Vos livraisons sont offertes pendant 48 h, dans la limite totale de 10 €.", minimum_order_cents: 0, category: "all", reward_type: "free_delivery" },
+  ],
+  1500: [
+    { template_key: "1500-menu", title: "Menu offert", description: "Un menu offert dans la limite de 15 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "1500-groceries", title: "15 € sur vos courses", description: "Une réduction sur vos courses dès 50 € d'achat.", minimum_order_cents: 5000, category: "market", reward_type: "fixed_discount" },
+    { template_key: "1500-restaurant", title: "15 € sur votre commande restaurant", description: "Une réduction sur votre commande restaurant dès 60 € d'achat.", minimum_order_cents: 6000, category: "restaurant", reward_type: "fixed_discount" },
+    { template_key: "1500-fruit", title: "Panier de fruits offert", description: "Un panier de fruits offert dans la limite de 15 €.", minimum_order_cents: 0, category: "market", reward_type: "free_item" },
+    { template_key: "1500-treats", title: "Pack gourmandises offert", description: "Un pack de gourmandises offert dans la limite de 15 €.", minimum_order_cents: 0, category: "market", reward_type: "free_item" },
+  ],
+  2000: [
+    { template_key: "2000-groceries", title: "20 € sur vos courses", description: "Une réduction sur vos courses dès 80 € d'achat.", minimum_order_cents: 8000, category: "market", reward_type: "fixed_discount" },
+    { template_key: "2000-restaurant", title: "20 € sur votre commande restaurant", description: "Une réduction sur votre commande restaurant dès 80 € d'achat.", minimum_order_cents: 8000, category: "restaurant", reward_type: "fixed_discount" },
+    { template_key: "2000-premium", title: "Menu premium offert", description: "Un menu premium offert dans la limite de 20 €.", minimum_order_cents: 0, category: "restaurant", reward_type: "free_item" },
+    { template_key: "2000-market-item", title: "Produit Market offert", description: "Un produit Market offert dans la limite de 20 €.", minimum_order_cents: 0, category: "market", reward_type: "free_item" },
+    { template_key: "2000-delivery-7d", title: "Livraison gratuite pendant 7 jours", description: "Vos livraisons sont offertes pendant 7 jours, dans la limite totale de 20 €.", minimum_order_cents: 0, category: "all", reward_type: "free_delivery" },
+  ],
+};
 
 const handler: Handler = async (event) => {
   if (!['GET', 'POST'].includes(event.httpMethod)) return { statusCode: 405, body: "Method Not Allowed" };
-
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || event.headers.authorization !== `Bearer ${cronSecret}`) {
     return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
   }
 
-  const openaiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || "gpt-5-mini";
-  if (!openaiKey) return { statusCode: 503, body: JSON.stringify({ error: "OPENAI_API_KEY is missing" }) };
-
-  const { data: lastRun } = await adminSupabase
-    .from("advantage_generation_runs")
-    .select("generated_at")
-    .eq("status", "success")
-    .order("generated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data: lastRun } = await adminSupabase.from("advantage_generation_runs").select("generated_at").eq("status", "success").order("generated_at", { ascending: false }).limit(1).maybeSingle();
   if (lastRun && Date.now() - new Date(lastRun.generated_at).getTime() < 48 * 60 * 60 * 1000) {
     return { statusCode: 200, body: JSON.stringify({ rotated: false, reason: "cycle_not_due" }) };
   }
 
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const [ordersResult, restaurantsResult, rewardsResult, recentOffersResult] = await Promise.all([
-    adminSupabase.from("orders").select("final_client_total_cents").eq("status", "delivered").gte("delivered_at", since).limit(1000),
-    adminSupabase.from("restaurants").select("id", { count: "exact", head: true }).eq("is_active", true),
-    adminSupabase.from("client_rewards").select("status").gte("created_at", since).limit(1000),
-    adminSupabase.from("advantage_catalog").select("title,reward_type,face_value_cents").order("created_at", { ascending: false }).limit(12),
-  ]);
+  const { data: recent } = await adminSupabase.from("advantage_catalog").select("template_key,points_cost").order("created_at", { ascending: false }).limit(18);
+  const recentByTier = new Map<number, Set<string>>();
+  for (const row of recent || []) {
+    if (!recentByTier.has(row.points_cost)) recentByTier.set(row.points_cost, new Set());
+    if (row.template_key) recentByTier.get(row.points_cost)?.add(row.template_key);
+  }
 
-  const totals = (ordersResult.data || []).map((order) => Number(order.final_client_total_cents || 0)).filter(Boolean);
-  const averageOrderCents = totals.length ? Math.round(totals.reduce((sum, value) => sum + value, 0) / totals.length) : 2500;
-  const rewards = rewardsResult.data || [];
-  const usedRewards = rewards.filter((reward) => reward.status === "used").length;
-  const stats = {
-    average_order_cents: averageOrderCents,
-    delivered_orders_30d: totals.length,
-    active_restaurants: restaurantsResult.count || 0,
-    rewards_created_30d: rewards.length,
-    rewards_used_30d: usedRewards,
-    recent_offers: recentOffersResult.data || [],
-  };
-
-  const aiResponse = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      instructions: "Tu conçois les avantages fidélité Foodiz en français. Propose exactement 4 offres variées, simples, réalistes et financièrement prudentes. Évite les titres récents. La valeur faciale est un plafond économique interne en centimes. Pour une remise en pourcentage, indique aussi un plafond via face_value_cents. N'évoque jamais la conversion interne des points dans les textes visibles.",
-      input: `Statistiques anonymisées Foodiz : ${JSON.stringify(stats)}`,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "foodiz_advantage_cycle",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              offers: {
-                type: "array",
-                minItems: 4,
-                maxItems: 4,
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    title: { type: "string", minLength: 5, maxLength: 80 },
-                    description: { type: "string", minLength: 10, maxLength: 180 },
-                    reward_type: { type: "string", enum: ["fixed_discount", "percent_discount", "free_delivery", "free_item"] },
-                    face_value_cents: { type: "integer", minimum: 100, maximum: 1500 },
-                    minimum_order_cents: { type: "integer", minimum: 100, maximum: 10000 },
-                    discount_percent: { type: "integer", minimum: 0, maximum: 20 },
-                  },
-                  required: ["title", "description", "reward_type", "face_value_cents", "minimum_order_cents", "discount_percent"],
-                },
-              },
-            },
-            required: ["offers"],
-          },
-        },
-      },
-    }),
+  const cycleNumber = Math.floor(Date.now() / (48 * 60 * 60 * 1000));
+  const proposals: OfferTemplate[] = Object.entries(templates).map(([tierText, options], tierIndex) => {
+    const tier = Number(tierText);
+    const recentKeys = recentByTier.get(tier) || new Set<string>();
+    const available = options.filter((option) => !recentKeys.has(option.template_key));
+    const pool = available.length ? available : options;
+    const selected = pool[(cycleNumber + tierIndex) % pool.length];
+    return { ...selected, points_cost: tier, face_value_cents: tier, eligible_products: [], eligible_establishments: [] };
   });
 
-  if (!aiResponse.ok) {
-    const detail = (await aiResponse.text()).slice(0, 500);
-    await adminSupabase.from("advantage_generation_runs").insert({ model_name: model, status: "failed", error_message: detail });
-    return { statusCode: 502, body: JSON.stringify({ error: "Advantage generation failed" }) };
-  }
-
-  try {
-    const parsed = JSON.parse(responseText(await aiResponse.json())) as { offers: Offer[] };
-    const { data: cycleId, error } = await adminSupabase.rpc("publish_ai_advantage_cycle", {
-      proposals: parsed.offers,
-      model_name: model,
-    });
-    if (error) throw error;
-    return { statusCode: 200, body: JSON.stringify({ rotated: Boolean(cycleId), cycleId }) };
-  } catch (error: any) {
-    await adminSupabase.from("advantage_generation_runs").insert({ model_name: model, status: "failed", error_message: String(error?.message || error).slice(0, 500) });
-    return { statusCode: 500, body: JSON.stringify({ error: "Generated offers were rejected by Foodiz safeguards" }) };
-  }
+  const { data: cycleId, error } = await adminSupabase.rpc("publish_foodiz_advantage_cycle", { proposals });
+  if (error) return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+  return { statusCode: 200, body: JSON.stringify({ rotated: Boolean(cycleId), cycleId, offerCount: proposals.length }) };
 };
 
 export { handler };
