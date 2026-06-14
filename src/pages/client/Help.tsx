@@ -12,18 +12,18 @@ export default function HelpPage() {
           <div className="w-12 h-12 rounded-full bg-foodiz-gold/10 flex items-center justify-center"><MessageCircle size={20} className="text-foodiz-gold" /></div>
           <div className="text-left">
             <h3 className="text-sm font-medium text-foodiz-cream">Contacter le support</h3>
-            <p className="text-xs text-foodiz-gray mt-1">Notre IA et nos équipes sont là pour vous.</p>
+            <p className="text-xs text-foodiz-gray mt-1">Diagnostic guidé puis transmission à notre équipe si nécessaire.</p>
           </div>
         </div>
         <ChevronRight size={18} className="text-foodiz-gold" />
       </button>
       <div className="space-y-2">
         <h2 className="foodiz-title text-sm mb-3">Questions fréquentes</h2>
-        {["Comment suivre ma commande ?", "Comment utiliser mes points ?", "Problème de paiement"].map((q, i) => (
-          <div key={i} className="foodiz-card p-4 flex justify-between items-center">
+        {["Comment suivre ma commande ?", "Comment utiliser un avantage ?", "Que faire si un paiement reste en attente ?"].map((q, i) => (
+          <button key={i} onClick={() => navigate('/client/help-center')} className="w-full foodiz-card p-4 flex justify-between items-center text-left">
             <span className="text-sm text-foodiz-cream">{q}</span>
             <ChevronRight size={16} className="text-foodiz-gold/50" />
-          </div>
+          </button>
         ))}
       </div>
     </div>

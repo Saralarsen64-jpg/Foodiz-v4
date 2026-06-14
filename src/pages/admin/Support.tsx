@@ -7,6 +7,8 @@ export default function AdminSupportPage() {
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("active");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -41,7 +43,7 @@ export default function AdminSupportPage() {
         user_id: ticket.user_id,
         title: 'Réponse du support Foodiz',
         message: `L'administrateur a répondu à votre demande "${ticket.subject}". Cliquez pour consulter.`,
-        type: 'support_reply',
+        type: 'support',
         link: '/client/help-center',
         is_read: false
       });
@@ -60,7 +62,8 @@ export default function AdminSupportPage() {
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Centre de Support</h1>
-      <p className="text-foodiz-gray text-sm mb-8">Gestion des demandes clients.</p>
+      <p className="text-foodiz-gray text-sm mb-5">Demandes enrichies par le diagnostic automatique Foodiz.</p>
+      <div className="flex flex-wrap gap-3 mb-8"><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-foodiz-card border border-foodiz-gold/20 rounded-xl px-3 py-2 text-xs text-foodiz-cream"><option value="active">À traiter</option><option value="all">Toutes</option><option value="closed">Clôturées</option></select><select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="bg-foodiz-card border border-foodiz-gold/20 rounded-xl px-3 py-2 text-xs text-foodiz-cream"><option value="all">Toutes catégories</option>{["order","payment","delivery","advantage","account","other"].map((value) => <option key={value} value={value}>{value}</option>)}</select></div>
 
       {loading ? <div className="text-center py-20 text-foodiz-gray animate-pulse">Chargement...</div> : tickets.length === 0 ? (
         <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
@@ -69,7 +72,7 @@ export default function AdminSupportPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {tickets.map((ticket) => (
+          {tickets.filter((ticket) => (statusFilter === 'all' || (statusFilter === 'active' ? ['open','in_progress'].includes(ticket.status) : ['closed','resolved'].includes(ticket.status))) && (categoryFilter === 'all' || ticket.category === categoryFilter)).map((ticket) => (
             <div key={ticket.id} className={`foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/10 flex flex-col gap-4 ${ticket.status === 'open' ? 'border-l-4 border-l-foodiz-gold' : 'opacity-60'}`}>
               <div className="flex justify-between items-start">
                 <div>
@@ -81,12 +84,14 @@ export default function AdminSupportPage() {
                     </span>
                   </div>
                   <p className="text-[10px] text-foodiz-gray">De: {ticket.user_email} · Le {new Date(ticket.created_at).toLocaleDateString('fr-FR')}</p>
+                  <div className="flex flex-wrap gap-2 mt-2"><span className="text-[9px] uppercase px-2 py-1 rounded-full border border-white/10 text-foodiz-gray">{ticket.category || 'other'}</span><span className={`text-[9px] uppercase px-2 py-1 rounded-full border ${ticket.priority === 'urgent' ? 'text-foodiz-red border-foodiz-red/20' : ticket.priority === 'high' ? 'text-foodiz-gold border-foodiz-gold/20' : 'text-foodiz-gray border-white/10'}`}>{ticket.priority}</span>{ticket.order_id && <span className="text-[9px] text-foodiz-gold">Commande #{ticket.order_id.slice(0,8)}</span>}</div>
                 </div>
               </div>
               
               <div className="bg-foodiz-black/50 p-4 rounded-xl border border-foodiz-gold/5">
                 <p className="text-foodiz-gray text-sm whitespace-pre-wrap">{ticket.message}</p>
               </div>
+              {ticket.diagnostic && Object.keys(ticket.diagnostic).length > 0 && <div className="p-4 rounded-xl border border-foodiz-gold/10 bg-foodiz-gold/[0.03]"><p className="text-[10px] uppercase text-foodiz-gold mb-2">Diagnostic automatique</p><p className="text-xs text-foodiz-gray">{ticket.diagnostic.diagnosis}</p><p className="text-xs text-foodiz-gray mt-1">Commande : {ticket.diagnostic.order_status || 'n/a'} · Paiement : {ticket.diagnostic.payment_status || 'n/a'}</p>{ticket.attempted_actions?.length > 0 && <p className="text-[10px] text-foodiz-gray mt-2">Déjà tenté : {ticket.attempted_actions.join(', ')}</p>}</div>}
 
               {ticket.admin_response && (
                 <div className="bg-foodiz-green/5 p-4 rounded-xl border border-foodiz-green/20">
