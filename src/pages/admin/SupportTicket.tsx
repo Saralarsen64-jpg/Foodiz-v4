@@ -15,7 +15,12 @@ export default function SupportTickets() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session || session.user.email !== 'adminfoodiz@gmail.com') navigate("/admin-auth");
+      if (!session) {
+        navigate("/admin-auth");
+        return;
+      }
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single();
+      if (profile?.role !== "admin") navigate("/admin-auth");
       else fetchTickets();
     };
     checkAuth();

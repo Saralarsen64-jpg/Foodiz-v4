@@ -4,6 +4,7 @@ import { ChevronLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { resolveRedirectPath } from "../../utils/authProfile";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -43,26 +44,8 @@ export default function LoginPage() {
         return;
       }
 
-      // 3. Récupérer le rôle depuis le profil
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileError || !profile) {
-        console.error('Profil non trouvé:', profileError);
-        toast.error("Profil utilisateur non trouvé");
-        setLoading(false);
-        return;
-      }
-
-      // 4. Rediriger selon le rôle
-      const userRole = profile.role || 'client';
-      if (userRole === 'admin') navigate('/admin');
-      else if (userRole === 'partner') navigate('/partner');
-      else if (userRole === 'courier') navigate('/courier');
-      else navigate('/client');
+      // 3. Respecter les étapes d'onboarding et de validation du rôle.
+      navigate(await resolveRedirectPath());
 
     } catch (err: any) {
       console.error('Erreur login:', err);

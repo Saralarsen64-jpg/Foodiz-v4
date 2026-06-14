@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { resolveRedirectPath } from "../../utils/authProfile";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -18,15 +19,8 @@ export default function AuthCallback() {
           return;
         }
 
-        // 2. Si la session est bonne, l'email est confirmé. On récupère le rôle pour rediriger.
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-        const role = profile?.role || 'client';
-
-        // 3. Redirection vers le bon dashboard
-        if (role === 'admin') navigate('/admin');
-        else if (role === 'partner') navigate('/partner');
-        else if (role === 'courier') navigate('/courier');
-        else navigate('/client');
+        // 2. Rediriger vers l'étape réellement accessible pour ce compte.
+        navigate(await resolveRedirectPath());
 
       } catch (err) {
         console.error("Erreur lors du callback:", err);

@@ -17,7 +17,6 @@ export type ProfileRow = {
   email?: string | null;
   phone?: string | null;
   status?: string | null;
-  points_balance?: number | null;
 };
 
 function getRoleFromUser(user: AuthUser): AppRole {
@@ -31,7 +30,7 @@ function getStatusFromRole(role: AppRole): AppStatus {
 export async function ensureProfileFromAuthUser(user: AuthUser) {
   const { data: existing } = await supabase
     .from("profiles")
-    .select("id, role, first_name, last_name, email, phone, status, points_balance")
+    .select("id, role, first_name, last_name, email, phone, status")
     .eq("id", user.id)
     .maybeSingle<ProfileRow>();
 
@@ -52,10 +51,9 @@ export async function ensureProfileFromAuthUser(user: AuthUser) {
       email: user.email || null,
       phone,
       status: getStatusFromRole(role),
-      points_balance: 0,
       updated_at: new Date().toISOString(),
     })
-    .select("id, role, first_name, last_name, email, phone, status, points_balance")
+    .select("id, role, first_name, last_name, email, phone, status")
     .single<ProfileRow>();
 
   if (error) throw error;
@@ -75,6 +73,7 @@ export async function ensurePartnerApplication(user: AuthUser) {
     .from("partner_applications")
     .insert({
       user_id: user.id,
+      business_name: user.user_metadata?.business_name || user.email || "Établissement à compléter",
       city: null,
       status: "pending",
       created_at: new Date().toISOString(),

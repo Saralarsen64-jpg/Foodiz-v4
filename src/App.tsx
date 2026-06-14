@@ -124,6 +124,10 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={["partner"]} />}>
+        <Route path="/partner/onboarding" element={<PartnerOnboarding />} />
+        <Route path="/partner/validation-status" element={<PartnerValidationStatus />} />
+      </Route>
+      <Route element={<ProtectedRoute allowedRoles={["partner"]} requireValidated />}>
         <Route path="/partner" element={<PartnerDashboard />} />
         <Route path="/partner/orders/current" element={<PartnerOrdersCurrent />} />
         <Route path="/partner/orders/history" element={<PartnerOrdersHistory />} />
@@ -132,8 +136,6 @@ export default function App() {
         <Route path="/partner/payouts" element={<PartnerPayouts />} />
         <Route path="/partner/customers" element={<PartnerCustomers />} />
         <Route path="/partner/marketing" element={<PartnerMarketing />} />
-        <Route path="/partner/onboarding" element={<PartnerOnboarding />} />
-        <Route path="/partner/validation-status" element={<PartnerValidationStatus />} />
         <Route path="/partner/support" element={<PartnerSupport />} />
         <Route path="/partner/menu" element={<PartnerMenu />} />
         <Route path="/partner/products" element={<PartnerProducts />} />
@@ -143,6 +145,10 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={["courier"]} />}>
+        <Route path="/courier/onboarding" element={<CourierOnboardingPage />} />
+        <Route path="/courier/validation-status" element={<CourierValidationStatusPage />} />
+      </Route>
+      <Route element={<ProtectedRoute allowedRoles={["courier"]} requireValidated />}>
         <Route path="/courier" element={<CourierDashboard />} />
         <Route path="/courier/deliveries/available" element={<DeliveriesAvailable />} />
         <Route path="/courier/deliveries/current" element={<DeliveryCurrent />} />
@@ -155,8 +161,6 @@ export default function App() {
         <Route path="/courier/profile" element={<CourierProfilePage />} />
         <Route path="/courier/support" element={<CourierSupportPage />} />
         <Route path="/courier/help-center" element={<CourierHelpCenterPage />} />
-        <Route path="/courier/onboarding" element={<CourierOnboardingPage />} />
-        <Route path="/courier/validation-status" element={<CourierValidationStatusPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
