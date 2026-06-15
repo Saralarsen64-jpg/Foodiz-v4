@@ -1,5 +1,5 @@
 import { Handler } from "@netlify/functions";
-import { adminSupabase } from "./_lib/auth.js";
+import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
 
 type OfferTemplate = {
   template_key: string;
@@ -65,13 +65,10 @@ const templates: Record<number, Omit<OfferTemplate, "points_cost" | "face_value_
 const handler: Handler = async (event) => {
   if (!['GET', 'POST'].includes(event.httpMethod)) return { statusCode: 405, body: "Method Not Allowed" };
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || event.headers.authorization !== `Bearer ${cronSecret}`) {
+  const authorizedCron = Boolean(cronSecret && event.headers.authorization === `Bearer ${cronSecret}`);
+  const user = authorizedCron ? null : await authenticatedUser(event.headers);
+  if (!authorizedCron && !user) {
     return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
-  }
-
-  const { data: lastRun } = await adminSupabase.from("advantage_generation_runs").select("generated_at").eq("status", "success").order("generated_at", { ascending: false }).limit(1).maybeSingle();
-  if (lastRun && Date.now() - new Date(lastRun.generated_at).getTime() < 48 * 60 * 60 * 1000) {
-    return { statusCode: 200, body: JSON.stringify({ rotated: false, reason: "cycle_not_due" }) };
   }
 
   const { data: recent } = await adminSupabase.from("advantage_catalog").select("template_key,points_cost").order("created_at", { ascending: false }).limit(18);
@@ -93,7 +90,31 @@ const handler: Handler = async (event) => {
 
   const { data: cycleId, error } = await adminSupabase.rpc("publish_foodiz_advantage_cycle", { proposals });
   if (error) return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
-  return { statusCode: 200, body: JSON.stringify({ rotated: Boolean(cycleId), cycleId, offerCount: proposals.length }) };
+
+  const { data: currentCycle } = await adminSupabase
+    .from("advantage_catalog")
+    .select("cycle_id,valid_until")
+    .eq("source", "rules_engine")
+    .eq("is_active", true)
+    .gt("valid_until", new Date().toISOString())
+    .order("generated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!currentCycle?.cycle_id) return { statusCode: 503, body: JSON.stringify({ error: "No active advantage cycle" }) };
+
+  const { data: offers, error: offersError } = await adminSupabase
+    .from("advantage_catalog")
+    .select("id,cycle_id,template_key,title,description,points_cost,face_value_cents,minimum_order_cents,category,reward_type,valid_until,generated_at")
+    .eq("cycle_id", currentCycle.cycle_id)
+    .eq("is_active", true)
+    .order("points_cost");
+  if (offersError) return { statusCode: 500, body: JSON.stringify({ error: offersError.message }) };
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    body: JSON.stringify({ rotated: Boolean(cycleId), cycleId: currentCycle.cycle_id, validUntil: currentCycle.valid_until, offers: offers || [] }),
+  };
 };
 
 export { handler };

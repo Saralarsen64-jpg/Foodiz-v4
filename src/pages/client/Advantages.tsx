@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { ChevronLeft, Gift, Star, Trophy, Crown, Lock, Unlock, Zap, Hourglass } from "lucide-react";
@@ -11,31 +11,24 @@ export default function AdvantagesPage() {
   const [lockedAdvantage, setLockedAdvantage] = useState<any | null>(null); // Un seul avantage verrouillé
   const [rewards, setRewards] = useState<any[]>([]);
   const [timeLeft, setTimeLeft] = useState("");
+  const [cycleExpiresAt, setCycleExpiresAt] = useState<number | null>(null);
+  const [catalogError, setCatalogError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const fetchCatalog = async () => {
-      const { data } = await supabase.from('advantage_catalog').select('valid_until').eq('is_active', true).order('generated_at', { ascending: false, nullsFirst: false }).limit(1);
-      if (data && data.length > 0) {
-        const validUntil = new Date(data[0].valid_until).getTime();
-        const updateTimer = () => {
-          const now = new Date().getTime();
-          const distance = validUntil - now;
-          if (distance < 0) setTimeLeft("Renouvellement...");
-          else {
-            const hours = Math.floor(distance / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-          }
-        };
-        updateTimer();
-        const timerInterval = setInterval(updateTimer, 1000);
-        return () => clearInterval(timerInterval);
-      }
-    };
-    fetchCatalog();
+  const fetchCycle = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    try {
+      const response = await fetch('/api/rotate-advantages', { headers: { Authorization: `Bearer ${session.access_token}` }, cache: 'no-store' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Catalogue indisponible");
+      setAdvantages(payload.offers || []);
+      setCycleExpiresAt(payload.validUntil ? new Date(payload.validUntil).getTime() : null);
+      setCatalogError(payload.offers?.length === 6 ? "" : "Le catalogue Foodiz Club est en cours de synchronisation.");
+    } catch {
+      setCatalogError("Impossible d'actualiser les avantages pour le moment.");
+    }
   }, []);
 
   useEffect(() => {
@@ -45,9 +38,6 @@ export default function AdvantagesPage() {
         const { data: wallet } = await supabase.from('client_wallets').select('points_balance').eq('user_id', user.id).single();
         if (wallet) setPoints(wallet.points_balance || 0);
 
-        const { data: advs } = await supabase.from('advantage_catalog').select('*').eq('is_active', true).order('points_cost');
-        if (advs) setAdvantages(advs);
-
         // Récupérer L'UNIQUE avantage verrouillé
         const { data: locked } = await supabase.from('client_locked_advantages').select('*').eq('user_id', user.id).limit(1).maybeSingle();
         if (locked) setLockedAdvantage(locked);
@@ -55,12 +45,50 @@ export default function AdvantagesPage() {
         const { data: rewardRows } = await supabase.from('client_rewards').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
         if (rewardRows) setRewards(rewardRows);
       }
+      await fetchCycle();
       setLoading(false);
     };
-    fetchData();
-  }, []);
+    void fetchData();
+  }, [fetchCycle]);
+
+  useEffect(() => {
+    if (!cycleExpiresAt) {
+      setTimeLeft("Synchronisation...");
+      return;
+    }
+    let refreshRequested = false;
+    const updateTimer = () => {
+      const distance = cycleExpiresAt - Date.now();
+      if (distance <= 0) {
+        setTimeLeft("Renouvellement...");
+        if (!refreshRequested) {
+          refreshRequested = true;
+          void fetchCycle();
+        }
+        return;
+      }
+      const hours = Math.floor(distance / 3600000);
+      const minutes = Math.floor((distance % 3600000) / 60000);
+      const seconds = Math.floor((distance % 60000) / 1000);
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    };
+    updateTimer();
+    const timer = window.setInterval(updateTimer, 1000);
+    return () => window.clearInterval(timer);
+  }, [cycleExpiresAt, fetchCycle]);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') void fetchCycle(); };
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => document.removeEventListener('visibilitychange', refreshWhenVisible);
+  }, [fetchCycle]);
 
   const handleLock = async (adv: any) => {
+    if (!cycleExpiresAt || cycleExpiresAt <= Date.now()) {
+      toast.error("Ce cycle vient d'expirer. Actualisation en cours.");
+      await fetchCycle();
+      return;
+    }
     setBusy(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -146,6 +174,8 @@ export default function AdvantagesPage() {
         {/* Catalogue */}
         <div>
           <h3 className="foodiz-title text-lg mb-4 flex items-center gap-2"><Zap size={18} className="text-foodiz-gold" /> Avantages du cycle actuel</h3>
+          {catalogError && <div className="foodiz-card mb-3 border-foodiz-red/20 bg-foodiz-red/5 p-4 text-center text-xs text-foodiz-red">{catalogError}</div>}
+          {!catalogError && advantages.length === 0 && <div className="foodiz-card p-5 text-center text-xs text-foodiz-gray">Synchronisation des avantages...</div>}
           <div className="space-y-3">
             {advantages.map((adv) => {
               const isLocked = lockedAdvantage?.catalog_id === adv.id;
