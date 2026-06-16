@@ -164,6 +164,14 @@ export default function CheckoutPage() {
     }
   };
 
+  const lockedCatalog = Array.isArray(lockedAdvantage?.advantage_catalog) ? lockedAdvantage?.advantage_catalog[0] : lockedAdvantage?.advantage_catalog;
+  const estimatedAdvantageDiscountCents = useAdvantage && orderBreakdown && lockedCatalog
+    ? lockedCatalog.reward_type === "free_delivery"
+      ? Math.min(Number(lockedCatalog.face_value_cents || lockedAdvantage.points_cost || 0), orderBreakdown.deliveryFeeCents)
+      : Math.min(Number(lockedCatalog.face_value_cents || lockedAdvantage.points_cost || 0), orderBreakdown.finalClientTotalCents)
+    : 0;
+  const estimatedTotalCents = orderBreakdown ? Math.max(0, orderBreakdown.finalClientTotalCents - estimatedAdvantageDiscountCents) : 0;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-foodiz-black flex items-center justify-center">
@@ -246,14 +254,14 @@ export default function CheckoutPage() {
               {useAdvantage && lockedAdvantage && (
                 <div className="flex justify-between text-xs text-foodiz-green">
                   <span>Avantage Foodiz Club</span>
-                  <span>Appliqué au paiement</span>
+                  <span>-{(estimatedAdvantageDiscountCents / 100).toFixed(2)}€ estimés</span>
                 </div>
               )}
 
               <div className="flex justify-between text-sm font-bold pt-2 border-t border-foodiz-gold/20">
                 <span className="text-foodiz-cream">TOTAL</span>
                 <span className="text-foodiz-gold">
-                  {(orderBreakdown.finalClientTotalCents / 100).toFixed(2)}€
+                  {(estimatedTotalCents / 100).toFixed(2)}€
                 </span>
               </div>
             </div>
@@ -288,7 +296,7 @@ export default function CheckoutPage() {
               Paiement en cours...
             </>
           ) : orderBreakdown ? (
-            `Payer ma commande ${(orderBreakdown.finalClientTotalCents / 100).toFixed(2)}€`
+            `Payer ma commande ${(estimatedTotalCents / 100).toFixed(2)}€`
           ) : (
             'Chargement...'
           )}

@@ -1,6 +1,7 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { sendFinancialDocumentEmail } from "./_lib/financial-documents.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const supabase = createClient(
@@ -391,8 +392,17 @@ const handler: Handler = async (event) => {
           type: "order",
           title: "Nouvelle commande à confirmer",
           message: `La commande #${order.id.slice(0, 8)} est réglée et attend votre confirmation.`,
-          data: { order_id: order.id },
+          related_order_id: order.id,
         });
+      }
+      const { data: documentId } = await supabase.rpc("generate_client_payment_receipt", { target_order_id: order.id });
+      if (documentId) {
+        try {
+          const { data: receipt } = await supabase.from("financial_documents").select("*").eq("id", documentId).single();
+          if (receipt) await sendFinancialDocumentEmail(receipt as any);
+        } catch (emailError) {
+          console.error("Zero amount receipt email failed:", emailError);
+        }
       }
       return {
         statusCode: 200,

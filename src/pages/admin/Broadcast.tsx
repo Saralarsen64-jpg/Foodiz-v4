@@ -1,81 +1,80 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CheckCircle, Megaphone, Send, Users } from "lucide-react";
+import toast from "react-hot-toast";
+import AdminShell from "../../components/AdminShell";
 import { supabase } from "../../lib/supabase";
-import { Send, CheckCircle, Users } from "lucide-react";
 
 export default function AdminBroadcast() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [clientCount, setClientCount] = useState(0);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // 1. Récupérer tous les IDs des clients
-    const { data: clients } = await supabase.from('profiles').select('id').eq('role', 'client');
-    
-    if (clients && clients.length > 0) {
-      // 2. Créer les notifications pour tout le monde
-      const notifications = clients.map(client => ({
-        user_id: client.id,
-        title: title,
-        message: message,
-        type: 'info',
-        is_read: false
-      }));
-
-      await supabase.from('notifications').insert(notifications);
-      
-      // 3. Enregistrer dans l'historique admin
-      await supabase.from('admin_broadcasts').insert({
-        admin_id: user.id,
-        title,
-        message,
-        target_roles: ['client'],
-        is_sent: true,
-        sent_at: new Date().toISOString(),
-        recipients_count: clients.length,
-      });
-    }
-    
-    setSent(true);
-    setLoading(false);
-    setTimeout(() => setSent(false), 3000);
-    setTitle(""); setMessage("");
+  const load = async () => {
+    const [{ count }, { data }] = await Promise.all([
+      supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "client"),
+      supabase.from("admin_broadcasts").select("*").order("created_at", { ascending: false }).limit(20),
+    ]);
+    setClientCount(count || 0);
+    setHistory(data || []);
   };
 
-  return (
-    <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Notification Globale</h1>
-      <p className="text-foodiz-gray text-sm mb-8">Envoyer une promotion ou une information à tous les clients Foodiz.</p>
+  useEffect(() => { void load(); }, []);
 
-      <div className="foodiz-card p-8 bg-[#0A0A0A] border-foodiz-gold/10">
-        {sent ? (
-          <div className="p-6 rounded-xl bg-foodiz-green/10 text-foodiz-green border border-foodiz-green/20 flex flex-col items-center justify-center text-center animate-fade-in-up">
-            <CheckCircle size={48} className="mb-4" />
-            <h3 className="text-lg font-bold mb-2">Envoyé avec succès !</h3>
-            <p className="text-sm">Tous les clients ont reçu la notification sur leur cloche.</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSend} className="space-y-6">
-            <div>
-              <label className="block text-foodiz-gold text-xs uppercase tracking-widest font-bold mb-2">Titre de la notification</label>
-              <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: -20% sur les burgers ce soir !" className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-4 text-foodiz-cream outline-none focus:border-foodiz-gold" />
-            </div>
-            <div>
-              <label className="block text-foodiz-gold text-xs uppercase tracking-widest font-bold mb-2">Message</label>
-              <textarea required value={message} onChange={e => setMessage(e.target.value)} placeholder="Profitez de cette offre exclusive..." className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-4 text-foodiz-cream outline-none focus:border-foodiz-gold h-32 resize-none" />
-            </div>
-            <button type="submit" disabled={loading} className="w-full foodiz-btn py-4 flex items-center justify-center gap-2 disabled:opacity-50">
-              <Send size={18} /> {loading ? 'Envoi en cours...' : `Envoyer à tous les clients`}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
+  const handleSend = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { data: clients, error: clientsError } = await supabase.from("profiles").select("id").eq("role", "client");
+    if (clientsError) { toast.error(clientsError.message); setLoading(false); return; }
+    if (!clients?.length) { toast.error("Aucun client destinataire."); setLoading(false); return; }
+
+    const { error: notificationError } = await supabase.from("notifications").insert(clients.map((client) => ({
+      user_id: client.id,
+      title: title.trim(),
+      message: message.trim(),
+      type: "info",
+      is_read: false,
+    })));
+    if (notificationError) { toast.error(notificationError.message); setLoading(false); return; }
+
+    const { error: broadcastError } = await supabase.from("admin_broadcasts").insert({
+      admin_id: user.id,
+      title: title.trim(),
+      message: message.trim(),
+      target_roles: ["client"],
+      is_sent: true,
+      sent_at: new Date().toISOString(),
+      recipients_count: clients.length,
+    });
+    if (broadcastError) { toast.error(broadcastError.message); setLoading(false); return; }
+
+    toast.success(`Notification envoyée à ${clients.length} client(s).`);
+    setTitle("");
+    setMessage("");
+    setLoading(false);
+    await load();
+  };
+
+  return <AdminShell title="Notification globale" subtitle="Diffusion administrative fiable avec historique d’envoi réel">
+    <section className="grid gap-4 md:grid-cols-[1fr_320px]">
+      <form onSubmit={handleSend} className="foodiz-card space-y-5 border-foodiz-gold/20 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.12),transparent_40%)] p-6 shadow-[0_0_45px_rgba(216,168,79,0.05)]">
+        <div className="flex items-center gap-3"><Megaphone size={21} className="text-foodiz-gold"/><div><h2 className="foodiz-title text-xl">Créer une annonce</h2><p className="mt-1 text-xs text-foodiz-gray">Envoyée dans la cloche de notification des clients.</p></div></div>
+        <label className="block text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Titre<input required maxLength={90} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ex : Foodiz arrive dans votre ville" className="mt-2 w-full rounded-2xl border border-foodiz-gold/20 bg-foodiz-black p-4 text-sm normal-case text-foodiz-cream outline-none"/></label>
+        <label className="block text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">Message<textarea required maxLength={240} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Message court, clair, utile." className="mt-2 h-36 w-full resize-none rounded-2xl border border-foodiz-gold/20 bg-foodiz-black p-4 text-sm normal-case text-foodiz-cream outline-none"/></label>
+        <button disabled={loading} className="foodiz-btn flex w-full items-center justify-center gap-2 py-4 disabled:opacity-50"><Send size={18}/>{loading ? "Envoi vérifié..." : `Envoyer à ${clientCount} client(s)`}</button>
+      </form>
+      <aside className="foodiz-card border-foodiz-gold/20 p-6">
+        <Users size={22} className="text-foodiz-gold"/><p className="mt-5 text-[10px] uppercase tracking-widest text-foodiz-gray">Audience actuelle</p><p className="mt-2 text-5xl font-serif italic text-foodiz-cream">{clientCount}</p><p className="mt-2 text-xs text-foodiz-gray">Clients enregistrés et ciblables par notification interne.</p>
+      </aside>
+    </section>
+
+    <section className="foodiz-card overflow-hidden">
+      <div className="border-b border-foodiz-gold/10 p-5"><h2 className="foodiz-title text-lg">Historique</h2></div>
+      {history.length === 0 ? <div className="p-6 text-sm text-foodiz-gray">Aucune diffusion enregistrée.</div> : <div className="divide-y divide-white/5">{history.map((item) => <article key={item.id} className="flex flex-col gap-3 p-5 md:flex-row md:items-center"><CheckCircle size={17} className="text-foodiz-green"/><div className="flex-1"><p className="font-semibold text-foodiz-cream">{item.title}</p><p className="mt-1 text-xs text-foodiz-gray">{item.message}</p></div><div className="text-xs text-foodiz-gray md:text-right"><p>{item.recipients_count} destinataire(s)</p><p>{item.sent_at ? new Date(item.sent_at).toLocaleString("fr-FR") : "-"}</p></div></article>)}</div>}
+    </section>
+  </AdminShell>;
 }

@@ -80,6 +80,8 @@ import AdminPartnerApplicationsPage from "./pages/admin/PartnerApplications";
 import AdminCourierApplicationsPage from "./pages/admin/CourierApplications";
 import AdminMarketingCampaignsPage from "./pages/admin/MarketingCampaigns";
 import AdminReferralsPage from "./pages/admin/Referrals";
+import AdminSettlementDetail from "./pages/admin/SettlementDetail";
+import AdminPartnerDetail from "./pages/admin/PartnerDetail";
 
 export default function App() {
   return (
@@ -171,9 +173,11 @@ export default function App() {
         <Route path="/admin/broadcast" element={<AdminBroadcastPage />} />
         <Route path="/admin/economics" element={<AdminEconomics />} />
         <Route path="/admin/payouts" element={<AdminPayouts />} />
+        <Route path="/admin/payouts/:id" element={<AdminSettlementDetail />} />
         <Route path="/admin/support" element={<AdminSupportPage />} />
         <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
         <Route path="/admin/partner-applications" element={<AdminPartnerApplicationsPage />} />
+        <Route path="/admin/partners/:id" element={<AdminPartnerDetail />} />
         <Route path="/admin/courier-applications" element={<AdminCourierApplicationsPage />} />
         <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
         <Route path="/admin/referrals" element={<AdminReferralsPage />} />

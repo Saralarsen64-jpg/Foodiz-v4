@@ -10,6 +10,8 @@ import {
   Store,
   Bike,
   ChevronLeft,
+  Radio,
+  UsersRound,
 } from "lucide-react";
 import Logo from "./Logo";
 import { cn } from "../utils/cn";
@@ -21,8 +23,10 @@ const ADMIN_ITEMS = [
   { label: "Support", icon: LifeBuoy, path: "/admin/support" },
   { label: "Abonnements", icon: CreditCard, path: "/admin/subscriptions" },
   { label: "Campagnes", icon: Megaphone, path: "/admin/marketing-campaigns" },
+  { label: "Diffusion", icon: Radio, path: "/admin/broadcast" },
   { label: "Partenaires", icon: Store, path: "/admin/partner-applications" },
   { label: "Livreurs", icon: Bike, path: "/admin/courier-applications" },
+  { label: "Parrainage", icon: UsersRound, path: "/admin/referrals" },
 ];
 
 export default function AdminShell({

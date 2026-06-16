@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, MapPin, Navigation, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Download, MapPin, Navigation, ShieldCheck } from "lucide-react";
+import toast from "react-hot-toast";
 import { getOrder } from "../../lib/orders";
+import { supabase } from "../../lib/supabase";
+import { downloadFinancialDocument } from "../../lib/financialDocuments";
 
 export default function OrderDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [receipt, setReceipt] = useState<any>(null);
 
   useEffect(() => {
     if (!id) return;
-    getOrder(id).then(setOrder).finally(() => setLoading(false));
+    void Promise.all([
+      getOrder(id).then(setOrder),
+      supabase.from("financial_documents").select("id,document_number,status,last_emailed_at").eq("order_id", id).eq("document_type", "client_payment_receipt").maybeSingle().then(({ data }) => setReceipt(data)),
+    ]).finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <div className="py-20 text-center text-foodiz-gray animate-pulse">Chargement de la commande...</div>;
@@ -38,6 +45,8 @@ export default function OrderDetailPage() {
           <span className="text-foodiz-gold font-bold text-lg">{(order.final_client_total_cents / 100).toFixed(2)} €</span>
         </div>
       </div>
+
+      {receipt && <button onClick={() => void downloadFinancialDocument(receipt.id, receipt.document_number).catch((error) => toast.error(error.message))} className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border border-foodiz-gold/20 px-4 py-3 text-sm text-foodiz-gold"><Download size={17}/>Télécharger mon reçu de paiement</button>}
 
       <div className="foodiz-card p-5 mb-6">
         <div className="flex items-center gap-3 mb-3">

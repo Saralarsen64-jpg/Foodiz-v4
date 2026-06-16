@@ -1,6 +1,7 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { sendFinancialDocumentEmail } from "./_lib/financial-documents.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const supabase = createClient(
@@ -165,6 +166,19 @@ const handler: Handler = async (event) => {
             type: "order",
             related_order_id: orderId,
           });
+
+          // The payment must remain confirmed even if transactional email delivery fails.
+          try {
+            const { data: receipt } = await supabase
+              .from("financial_documents")
+              .select("*")
+              .eq("order_id", orderId)
+              .eq("document_type", "client_payment_receipt")
+              .single();
+            if (receipt) await sendFinancialDocumentEmail(receipt as any);
+          } catch (emailError) {
+            console.error("Receipt email failed:", emailError);
+          }
         }
         break;
       }

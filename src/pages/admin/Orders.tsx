@@ -1,86 +1,26 @@
 import { useEffect, useState } from "react";
+import { ChevronDown, ChevronUp, Clock, ReceiptText } from "lucide-react";
+import AdminShell from "../../components/AdminShell";
 import { supabase } from "../../lib/supabase";
-import { Clock, CheckCircle, AlertCircle } from "lucide-react";
+
+const euros = (cents: number) => `${((cents || 0) / 100).toFixed(2)} €`;
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [expanded, setExpanded] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      // Récupère les commandes actives avec les infos client et resto
-      const { data } = await supabase
-        .from('orders')
-        .select(`
-          *, 
-          client:profiles!orders_client_id_fkey(full_name, email),
-          restaurant:restaurants!orders_restaurant_id_fkey(name)
-        `)
-        .not('status', 'in', '(delivered,cancelled)')
-        .order('created_at', { ascending: false });
-      
-      if (data) setOrders(data);
-      setLoading(false);
-    };
-    fetchOrders();
-
-    // Écoute en temps réel des nouvelles commandes
-    const channel = supabase.channel('realtime-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'pending': return <span className="px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-xs border border-yellow-500/20 flex items-center gap-1"><Clock size={10}/> En attente</span>;
-      case 'preparing': return <span className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs border border-blue-500/20 flex items-center gap-1"><AlertCircle size={10}/> En cuisine</span>;
-      case 'delivering': return <span className="px-2 py-1 rounded-full bg-foodiz-gold/10 text-foodiz-gold text-xs border border-foodiz-gold/20 flex items-center gap-1"><Clock size={10}/> En livraison</span>;
-      default: return <span className="text-foodiz-gray text-xs">{status}</span>;
-    }
+  const load = async () => {
+    const { data } = await supabase.from("orders").select("*,client:profiles!orders_client_id_fkey(full_name,email),restaurant:restaurants!orders_restaurant_id_fkey(name),ledger:order_financial_ledger(*)").order("created_at", { ascending: false }).limit(100);
+    setOrders(data || []);
+    setLoading(false);
   };
 
-  return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Vue "Dieu" des Commandes</h1>
-      <p className="text-foodiz-gray text-sm mb-8">Suivi en temps réel de l'activité sur la plateforme.</p>
+  useEffect(() => { void load(); const channel = supabase.channel("admin-orders").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => void load()).subscribe(); return () => { void supabase.removeChannel(channel); }; }, []);
 
-      {loading ? <div className="text-foodiz-gray animate-pulse">Chargement...</div> : orders.length === 0 ? (
-        <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
-          <CheckCircle size={48} className="mx-auto text-foodiz-green/20 mb-4" />
-          <p className="text-foodiz-gray text-sm">Aucune commande active pour le moment. La plateforme est calme.</p>
-        </div>
-      ) : (
-        <div className="foodiz-card bg-[#0A0A0A] border-foodiz-gold/10 overflow-hidden rounded-2xl">
-          <table className="w-full text-left text-sm text-foodiz-gray">
-            <thead className="bg-foodiz-black text-foodiz-gold uppercase text-xs">
-              <tr>
-                <th className="px-6 py-4">ID Commande</th>
-                <th className="px-6 py-4">Client</th>
-                <th className="px-6 py-4">Restaurant</th>
-                <th className="px-6 py-4">Total</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-foodiz-gold/10">
-              {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-foodiz-gold/5 transition-colors">
-                  <td className="px-6 py-4 font-mono text-xs text-foodiz-cream">#{order.id.slice(0, 8)}</td>
-                  <td className="px-6 py-4">
-                    <p className="text-foodiz-cream">{order.client?.full_name || 'Inconnu'}</p>
-                    <p className="text-[10px]">{order.client?.email}</p>
-                  </td>
-                  <td className="px-6 py-4 text-foodiz-cream">{order.restaurant?.name || 'Inconnu'}</td>
-                  <td className="px-6 py-4 font-bold text-foodiz-gold">{(order.final_client_total_cents / 100).toFixed(2)} €</td>
-                  <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
-                  <td className="px-6 py-4 text-xs">{new Date(order.created_at).toLocaleTimeString('fr-FR')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
+  return <AdminShell title="Commandes et répartitions" subtitle="Suivi opérationnel et justification financière par commande">
+    {loading ? <div className="text-foodiz-gray animate-pulse">Chargement...</div> : <div className="space-y-3">{orders.length === 0 && <div className="foodiz-card p-8 text-center text-foodiz-gray">Aucune commande.</div>}{orders.map((order) => { const ledger = Array.isArray(order.ledger) ? order.ledger[0] : order.ledger; const isOpen = expanded === order.id; return <article key={order.id} className="foodiz-card overflow-hidden"><button onClick={() => setExpanded(isOpen ? "" : order.id)} className="flex w-full items-center gap-4 p-4 text-left"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foodiz-gold/10"><ReceiptText size={17} className="text-foodiz-gold"/></div><div className="min-w-0 flex-1"><p className="font-mono text-sm text-foodiz-cream">#{order.id.slice(0, 8)} · {order.restaurant?.name || "Restaurant"}</p><p className="mt-1 text-[10px] text-foodiz-gray">{order.client?.full_name || order.client?.email || "Client"} · {new Date(order.created_at).toLocaleString("fr-FR")}</p></div><p className="font-semibold text-foodiz-gold">{euros(order.final_client_total_cents)}</p><span className="hidden text-[10px] uppercase text-foodiz-gray sm:block">{order.status}</span>{isOpen ? <ChevronUp size={17}/> : <ChevronDown size={17}/>}</button>{isOpen && <div className="border-t border-foodiz-gold/10 p-4">{!ledger ? <p className="text-xs text-foodiz-gray">L'écriture sera disponible après confirmation du paiement.</p> : <><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[
+      ["Encaissé client", ledger.client_collected_cents], ["Avantage financé", ledger.advantage_funded_cents], ["Partenaire", ledger.partner_cents], ["Frais livraison", ledger.delivery_fee_cents], ["Livreur", Number(ledger.courier_earnings_cents) + Number(ledger.courier_prime_cents)], ["Foodiz", ledger.foodiz_revenue_cents], ["Service + interne", Number(ledger.service_fee_cents) + Number(ledger.internal_fees_cents)], ["Fidélité", ledger.loyalty_fund_cents], ["Parrainage", ledger.referral_fund_cents], ["Réserve système", ledger.system_reserve_cents]
+    ].map(([label, value]) => <div key={String(label)} className="rounded-xl border border-white/5 bg-white/[0.02] p-3"><p className="text-[9px] uppercase text-foodiz-gray">{label}</p><p className="mt-1 text-sm text-foodiz-cream">{euros(Number(value))}</p></div>)}</div><p className="mt-4 flex items-center gap-2 text-[10px] text-foodiz-gray"><Clock size={12}/>Paiement : {ledger.payment_status} · livraison : {ledger.order_status}</p></>}</div>}</article>; })}</div>}
+  </AdminShell>;
 }

@@ -1,94 +1,75 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft, CreditCard, Download, ReceiptText, ShieldCheck } from "lucide-react";
+import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, CreditCard, Plus, Trash2, ShieldCheck } from "lucide-react";
+import { downloadFinancialDocument } from "../../lib/financialDocuments";
 
 export default function PaymentsPage() {
   const navigate = useNavigate();
-  const [cards, setCards] = useState<any[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [newCard, setNewCard] = useState({ number: "", expiry: "" });
+  const [receipts, setReceipts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchCards(); }, []);
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase
+        .from("financial_documents")
+        .select("id,document_number,status,generated_at,last_emailed_at,payload_snapshot")
+        .eq("document_type", "client_payment_receipt")
+        .order("generated_at", { ascending: false })
+        .limit(50);
+      setReceipts(data || []);
+      setLoading(false);
+    })();
+  }, []);
 
-  const fetchCards = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('client_payment_methods').select('*').eq('user_id', user.id);
-      if (data) setCards(data);
-    }
-  };
+  return <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
+    <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+    <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && newCard.number.length >= 4) {
-      // SÉCURITÉ : On ne stocke que les 4 derniers chiffres
-      const lastFour = newCard.number.slice(-4);
-      await supabase.from('client_payment_methods').insert({ 
-        user_id: user.id, 
-        last_four: lastFour, 
-        expiry_date: newCard.expiry,
-        brand: 'Visa' // Simplifié pour la démo
-      });
-      setNewCard({ number: "", expiry: "" });
-      setShowForm(false);
-      fetchCards();
-    }
-  };
+    <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+      <div className="max-w-lg mx-auto flex items-center justify-between">
+        <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
+        <h1 className="foodiz-title text-lg">Paiements & reçus</h1>
+        <div className="w-6" />
+      </div>
+    </header>
 
-  const handleDelete = async (id: string) => {
-    await supabase.from('client_payment_methods').delete().eq('id', id);
-    fetchCards();
-  };
-
-  return (
-    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-          <h1 className="foodiz-title text-lg">Mes Paiements</h1>
-          <button onClick={() => setShowForm(!showForm)} className="text-foodiz-gold"><Plus size={24} /></button>
+    <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
+      <section className="rounded-[2rem] border border-foodiz-gold/25 bg-[linear-gradient(145deg,rgba(216,168,79,0.18),rgba(17,17,17,0.98)_45%)] p-6 shadow-[0_0_45px_rgba(216,168,79,0.08)]">
+        <div className="flex items-start gap-4">
+          <div className="rounded-2xl border border-foodiz-gold/25 bg-foodiz-gold/10 p-3 text-foodiz-gold"><ShieldCheck size={24}/></div>
+          <div>
+            <h2 className="foodiz-title text-xl text-foodiz-cream">Paiement sécurisé par Stripe</h2>
+            <p className="mt-2 text-sm leading-relaxed text-foodiz-gray">
+              Foodiz ne collecte pas et ne stocke pas vos numéros de carte. Les paiements sont saisis uniquement dans l’espace sécurisé Stripe au moment de commander.
+            </p>
+          </div>
         </div>
-      </header>
+      </section>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        <div className="flex items-center gap-2 text-foodiz-green text-xs bg-foodiz-green/5 p-3 rounded-xl border border-foodiz-green/10 mb-6">
-          <ShieldCheck size={14} /> Paiements 100% sécurisés. Nous ne stockons jamais votre numéro complet.
+      <section className="foodiz-card p-5">
+        <div className="flex items-center gap-3">
+          <CreditCard size={20} className="text-foodiz-gold"/>
+          <div>
+            <p className="font-semibold text-foodiz-cream">Cartes enregistrées</p>
+            <p className="mt-1 text-xs text-foodiz-gray">Aucune carte n’est enregistrée directement dans Foodiz.</p>
+          </div>
         </div>
+      </section>
 
-        {showForm && (
-          <form onSubmit={handleAdd} className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/30 space-y-3 animate-fade-in-up">
-            <input type="text" placeholder="Numéro de carte (16 chiffres)" maxLength={19} required value={newCard.number} onChange={e => setNewCard({...newCard, number: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none font-mono tracking-widest" />
-            <input type="text" placeholder="Date d'expiration (MM/AA)" maxLength={5} required value={newCard.expiry} onChange={e => setNewCard({...newCard, expiry: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
-            <button type="submit" className="w-full foodiz-btn py-3 text-sm">Ajouter la carte en toute sécurité</button>
-          </form>
-        )}
-
-        {cards.length === 0 ? (
-          <div className="text-center py-10 text-foodiz-gray text-sm">Aucune carte enregistrée.</div>
-        ) : (
-          cards.map((card) => (
-            <div key={card.id} className="foodiz-card p-4 flex items-center justify-between group bg-gradient-to-r from-foodiz-card to-[#0A0A0A]">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-8 bg-foodiz-cream rounded flex items-center justify-center">
-                  <CreditCard size={16} className="text-foodiz-black" />
-                </div>
-                <div>
-                  <p className="text-foodiz-cream text-sm font-bold font-mono">•••• •••• •••• {card.last_four}</p>
-                  <p className="text-foodiz-gray text-xs">Expire le {card.expiry_date}</p>
-                </div>
-              </div>
-              <button onClick={() => handleDelete(card.id)} className="text-foodiz-gray hover:text-foodiz-red transition-colors p-2">
-                <Trash2 size={18} />
-              </button>
+      <section>
+        <h2 className="foodiz-title mb-3 flex items-center gap-2 text-sm"><ReceiptText size={17} className="text-foodiz-gold"/>Mes reçus</h2>
+        {loading ? <div className="foodiz-card p-5 text-center text-sm text-foodiz-gray animate-pulse">Chargement des reçus...</div> : receipts.length === 0 ? <div className="foodiz-card p-5 text-center text-sm text-foodiz-gray">Aucun reçu disponible pour le moment.</div> : <div className="space-y-3">
+          {receipts.map((receipt) => <article key={receipt.id} className="foodiz-card flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="font-mono text-sm text-foodiz-cream">{receipt.document_number}</p>
+              <p className="mt-1 text-[10px] text-foodiz-gray">{receipt.payload_snapshot?.restaurant_name || "Commande Foodiz"} · {((receipt.payload_snapshot?.total_paid_cents || 0) / 100).toFixed(2)} €</p>
             </div>
-          ))
-        )}
-      </main>
-    </div>
-  );
+            <button onClick={() => void downloadFinancialDocument(receipt.id, receipt.document_number).catch((error) => toast.error(error.message))} className="rounded-xl border border-foodiz-gold/20 p-3 text-foodiz-gold"><Download size={17}/></button>
+          </article>)}
+        </div>}
+      </section>
+    </main>
+  </div>;
 }
