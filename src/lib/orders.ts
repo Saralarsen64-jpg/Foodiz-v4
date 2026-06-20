@@ -176,7 +176,6 @@ export async function getOrder(orderId: string) {
     .from('orders')
     .select(`
       *,
-      client:profiles!orders_client_id_fkey(full_name, first_name, last_name, email, phone, address, postal_code, city),
       restaurant:restaurants!orders_restaurant_id_fkey(name, address, city),
       order_items(
         *,
@@ -235,7 +234,6 @@ export async function getRestaurantActiveOrders(restaurantId: string) {
     .from('orders')
     .select(`
       *,
-      client:profiles!orders_client_id_fkey(first_name, last_name),
       order_items(quantity, product:products(name))
     `)
     .eq('restaurant_id', restaurantId)
@@ -254,7 +252,6 @@ export async function getCourierAssignedOrders(courierId: string) {
     .from('orders')
     .select(`
       *,
-      client:profiles!orders_client_id_fkey(first_name, last_name, phone, address),
       restaurant:restaurants(name, address, city)
     `)
     .eq('courier_id', courierId)

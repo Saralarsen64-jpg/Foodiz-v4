@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { resolveRedirectPath } from "../../utils/authProfile";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -35,16 +36,7 @@ export default function AuthPage() {
       return;
     }
 
-    if (data.user) {
-      // On récupère le rôle pour rediriger vers le bon espace
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      const userRole = profile?.role || 'client';
-      
-      if (userRole === 'admin') navigate('/admin');
-      else if (userRole === 'partner') navigate('/partner');
-      else if (userRole === 'courier') navigate('/courier');
-      else navigate('/client');
-    }
+    if (data.user) navigate(await resolveRedirectPath());
     setLoading(false);
   };
 

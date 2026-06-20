@@ -5,6 +5,7 @@ import { Icon } from "leaflet";
 import { ChevronLeft, Phone, MapPin, Clock, CheckCircle, Loader } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { getClientOrderCourierContact } from "../../lib/orderContacts";
 
 const courierIcon = new Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-orange.png",
@@ -76,13 +77,7 @@ export default function DeliveryTrackingPage() {
           setTracking(trackingData);
 
           // Charger les infos du livreur
-          const { data: courierData } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", trackingData.courier_id)
-            .single();
-
-          setCourier(courierData);
+          setCourier(await getClientOrderCourierContact(orderId));
         }
 
         // Charger le restaurant
@@ -97,7 +92,7 @@ export default function DeliveryTrackingPage() {
         // Charger le client
         const { data: clientData } = await supabase
           .from("profiles")
-          .select("*")
+          .select("id,latitude,longitude")
           .eq("id", orderData.client_id)
           .single();
 

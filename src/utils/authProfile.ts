@@ -19,45 +19,16 @@ export type ProfileRow = {
   status?: string | null;
 };
 
-function getRoleFromUser(user: AuthUser): AppRole {
-  return (user.user_metadata?.role || "client") as AppRole;
-}
-
-function getStatusFromRole(role: AppRole): AppStatus {
-  return role === "client" ? "active" : "pending";
-}
-
 export async function ensureProfileFromAuthUser(user: AuthUser) {
-  const { data: existing } = await supabase
+  const { data: existing, error } = await supabase
     .from("profiles")
     .select("id, role, first_name, last_name, email, phone, status")
     .eq("id", user.id)
     .maybeSingle<ProfileRow>();
 
   if (existing) return existing;
-
-  const role = getRoleFromUser(user);
-  const firstName = user.user_metadata?.first_name || null;
-  const lastName = user.user_metadata?.last_name || null;
-  const phone = user.user_metadata?.phone || null;
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert({
-      id: user.id,
-      role,
-      first_name: firstName,
-      last_name: lastName,
-      email: user.email || null,
-      phone,
-      status: getStatusFromRole(role),
-      updated_at: new Date().toISOString(),
-    })
-    .select("id, role, first_name, last_name, email, phone, status")
-    .single<ProfileRow>();
-
   if (error) throw error;
-  return data;
+  throw new Error("Le profil Foodiz n'a pas été provisionné. Contactez le support.");
 }
 
 export async function ensurePartnerApplication(user: AuthUser) {

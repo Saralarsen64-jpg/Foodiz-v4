@@ -24,6 +24,7 @@ import {
 import GoldIcon from "../../components/GoldIcon";
 import Logo from "../../components/Logo";
 import { supabase } from "../../lib/supabase";
+import { getPartnerOrderCustomers } from "../../lib/orderContacts";
 
 type PeriodKey = "day" | "week" | "month" | "year";
 
@@ -95,20 +96,23 @@ export default function PartnerDashboard() {
         if (ratings.length) setRating((ratings.reduce((sum: number, value: number) => sum + value, 0) / ratings.length).toFixed(1).replace(".", ","));
 
         // 3. Récupérer les commandes actives
-        const { data: activeOrdersData } = await supabase
-          .from("orders")
-          .select(`
-            id,
-            status,
-            final_client_total_cents,
-            created_at,
-            client:profiles(first_name, last_name),
-            order_items(quantity)
-          `)
-          .eq("restaurant_id", restaurant.id)
-          .eq("payment_status", "completed")
-          .in("status", ["pending", "preparing", "ready"])
-          .order("created_at", { ascending: true });
+        const [{ data: activeOrdersData }, contacts] = await Promise.all([
+          supabase
+            .from("orders")
+            .select(`
+              id,
+              status,
+              final_client_total_cents,
+              created_at,
+              order_items(quantity)
+            `)
+            .eq("restaurant_id", restaurant.id)
+            .eq("payment_status", "completed")
+            .in("status", ["pending", "preparing", "ready"])
+            .order("created_at", { ascending: true }),
+          getPartnerOrderCustomers(),
+        ]);
+        const contactByOrder = new Map(contacts.map((contact) => [contact.order_id, contact]));
 
         const formattedActive = (activeOrdersData || []).map((order: any) => ({
           id: order.id,
@@ -116,7 +120,7 @@ export default function PartnerDashboard() {
           total: (order.final_client_total_cents || 0) / 100,
           status: order.status,
           time: order.status === "ready" ? "Prête" : "En cours",
-          client: `${order.client?.first_name || "Client"} ${order.client?.last_name || ""}`,
+          client: contactByOrder.get(order.id)?.display_name || "Client",
         }));
 
         setActiveOrders(formattedActive);
@@ -124,7 +128,7 @@ export default function PartnerDashboard() {
         // 4. Récupérer les commandes livrées (historique + calcul revenu du jour)
         const { data: deliveredOrders } = await supabase
           .from("orders")
-          .select("*, client:profiles!orders_client_id_fkey(full_name, first_name, last_name)")
+          .select("*")
           .eq("restaurant_id", restaurant.id)
           .eq("status", "delivered")
           .order("created_at", { ascending: false })
@@ -132,7 +136,7 @@ export default function PartnerDashboard() {
         if (deliveredOrders) {
           const formattedHistory = deliveredOrders.map((order: any) => ({
             id: order.id,
-            client: order.client?.full_name || [order.client?.first_name, order.client?.last_name].filter(Boolean).join(" ") || `#${order.id.slice(0, 8)}`,
+            client: contactByOrder.get(order.id)?.display_name || `#${order.id.slice(0, 8)}`,
             total: (order.final_client_total_cents || 0) / 100,
             partnerTotal: (order.partner_total_cents || 0) / 100,
             date: new Date(order.delivered_at || order.created_at).toLocaleDateString('fr-FR'),
@@ -152,7 +156,7 @@ export default function PartnerDashboard() {
 
           const grouped = deliveredOrders.reduce<Record<string, any>>((acc, order: any) => {
             const key = order.client_id;
-            const item = acc[key] || { name: order.client?.full_name || order.client?.first_name || "Client", orders: 0, total: 0 };
+            const item = acc[key] || { name: contactByOrder.get(order.id)?.display_name || "Client", orders: 0, total: 0 };
             item.orders += 1;
             item.total += (order.final_client_total_cents || 0) / 100;
             acc[key] = item;

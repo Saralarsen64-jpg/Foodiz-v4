@@ -30,12 +30,18 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", currentSession.user.id)
         .single();
-      const currentRole = (profile?.role as AppRole) || "client";
+      if (profileError || !profile) {
+        setSession(null);
+        setRole(null);
+        setValidationRedirect(null);
+        return;
+      }
+      const currentRole = profile.role as AppRole;
       setRole(currentRole);
 
       if (!requireValidated) {

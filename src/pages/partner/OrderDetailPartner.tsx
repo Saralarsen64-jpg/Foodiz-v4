@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Phone, User } from "lucide-react";
 import { getOrder } from "../../lib/orders";
+import { getPartnerOrderCustomers } from "../../lib/orderContacts";
 
 export default function PartnerOrderDetail() {
   const { id } = useParams();
@@ -11,7 +12,12 @@ export default function PartnerOrderDetail() {
 
   useEffect(() => {
     if (!id) return;
-    getOrder(id).then(setOrder).finally(() => setLoading(false));
+    Promise.all([getOrder(id), getPartnerOrderCustomers()])
+      .then(([orderData, contacts]) => {
+        const contact = contacts.find((item) => item.order_id === id);
+        setOrder({ ...orderData, client: contact || null });
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gray">Chargement...</div>;
@@ -21,7 +27,7 @@ export default function PartnerOrderDetail() {
   const totalPartner = order.partner_total_cents / 100;
   const totalClient = order.final_client_total_cents / 100;
   const supplement = totalClient - totalPartner;
-  const clientName = order.client?.full_name || [order.client?.first_name, order.client?.last_name].filter(Boolean).join(" ") || "Client";
+  const clientName = order.client?.display_name || "Client";
 
   return (
     <div className="min-h-screen bg-foodiz-black">

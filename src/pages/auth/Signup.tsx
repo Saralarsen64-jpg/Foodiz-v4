@@ -3,11 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Mail, Lock, User, Phone, MapPin, Hash, Briefcase, AlertCircle, CheckCircle } from "lucide-react";
 import Logo from "../../components/Logo";
+import { normalizePublicSignupRole } from "../../utils/authRoles";
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const role = searchParams.get("role") || "client";
+  const role = normalizePublicSignupRole(searchParams.get("role"));
   const refCode = searchParams.get("ref");
   
   const [firstName, setFirstName] = useState("");

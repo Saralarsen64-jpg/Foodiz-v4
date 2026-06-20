@@ -5,11 +5,12 @@ import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 import { resolveRedirectPath } from "../../utils/authProfile";
+import { normalizePublicSignupRole } from "../../utils/authRoles";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const role = params.get("role") || "client";
+  const role = normalizePublicSignupRole(params.get("role"));
   const [showPwd, setShowPwd] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

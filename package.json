@@ -7,6 +7,7 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "typecheck:functions": "tsc -p tsconfig.functions.json",
+    "test:security": "node --test tests/security/*.test.ts",
     "check": "npm run typecheck && npm run build",
     "build": "vite build",
     "preview": "vite preview"

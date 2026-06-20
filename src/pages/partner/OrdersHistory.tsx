@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, Clock, ChevronRight } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
+import { getPartnerOrderCustomers } from "../../lib/orderContacts";
 
 export default function PartnerOrdersHistory() {
   const navigate = useNavigate();
@@ -15,8 +16,15 @@ export default function PartnerOrdersHistory() {
       if (!user) return;
       const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
       if (!restaurant) return;
-      const { data } = await supabase.from("orders").select("id, status, final_client_total_cents, partner_total_cents, created_at, client:profiles!orders_client_id_fkey(full_name, first_name), order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).in("status", ["delivered", "cancelled"]).order("created_at", { ascending: false });
-      setOrders(data || []);
+      const [{ data }, contacts] = await Promise.all([
+        supabase.from("orders").select("id, status, final_client_total_cents, partner_total_cents, created_at, order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).in("status", ["delivered", "cancelled"]).order("created_at", { ascending: false }),
+        getPartnerOrderCustomers(),
+      ]);
+      const contactByOrder = new Map(contacts.map((contact) => [contact.order_id, contact]));
+      setOrders((data || []).map((order: any) => ({
+        ...order,
+        client_name: contactByOrder.get(order.id)?.display_name || "Client",
+      })));
     };
     load();
   }, []);
@@ -51,7 +59,7 @@ export default function PartnerOrdersHistory() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-foodiz-cream">{h.client?.full_name || h.client?.first_name || "Client"}</h3>
+                  <h3 className="text-sm font-medium text-foodiz-cream">{h.client_name}</h3>
                   <span className={`text-[10px] font-medium ${h.status === "delivered" ? "text-foodiz-green" : "text-foodiz-red"}`}>
                     {h.status === "delivered" ? "Livrée" : "Annulée"}
                   </span>

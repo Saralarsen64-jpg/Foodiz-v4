@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Clock, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { getPartnerOrderCustomers } from "../../lib/orderContacts";
 
 type OrderStatus = "pending" | "preparing" | "ready";
 
@@ -29,10 +30,14 @@ export default function PartnerOrdersCurrent() {
       const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
       if (!restaurant) return;
       restaurantId = restaurant.id;
-      const { data } = await supabase.from("orders").select("id, status, final_client_total_cents, created_at, client:profiles!orders_client_id_fkey(full_name, first_name), order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).eq("payment_status", "completed").in("status", ["pending", "preparing", "ready"]).order("created_at");
+      const [{ data }, contacts] = await Promise.all([
+        supabase.from("orders").select("id, status, final_client_total_cents, created_at, order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).eq("payment_status", "completed").in("status", ["pending", "preparing", "ready"]).order("created_at"),
+        getPartnerOrderCustomers(),
+      ]);
+      const contactByOrder = new Map(contacts.map((contact) => [contact.order_id, contact]));
       setOrders((data || []).map((order: any) => ({
         id: order.id,
-        client: order.client?.full_name || order.client?.first_name || "Client",
+        client: contactByOrder.get(order.id)?.display_name || "Client",
         items: (order.order_items || []).map((item: any) => `${item.product?.name || "Produit"} x${item.quantity}`).join(", "),
         total: order.final_client_total_cents / 100,
         status: order.status,

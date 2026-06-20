@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Users, Crown, TrendingUp, Star } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import { getPartnerOrderCustomers } from "../../lib/orderContacts";
 
 export default function PartnerCustomers() {
   const navigate = useNavigate();
@@ -13,9 +14,13 @@ export default function PartnerCustomers() {
       if (!user) return;
       const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).single();
       if (!restaurant) return;
-      const { data } = await supabase.from("orders").select("client_id, final_client_total_cents, client:profiles!orders_client_id_fkey(full_name, first_name, last_name)").eq("restaurant_id", restaurant.id).eq("status", "delivered");
+      const [{ data }, contacts] = await Promise.all([
+        supabase.from("orders").select("id, client_id, final_client_total_cents").eq("restaurant_id", restaurant.id).eq("status", "delivered"),
+        getPartnerOrderCustomers(),
+      ]);
+      const contactByOrder = new Map(contacts.map((contact) => [contact.order_id, contact]));
       const grouped = (data || []).reduce<Record<string, any>>((acc, order: any) => {
-        const current = acc[order.client_id] || { name: order.client?.full_name || [order.client?.first_name, order.client?.last_name].filter(Boolean).join(" ") || "Client", orders: 0, total: 0 };
+        const current = acc[order.client_id] || { name: contactByOrder.get(order.id)?.display_name || "Client", orders: 0, total: 0 };
         current.orders += 1;
         current.total += order.final_client_total_cents / 100;
         acc[order.client_id] = current;

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Bike, CheckCircle2, ChevronLeft, CircleUserRound, MapPin, MessageCircle, Navigation, Phone, ShieldCheck, Store, X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { getCourierOrderClientContact } from "../../lib/orderContacts";
 
 type DeliveryStep = "accepted" | "at_restaurant" | "picked_up" | "in_transit" | "at_customer" | "delivered";
 
@@ -33,11 +34,11 @@ export default function DeliveryTrackingPage() {
       id, status, courier_id, delivery_address, client_latitude, client_longitude,
       courier_earnings_cents, courier_prime_fund_cents, created_at,
       restaurant:restaurants(name, address, postal_code, city, latitude, longitude),
-      client:profiles!orders_client_id_fkey(full_name, first_name, phone),
       order_items(id, quantity, product:products(name))
     `).eq("id", id).single();
     if (!data) return;
-    setOrder(data);
+    const client = await getCourierOrderClientContact(id);
+    setOrder({ ...data, client });
     const { data: trackingData } = await supabase.from("delivery_tracking").select("*").eq("order_id", id).maybeSingle();
     setTracking(trackingData);
     const status = trackingData?.status;
@@ -75,7 +76,7 @@ export default function DeliveryTrackingPage() {
   const earnings = ((order?.courier_earnings_cents || 0) + (order?.courier_prime_fund_cents || 0)) / 100;
   const currentIndex = STEPS.findIndex((item) => item.key === step);
   const progress = ((currentIndex + 1) / STEPS.length) * 100;
-  const clientName = order?.client?.full_name || order?.client?.first_name || "Client Foodiz";
+  const clientName = order?.client?.display_name || order?.client?.first_name || "Client Foodiz";
   const restaurantAddress = useMemo(() => [order?.restaurant?.address, order?.restaurant?.postal_code, order?.restaurant?.city].filter(Boolean).join(", "), [order]);
 
   const updateStep = async (next: DeliveryStep) => {
