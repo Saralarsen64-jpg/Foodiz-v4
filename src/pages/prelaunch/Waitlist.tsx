@@ -388,10 +388,7 @@ export default function WaitlistPage() {
         </main>
 
         <footer className="border-t border-foodiz-gold/10 px-6 py-5 text-center">
-          <button onClick={() => navigate("/admin-auth")} className="text-[9px] uppercase tracking-[.2em] text-foodiz-gray/35 hover:text-foodiz-gold">
-            Accès équipe Foodiz
-          </button>
-          <p className="mt-3 text-[9px] tracking-[.16em] text-foodiz-gray/25">© {new Date().getFullYear()} · FOODIZ</p>
+          <p className="text-[9px] tracking-[.16em] text-foodiz-gray/25">© {new Date().getFullYear()} · FOODIZ</p>
         </footer>
       </section>
 
