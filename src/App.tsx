@@ -93,7 +93,7 @@ export default function App() {
     <LaunchBoundary>
       <Routes>
       {/* Redirect root */}
-      <Route path="/" element={<Navigate to="/auth" replace />} />
+      <Route path="/" element={<Navigate to="/waitlist" replace />} />
 
       {/* ─── AUTH ROUTES (Publiques) ─────────────────────────────────────── */}
       <Route path="/waitlist" element={<WaitlistPage />} />

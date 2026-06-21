@@ -63,8 +63,14 @@ export default function LaunchBoundary({ children }: { children: ReactNode }) {
     (path) => location.pathname === path || location.pathname.startsWith(`${path}/`),
   ) || isAdminPath(location.pathname);
 
+  // The public domain root is always the public waitlist before launch,
+  // including when an administrator session is already present.
+  if (!launched && location.pathname === "/") {
+    return <Navigate to="/waitlist" replace />;
+  }
+
   if (!launched && !availableBeforeLaunch) {
-    if (sessionRole === "admin") return <Navigate to="/admin" replace />;
+    if (sessionRole === "admin") return <Navigate to="/waitlist" replace />;
     if (hasSession) return <Navigate to="/prelaunch-confirmed" replace />;
     return <Navigate to="/waitlist" replace />;
   }

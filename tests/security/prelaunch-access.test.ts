@@ -30,6 +30,10 @@ const launchBoundary = readFileSync(
   new URL("../../src/components/LaunchBoundary.tsx", import.meta.url),
   "utf8",
 );
+const appRoutes = readFileSync(
+  new URL("../../src/App.tsx", import.meta.url),
+  "utf8",
+);
 const uniquePhoneMigration = readFileSync(
   new URL("../../supabase/migrations/33_unique_phone_identity_for_clients_and_couriers.sql", import.meta.url),
   "utf8",
@@ -103,6 +107,16 @@ test("la route exacte /admin et ses sous-routes restent accessibles avant lancem
   assert.match(launchBoundary, /pathname === "\/admin"/);
   assert.match(launchBoundary, /pathname\.startsWith\("\/admin\/"\)/);
   assert.match(launchBoundary, /isAdminPath\(location\.pathname\)/);
+});
+
+test("foodiz.co reste toujours la waitlist même avec une session admin", () => {
+  assert.match(appRoutes, /path="\/" element=\{<Navigate to="\/waitlist" replace \/>}/);
+  assert.match(launchBoundary, /location\.pathname === "\/"/);
+  assert.match(launchBoundary, /sessionRole === "admin"\) return <Navigate to="\/waitlist"/);
+  assert.doesNotMatch(
+    launchBoundary,
+    /sessionRole === "admin"\) return <Navigate to="\/admin"/,
+  );
 });
 
 test("les formats français équivalents partagent une identité téléphonique", () => {
