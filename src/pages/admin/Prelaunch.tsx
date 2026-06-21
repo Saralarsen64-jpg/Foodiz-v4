@@ -15,6 +15,7 @@ type Profile = {
   status: string;
   created_at: string;
   partner?: { establishment_name?: string } | { establishment_name?: string }[] | null;
+  driver?: { siret?: string; vehicle_type?: string; availability?: string } | { siret?: string; vehicle_type?: string; availability?: string }[] | null;
 };
 
 type Payload = {
@@ -72,14 +73,18 @@ export default function AdminPrelaunch() {
   const exportCsv = () => {
     const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
     const rows = [
-      ["Rôle", "Prénom", "Nom", "Établissement", "Email", "Téléphone", "Ville", "Statut", "Date"],
+      ["Rôle", "Prénom", "Nom", "Établissement", "SIRET livreur", "Véhicule", "Disponibilité", "Email", "Téléphone", "Ville", "Statut", "Date"],
       ...(data?.profiles || []).map((profile) => {
         const partner = Array.isArray(profile.partner) ? profile.partner[0] : profile.partner;
+        const driver = Array.isArray(profile.driver) ? profile.driver[0] : profile.driver;
         return [
           roleLabels[profile.role],
           profile.first_name,
           profile.last_name,
           partner?.establishment_name || "",
+          driver?.siret || "",
+          driver?.vehicle_type || "",
+          driver?.availability || "",
           profile.email,
           profile.phone,
           profile.city,
@@ -170,6 +175,7 @@ export default function AdminPrelaunch() {
               <tbody className="divide-y divide-foodiz-gold/10">
                 {data.profiles.map((profile) => {
                   const partner = Array.isArray(profile.partner) ? profile.partner[0] : profile.partner;
+                  const driver = Array.isArray(profile.driver) ? profile.driver[0] : profile.driver;
                   return (
                     <tr key={profile.id} className="hover:bg-white/[.02]">
                       <td className="px-5 py-4">
@@ -177,6 +183,11 @@ export default function AdminPrelaunch() {
                         <p className="text-xs text-foodiz-gold mt-1">
                           {roleLabels[profile.role]}{partner?.establishment_name ? ` · ${partner.establishment_name}` : ""}
                         </p>
+                        {driver?.siret && (
+                          <p className="text-[11px] text-foodiz-gray mt-1">
+                            SIRET {driver.siret} · {driver.vehicle_type || "véhicule à préciser"}
+                          </p>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-foodiz-gray">{profile.email}</td>
                       <td className="px-5 py-4">{profile.city}</td>

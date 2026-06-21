@@ -18,6 +18,14 @@ const apiRouter = readFileSync(
   new URL("../../api/[...path].ts", import.meta.url),
   "utf8",
 );
+const courierSiretMigration = readFileSync(
+  new URL("../../supabase/migrations/32_prelaunch_courier_siret.sql", import.meta.url),
+  "utf8",
+);
+const sendLaunchAccess = readFileSync(
+  new URL("../../netlify/functions/send-launch-access.ts", import.meta.url),
+  "utf8",
+);
 
 test("le statut de lancement démarre fermé", () => {
   assert.match(migration, /'launch_status', '\{"launched": false\}'::jsonb/);
@@ -61,3 +69,20 @@ test("le routeur API refuse également les contournements directs", () => {
   assert.match(apiRouter, /userHasApplicationAccess/);
 });
 
+test("le SIRET livreur est stocké et validé sur 14 chiffres", () => {
+  assert.match(courierSiretMigration, /ADD COLUMN IF NOT EXISTS siret text/);
+  assert.match(courierSiretMigration, /\^\[0-9\]\{14\}\$/);
+  assert.match(registerApi, /prelaunch_driver_details/);
+  assert.match(registerApi, /siret,/);
+});
+
+test("l’envoi de lancement ne cible que les profils encore en attente", () => {
+  assert.match(sendLaunchAccess, /\.eq\("status", "prelaunch_pending"\)/);
+  assert.doesNotMatch(sendLaunchAccess, /\.in\("status", \["prelaunch_pending", "launch_email_sent"\]\)/);
+});
+
+test("l’activation renvoie la connexion correspondant au rôle", () => {
+  assert.match(activateApi, /loginPath/);
+  assert.match(activateApi, /role === "livreur" \? "courier"/);
+  assert.match(activateApi, /role === "partenaire" \? "partner"/);
+});

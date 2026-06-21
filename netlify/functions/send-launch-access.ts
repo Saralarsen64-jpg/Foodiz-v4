@@ -31,7 +31,7 @@ const handler: Handler = async (event) => {
   const { data: profiles, error } = await adminSupabase
     .from("prelaunch_profiles")
     .select("id,user_id,email,first_name,status")
-    .in("status", ["prelaunch_pending", "launch_email_sent"])
+    .eq("status", "prelaunch_pending")
     .order("created_at")
     .limit(100);
   if (error) {

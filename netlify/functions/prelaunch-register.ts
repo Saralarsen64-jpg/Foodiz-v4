@@ -73,7 +73,7 @@ const handler: Handler = async (event) => {
 
   const establishmentName = cleanText(input.establishmentName, 140);
   const establishmentType = cleanText(input.establishmentType, 30);
-  const siret = cleanText(input.siret, 20);
+  const siret = cleanText(input.siret, 20).replace(/\s+/g, "");
   const vehicleType = cleanText(input.vehicleType, 30);
   const availability = cleanText(input.availability, 30);
 
@@ -84,10 +84,12 @@ const handler: Handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "Complétez les informations de votre établissement." }) };
   }
   if (role === "livreur" && (
+    !/^[0-9]{14}$/.test(siret)
+    ||
     !["velo", "scooter", "voiture", "autre"].includes(vehicleType)
     || !["journee", "soiree", "nuit", "week_end"].includes(availability)
   )) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Complétez votre véhicule et vos disponibilités." }) };
+    return { statusCode: 400, body: JSON.stringify({ error: "Renseignez un SIRET valide de 14 chiffres, votre véhicule et vos disponibilités." }) };
   }
 
   const fingerprint = requestFingerprint(event.headers);
@@ -127,7 +129,7 @@ const handler: Handler = async (event) => {
       phone,
       city,
       business_name: role === "partenaire" ? establishmentName : undefined,
-      siret: role === "partenaire" ? siret || undefined : undefined,
+      siret: role === "partenaire" || role === "livreur" ? siret || undefined : undefined,
       cgu_accepted: true,
       prelaunch: true,
     },
@@ -173,6 +175,7 @@ const handler: Handler = async (event) => {
     if (role === "livreur") {
       const { error } = await adminSupabase.from("prelaunch_driver_details").insert({
         prelaunch_profile_id: profile.id,
+        siret,
         vehicle_type: vehicleType,
         availability,
       });

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Mail, Lock, User, Phone, MapPin, Hash, Briefcase, AlertCircle, CheckCircle } from "lucide-react";
-import Logo from "../../components/Logo";
 import { normalizePublicSignupRole } from "../../utils/authRoles";
 
 export default function SignupPage() {
@@ -83,7 +82,9 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-foodiz-black flex items-center justify-center p-4">
       <div className="w-full max-w-md foodiz-card p-8 border border-foodiz-gold/20 shadow-2xl">
-        <div className="flex justify-center mb-6"><Logo size="md" /></div>
+        <div className="flex justify-center mb-6">
+          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="w-64 max-w-full h-auto rounded-2xl" />
+        </div>
         <h1 className="foodiz-title text-2xl text-center mb-2 text-foodiz-cream">
           Inscription {role === 'partner' ? 'Partenaire' : role === 'courier' ? 'Livreur' : 'Client'}
         </h1>

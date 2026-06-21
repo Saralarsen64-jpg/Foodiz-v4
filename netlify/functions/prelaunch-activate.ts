@@ -25,7 +25,7 @@ const handler: Handler = async (event) => {
 
   const { data: profile } = await adminSupabase
     .from("prelaunch_profiles")
-    .select("id,user_id,status,launch_token_expires_at")
+    .select("id,user_id,role,status,launch_token_expires_at")
     .eq("launch_token", sha256(token))
     .maybeSingle();
 
@@ -33,7 +33,11 @@ const handler: Handler = async (event) => {
     return { statusCode: 404, body: JSON.stringify({ error: "Ce lien d’activation est invalide." }) };
   }
   if (profile.status === "activated") {
-    return { statusCode: 200, body: JSON.stringify({ activated: true }) };
+    const loginRole = profile.role === "livreur" ? "courier" : profile.role === "partenaire" ? "partner" : "client";
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ activated: true, loginPath: `/auth/login?role=${loginRole}` }),
+    };
   }
   if (new Date(profile.launch_token_expires_at).getTime() <= Date.now()) {
     return { statusCode: 410, body: JSON.stringify({ error: "Ce lien a expiré. Demandez un nouvel accès à Foodiz." }) };
@@ -72,6 +76,7 @@ const handler: Handler = async (event) => {
     body: JSON.stringify({
       activated: true,
       message: "Votre accès Foodiz est activé. Vous pouvez maintenant vous connecter.",
+      loginPath: `/auth/login?role=${profile.role === "livreur" ? "courier" : profile.role === "partenaire" ? "partner" : "client"}`,
     }),
   };
 };

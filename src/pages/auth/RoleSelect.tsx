@@ -45,7 +45,7 @@ export default function AuthPage() {
       {/* ─── Kraft Envelope Header ───────────────────────────────────── */}
       <div className="relative w-full overflow-hidden pb-10">
         <img
-          src="https://i.imgur.com/gtCArFr.png"
+          src="/images/Logo-Foodiz.PNG"
           alt="Foodiz"
           className="block w-full h-auto align-top"
         />

@@ -20,7 +20,7 @@ const handler: Handler = async (event) => {
       id,user_id,role,first_name,last_name,email,phone,city,status,
       marketing_consent,created_at,launch_notified_at,activated_at,
       partner:prelaunch_partner_details(establishment_name,establishment_type,siret),
-      driver:prelaunch_driver_details(vehicle_type,availability)
+      driver:prelaunch_driver_details(siret,vehicle_type,availability)
     `)
     .order("created_at", { ascending: false });
 

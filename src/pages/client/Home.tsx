@@ -98,7 +98,7 @@ export default function ClientHome() {
       {/* HEADER ÉLÉGANT ET AÉRÉ */}
       <header className="px-6 pt-12 pb-8 bg-gradient-to-b from-foodiz-card to-foodiz-black border-b border-foodiz-gold/10">
         <div className="max-w-lg mx-auto flex justify-between items-center mb-8">
-          <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="h-10 w-auto" />
+          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="h-10 w-auto" />
           <div className="flex gap-3">
             <button onClick={() => navigate("/client/notifications")} className="relative p-2.5 rounded-full bg-foodiz-black border border-foodiz-gold/20 text-foodiz-gold hover:bg-foodiz-gold/10 transition-colors">
               <Bell size={18} />

@@ -76,7 +76,7 @@ export default function LoginPage() {
           <ChevronLeft size={18} /> Retour
         </button>
         <div className="flex flex-col items-center">
-          <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="w-48 h-auto" />
+          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="w-64 max-w-full h-auto rounded-2xl" />
           <p className="text-foodiz-gray text-[10px] mt-3 tracking-widest uppercase">{roleLabel}</p>
         </div>
       </div>

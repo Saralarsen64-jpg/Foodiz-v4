@@ -1,38 +1,29 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useMemo, useState } from "react";
 import {
   ArrowRight,
   Bike,
+  Building2,
   Check,
+  ChevronDown,
   Eye,
   EyeOff,
   LoaderCircle,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
   ShoppingBag,
   Store,
+  User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Logo from "../../components/Logo";
 
 type Role = "client" | "livreur" | "partenaire";
 
 const ROLES = [
-  {
-    value: "client" as const,
-    label: "Je suis client",
-    eyebrow: "Découvrir & commander",
-    icon: ShoppingBag,
-  },
-  {
-    value: "livreur" as const,
-    label: "Je suis livreur",
-    eyebrow: "Livrer localement",
-    icon: Bike,
-  },
-  {
-    value: "partenaire" as const,
-    label: "Je suis partenaire",
-    eyebrow: "Développer mon activité",
-    icon: Store,
-  },
+  { value: "client" as const, label: "Client", detail: "Commander local", icon: ShoppingBag },
+  { value: "livreur" as const, label: "Livreur", detail: "Livrer avec Foodiz", icon: Bike },
+  { value: "partenaire" as const, label: "Partenaire", detail: "Développer mon activité", icon: Store },
 ];
 
 const initialForm = {
@@ -52,8 +43,19 @@ const initialForm = {
   companyWebsite: "",
 };
 
+function InputShell({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3.5 transition-all hover:border-foodiz-gold/50 focus-within:border-foodiz-gold focus-within:shadow-[0_0_18px_rgba(216,168,79,.08)]">
+      <span className="shrink-0 text-foodiz-gold [filter:drop-shadow(0_0_4px_rgba(216,168,79,.4))]">
+        {icon}
+      </span>
+      {children}
+    </div>
+  );
+}
+
 function Field({
-  label,
+  icon,
   name,
   value,
   onChange,
@@ -61,19 +63,20 @@ function Field({
   placeholder,
   required = true,
   autoComplete,
+  trailing,
 }: {
-  label: string;
+  icon: ReactNode;
   name: string;
   value: string;
   onChange: (name: string, value: string) => void;
   type?: string;
-  placeholder?: string;
+  placeholder: string;
   required?: boolean;
   autoComplete?: string;
+  trailing?: ReactNode;
 }) {
   return (
-    <label className="block">
-      <span className="block text-[11px] uppercase tracking-[.16em] font-bold text-black/55 mb-2">{label}</span>
+    <InputShell icon={icon}>
       <input
         name={name}
         type={type}
@@ -82,37 +85,40 @@ function Field({
         placeholder={placeholder}
         required={required}
         autoComplete={autoComplete}
-        className="w-full rounded-2xl border border-black/15 bg-white/55 px-4 py-3.5 text-[15px] text-black outline-none placeholder:text-black/30 focus:border-black/45 focus:bg-white/75 transition"
+        className="min-w-0 flex-1 bg-transparent text-sm text-foodiz-cream outline-none placeholder:text-foodiz-gray/60"
       />
-    </label>
+      {trailing}
+    </InputShell>
   );
 }
 
 function SelectField({
-  label,
+  icon,
   name,
   value,
   options,
   onChange,
 }: {
-  label: string;
+  icon: ReactNode;
   name: string;
   value: string;
   options: { value: string; label: string }[];
   onChange: (name: string, value: string) => void;
 }) {
   return (
-    <label className="block">
-      <span className="block text-[11px] uppercase tracking-[.16em] font-bold text-black/55 mb-2">{label}</span>
-      <select
-        name={name}
-        value={value}
-        onChange={(event) => onChange(name, event.target.value)}
-        className="w-full rounded-2xl border border-black/15 bg-white/55 px-4 py-3.5 text-[15px] text-black outline-none focus:border-black/45 transition"
-      >
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-    </label>
+    <InputShell icon={icon}>
+      <div className="relative min-w-0 flex-1">
+        <select
+          name={name}
+          value={value}
+          onChange={(event) => onChange(name, event.target.value)}
+          className="w-full appearance-none bg-transparent pr-6 text-sm text-foodiz-cream outline-none"
+        >
+          {options.map((option) => <option key={option.value} value={option.value} className="bg-foodiz-card">{option.label}</option>)}
+        </select>
+        <ChevronDown size={15} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-foodiz-gold/70" />
+      </div>
+    </InputShell>
   );
 }
 
@@ -156,89 +162,99 @@ export default function WaitlistPage() {
   };
 
   return (
-    <main className="min-h-screen kraft-paper-bg text-foodiz-black">
-      <div className="min-h-screen bg-[radial-gradient(circle_at_15%_10%,rgba(255,255,255,.3),transparent_26%),linear-gradient(135deg,rgba(216,185,143,.88),rgba(198,160,106,.92))]">
-        <header className="max-w-7xl mx-auto px-5 sm:px-8 py-6 flex justify-between items-center">
-          <Logo size="lg" />
-          <a href="/admin-auth" className="text-[10px] uppercase tracking-[.2em] font-bold text-black/45 hover:text-black transition">
-            Accès équipe
-          </a>
-        </header>
+    <div className="min-h-screen bg-foodiz-black text-foodiz-cream">
+      <div className="relative w-full overflow-hidden pb-10">
+        <img
+          src="/images/Logo-Foodiz.PNG"
+          alt="Foodiz"
+          className="block h-auto w-full align-top"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-foodiz-black/35 to-foodiz-black" />
+      </div>
 
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 pb-16 grid lg:grid-cols-[.82fr_1.18fr] gap-10 lg:gap-16 items-start">
-          <section className="lg:sticky lg:top-16 pt-8 lg:pt-16">
-            <div className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white/20 px-4 py-2 text-[10px] uppercase tracking-[.22em] font-bold">
-              <span className="w-2 h-2 rounded-full bg-black animate-pulse" />
-              Ouverture prochaine
+      <section
+        className="relative z-10 mx-4 -mt-16 max-w-[560px] overflow-hidden rounded-[34px] border border-foodiz-gold/35 md:mx-auto"
+        style={{
+          background: "radial-gradient(circle at top, rgba(216,168,79,.1), transparent 34%), #050505",
+          boxShadow: "0 -1px 0 rgba(224,180,92,.35), 0 28px 90px rgba(0,0,0,.7), 0 0 48px rgba(216,168,79,.13)",
+        }}
+      >
+        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-foodiz-gold/70 to-transparent" />
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-foodiz-gold/10 blur-3xl" />
+
+        <main className="relative z-10 mx-auto max-w-lg px-5 pb-8 pt-8 sm:px-7">
+          <div className="text-center">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-foodiz-gold/25 bg-foodiz-gold/[.06] px-4 py-2">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foodiz-gold shadow-[0_0_9px_#D8A84F]" />
+              <span className="text-[9px] font-bold uppercase tracking-[.24em] text-foodiz-gold">Ouverture prochaine</span>
             </div>
-            <h1 className="font-serif text-[3.5rem] sm:text-[5rem] lg:text-[6.2rem] leading-[.9] tracking-[-.055em] mt-7">
-              Foodiz<br />arrive bientôt
+            <h1 className="mt-5 text-3xl sm:text-4xl" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 500 }}>
+              <span className="text-foodiz-cream">Foodiz arrive </span>
+              <span className="italic text-foodiz-gold">bientôt</span>
             </h1>
-            <p className="text-xl sm:text-2xl font-medium leading-snug mt-7 max-w-lg">
-              L’app qui régale clients,<br className="hidden sm:block" /> livreurs et partenaires.
+            <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-foodiz-gray">
+              L’app qui régale clients, livreurs et partenaires.
+              <br />
+              Préparez votre compte avant l’ouverture officielle.
             </p>
-            <p className="text-black/58 leading-relaxed mt-6 max-w-md">
-              Rejoignez les premiers membres de l’écosystème Foodiz et recevez votre accès personnel dès l’ouverture.
-            </p>
+          </div>
 
-            <div className="mt-10 grid gap-3 max-w-md">
-              {["Un compte sécurisé déjà prêt", "Un accès envoyé personnellement", "Vos données protégées dès maintenant"].map((item) => (
-                <div key={item} className="flex items-center gap-3 text-sm font-semibold">
-                  <span className="w-7 h-7 rounded-full bg-black text-foodiz-gold flex items-center justify-center"><Check size={14} /></span>
-                  {item}
-                </div>
-              ))}
-            </div>
-          </section>
+          <div className="my-7 flex items-center gap-4">
+            <div className="h-px flex-1 bg-foodiz-gold/20" />
+            <span className="text-[10px] font-semibold uppercase tracking-[.18em] text-foodiz-gold">Je suis</span>
+            <div className="h-px flex-1 bg-foodiz-gold/20" />
+          </div>
 
-          <section className="rounded-[2rem] sm:rounded-[2.6rem] bg-[#f8ead2]/92 border border-black/10 shadow-[0_35px_120px_rgba(34,21,5,.25)] backdrop-blur p-5 sm:p-8 lg:p-10">
-            <div>
-              <p className="text-[10px] uppercase tracking-[.24em] font-bold text-black/45">Votre place chez Foodiz</p>
-              <h2 className="font-serif text-3xl sm:text-4xl mt-2">Choisissez votre profil</h2>
-            </div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {ROLES.map((option) => {
+              const selected = role === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setRole(option.value);
+                    setError("");
+                  }}
+                  className={`relative flex min-h-[118px] flex-col items-center justify-center rounded-2xl border px-2 py-4 text-center transition-all ${
+                    selected
+                      ? "border-foodiz-gold bg-foodiz-gold/[.1] shadow-[0_0_20px_rgba(216,168,79,.13)]"
+                      : "border-foodiz-gold/25 bg-foodiz-card hover:border-foodiz-gold/50"
+                  }`}
+                >
+                  {selected && (
+                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-foodiz-gold text-foodiz-black">
+                      <Check size={12} strokeWidth={3} />
+                    </span>
+                  )}
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-full border ${
+                    selected ? "border-foodiz-gold bg-foodiz-gold/10" : "border-foodiz-gold/45"
+                  }`}>
+                    <option.icon size={20} className="text-foodiz-gold [filter:drop-shadow(0_0_4px_rgba(216,168,79,.45))]" strokeWidth={1.6} />
+                  </span>
+                  <span className="mt-3 text-xs font-bold text-foodiz-cream sm:text-sm">{option.label}</span>
+                  <span className="mt-1 hidden text-[9px] leading-tight text-foodiz-gray/60 sm:block">{option.detail}</span>
+                </button>
+              );
+            })}
+          </div>
 
-            <div className="grid sm:grid-cols-3 gap-3 mt-7">
-              {ROLES.map((option) => {
-                const selected = role === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setRole(option.value);
-                      setError("");
-                    }}
-                    className={`rounded-2xl border p-4 text-left transition-all ${
-                      selected
-                        ? "bg-black text-foodiz-cream border-black shadow-xl -translate-y-1"
-                        : "bg-white/35 border-black/10 hover:border-black/30"
-                    }`}
-                  >
-                    <option.icon size={23} className={selected ? "text-foodiz-gold" : "text-black/65"} />
-                    <span className="block font-bold mt-5 text-sm">{option.label}</span>
-                    <span className={`block text-[10px] mt-1 ${selected ? "text-white/50" : "text-black/45"}`}>{option.eyebrow}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <form onSubmit={submit} className="mt-7 space-y-3.5">
+            <input
+              tabIndex={-1}
+              autoComplete="off"
+              value={form.companyWebsite}
+              onChange={(event) => update("companyWebsite", event.target.value)}
+              className="hidden"
+              aria-hidden="true"
+            />
 
-            <form onSubmit={submit} className="mt-8 space-y-5">
-              <input
-                tabIndex={-1}
-                autoComplete="off"
-                value={form.companyWebsite}
-                onChange={(event) => update("companyWebsite", event.target.value)}
-                className="hidden"
-                aria-hidden="true"
-              />
-
-              {role === "partenaire" && (
-                <div className="grid sm:grid-cols-2 gap-4 rounded-2xl bg-black/[.04] border border-black/10 p-4">
-                  <div className="sm:col-span-2">
-                    <Field label="Nom de l’établissement" name="establishmentName" value={form.establishmentName} onChange={update} />
-                  </div>
+            {role === "partenaire" && (
+              <div className="space-y-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[.025] p-3">
+                <Field icon={<Building2 size={18} />} name="establishmentName" value={form.establishmentName} onChange={update} placeholder="Nom de l’établissement" />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <SelectField
-                    label="Type d’établissement"
+                    icon={<Store size={17} />}
                     name="establishmentType"
                     value={form.establishmentType}
                     onChange={update}
@@ -249,24 +265,33 @@ export default function WaitlistPage() {
                       { value: "autre", label: "Autre" },
                     ]}
                   />
-                  <Field label="SIRET (facultatif)" name="siret" value={form.siret} onChange={update} required={false} />
-                </div>
-              )}
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Field label={role === "partenaire" ? "Prénom du contact" : "Prénom"} name="firstName" value={form.firstName} onChange={update} autoComplete="given-name" />
-                <Field label={role === "partenaire" ? "Nom du contact" : "Nom"} name="lastName" value={form.lastName} onChange={update} autoComplete="family-name" />
-                <Field label="Email" name="email" value={form.email} onChange={update} type="email" autoComplete="email" />
-                <Field label="Téléphone" name="phone" value={form.phone} onChange={update} type="tel" autoComplete="tel" />
-                <div className="sm:col-span-2">
-                  <Field label="Ville" name="city" value={form.city} onChange={update} autoComplete="address-level2" />
+                  <Field icon={<Building2 size={17} />} name="siret" value={form.siret} onChange={update} placeholder="SIRET (facultatif)" required={false} />
                 </div>
               </div>
+            )}
 
-              {role === "livreur" && (
-                <div className="grid sm:grid-cols-2 gap-4 rounded-2xl bg-black/[.04] border border-black/10 p-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field icon={<User size={17} />} name="firstName" value={form.firstName} onChange={update} placeholder={role === "partenaire" ? "Prénom du contact" : "Prénom"} autoComplete="given-name" />
+              <Field icon={<User size={17} />} name="lastName" value={form.lastName} onChange={update} placeholder={role === "partenaire" ? "Nom du contact" : "Nom"} autoComplete="family-name" />
+            </div>
+
+            <Field icon={<Mail size={18} />} name="email" value={form.email} onChange={update} type="email" placeholder="Adresse email" autoComplete="email" />
+            <Field icon={<Phone size={18} />} name="phone" value={form.phone} onChange={update} type="tel" placeholder="Téléphone" autoComplete="tel" />
+            <Field icon={<MapPin size={18} />} name="city" value={form.city} onChange={update} placeholder="Ville" autoComplete="address-level2" />
+
+            {role === "livreur" && (
+              <div className="space-y-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[.025] p-3">
+                <Field
+                  icon={<Building2 size={17} />}
+                  name="siret"
+                  value={form.siret}
+                  onChange={update}
+                  placeholder="Numéro SIRET — 14 chiffres"
+                  autoComplete="off"
+                />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <SelectField
-                    label="Véhicule"
+                    icon={<Bike size={17} />}
                     name="vehicleType"
                     value={form.vehicleType}
                     onChange={update}
@@ -278,7 +303,7 @@ export default function WaitlistPage() {
                     ]}
                   />
                   <SelectField
-                    label="Disponibilité"
+                    icon={<ArrowRight size={17} />}
                     name="availability"
                     value={form.availability}
                     onChange={update}
@@ -290,71 +315,87 @@ export default function WaitlistPage() {
                     ]}
                   />
                 </div>
-              )}
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="relative">
-                  <Field
-                    label="Mot de passe"
-                    name="password"
-                    value={form.password}
-                    onChange={update}
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((current) => !current)}
-                    className="absolute right-4 bottom-3.5 text-black/45 hover:text-black"
-                    aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                <Field
-                  label="Confirmation"
-                  name="passwordConfirmation"
-                  value={form.passwordConfirmation}
-                  onChange={update}
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                />
               </div>
-              <p className="text-[11px] text-black/45 -mt-2">10 caractères minimum, avec une majuscule, une minuscule et un chiffre.</p>
+            )}
 
-              <label className="flex items-start gap-3 rounded-2xl border border-black/10 bg-white/30 p-4 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.marketingConsent}
-                  onChange={(event) => update("marketingConsent", event.target.checked)}
-                  required
-                  className="mt-1 accent-black"
-                />
-                <span className="text-xs text-black/60 leading-relaxed">
-                  J’accepte que Foodiz utilise ces informations pour gérer ma pré-inscription et m’envoyer les informations liées au lancement. Je pourrai retirer mon consentement.
-                </span>
-              </label>
-
-              {error && (
-                <div className="rounded-2xl bg-red-950/10 border border-red-800/20 px-4 py-3 text-sm text-red-900">{error}</div>
+            <Field
+              icon={<Lock size={18} />}
+              name="password"
+              value={form.password}
+              onChange={update}
+              type={showPassword ? "text" : "password"}
+              placeholder="Mot de passe"
+              autoComplete="new-password"
+              trailing={(
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="shrink-0 text-foodiz-gold/60 hover:text-foodiz-gold"
+                  aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               )}
+            />
+            <Field
+              icon={<Lock size={18} />}
+              name="passwordConfirmation"
+              value={form.passwordConfirmation}
+              onChange={update}
+              type={showPassword ? "text" : "password"}
+              placeholder="Confirmer le mot de passe"
+              autoComplete="new-password"
+            />
+            <p className="px-1 text-[10px] leading-relaxed text-foodiz-gray/55">
+              10 caractères minimum, avec une majuscule, une minuscule et un chiffre.
+            </p>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full rounded-2xl bg-black text-foodiz-cream px-5 py-4 font-bold flex items-center justify-center gap-3 hover:bg-[#171717] disabled:opacity-60 transition shadow-xl"
-              >
-                {submitting ? <LoaderCircle size={20} className="animate-spin" /> : <ArrowRight size={20} />}
-                {submitting ? "Pré-inscription en cours…" : buttonLabel}
-              </button>
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-foodiz-gold/20 bg-foodiz-card px-4 py-3.5">
+              <input
+                type="checkbox"
+                checked={form.marketingConsent}
+                onChange={(event) => update("marketingConsent", event.target.checked)}
+                required
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[#D8A84F]"
+              />
+              <span className="text-[10px] leading-relaxed text-foodiz-gray">
+                J’accepte que Foodiz utilise ces informations pour gérer ma pré-inscription et m’envoyer les informations liées au lancement.
+              </span>
+            </label>
 
-              <p className="text-center text-[10px] text-black/40 leading-relaxed">
-                Votre mot de passe est géré exclusivement par Supabase Auth et n’est jamais stocké dans nos tables applicatives.
-              </p>
-            </form>
-          </section>
-        </div>
-      </div>
-    </main>
+            {error && (
+              <div className="rounded-2xl border border-foodiz-red/25 bg-foodiz-red/[.06] px-4 py-3 text-sm text-foodiz-red">{error}</div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-semibold text-foodiz-black transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-foodiz-gold/30 disabled:opacity-50"
+              style={{
+                background: "linear-gradient(180deg, #E0B45C 0%, #D8A84F 50%, #C9A45C 100%)",
+                boxShadow: "0 4px 20px rgba(216,168,79,.25), inset 0 1px 0 rgba(255,255,255,.25)",
+              }}
+            >
+              {submitting ? <LoaderCircle size={19} className="animate-spin" /> : <ArrowRight size={19} />}
+              {submitting ? "Pré-inscription en cours…" : buttonLabel}
+            </button>
+          </form>
+
+          <div className="mt-7 flex items-center justify-center gap-2 text-center">
+            <Lock size={13} className="text-foodiz-gold/70" />
+            <p className="text-[9px] uppercase tracking-[.12em] text-foodiz-gray/45">Mot de passe sécurisé par Supabase Auth</p>
+          </div>
+        </main>
+
+        <footer className="border-t border-foodiz-gold/10 px-6 py-5 text-center">
+          <button onClick={() => navigate("/admin-auth")} className="text-[9px] uppercase tracking-[.2em] text-foodiz-gray/35 hover:text-foodiz-gold">
+            Accès équipe Foodiz
+          </button>
+          <p className="mt-3 text-[9px] tracking-[.16em] text-foodiz-gray/25">© {new Date().getFullYear()} · FOODIZ</p>
+        </footer>
+      </section>
+
+      <div className="h-14" />
+    </div>
   );
 }

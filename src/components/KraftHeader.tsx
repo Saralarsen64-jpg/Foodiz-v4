@@ -12,7 +12,7 @@ export default function KraftHeader() {
       <div className="flex items-center justify-between max-w-lg mx-auto">
         {/* Logo */}
         <button onClick={() => navigate("/client")} className="flex items-center">
-          <img src="https://i.imgur.com/gtCArFr.png" alt="Foodiz" className="h-8 w-auto" />
+          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="h-8 w-auto" />
         </button>
 
         {/* Icons */}
