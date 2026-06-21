@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   Radio,
   UsersRound,
+  Hourglass,
 } from "lucide-react";
 import Logo from "./Logo";
 import { cn } from "../utils/cn";
@@ -27,6 +28,7 @@ const ADMIN_ITEMS = [
   { label: "Partenaires", icon: Store, path: "/admin/partner-applications" },
   { label: "Livreurs", icon: Bike, path: "/admin/courier-applications" },
   { label: "Parrainage", icon: UsersRound, path: "/admin/referrals" },
+  { label: "Pré-lancement", icon: Hourglass, path: "/admin/prelaunch" },
 ];
 
 export default function AdminShell({

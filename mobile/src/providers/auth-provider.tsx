@@ -26,6 +26,7 @@ export type FoodizProfile = {
 
 type AuthContextValue = {
   loading: boolean;
+  launched: boolean;
   session: Session | null;
   profile: FoodizProfile | null;
   refreshProfile: () => Promise<void>;
@@ -36,6 +37,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
+  const [launched, setLaunched] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<FoodizProfile | null>(null);
 
@@ -68,9 +70,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     void supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
+      let launchOpen = false;
+      try {
+        const apiUrl = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
+        const response = await fetch(`${apiUrl}/api/launch-status`);
+        const launchStatus = await response.json();
+        launchOpen = launchStatus.launched === true;
+        if (mounted) setLaunched(launchOpen);
+      } catch {
+        if (mounted) setLaunched(false);
+      }
       setSession(data.session);
       try {
-        await loadProfile(data.session);
+        if (launchOpen && data.session) await loadProfile(data.session);
+        else setProfile(null);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -81,7 +94,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (!mounted) return;
         setSession(nextSession);
         try {
-          await loadProfile(nextSession);
+          if (launched) await loadProfile(nextSession);
+          else setProfile(null);
         } finally {
           if (mounted) setLoading(false);
         }
@@ -92,11 +106,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [loadProfile]);
+  }, [launched, loadProfile]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       loading,
+      launched,
       session,
       profile,
       refreshProfile,
@@ -105,7 +120,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setProfile(null);
       },
     }),
-    [loading, profile, refreshProfile, session],
+    [launched, loading, profile, refreshProfile, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

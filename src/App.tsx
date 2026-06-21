@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import AdminAuth from "./pages/admin/AdminAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LaunchBoundary from "./components/LaunchBoundary";
 
 // Layouts
 import ClientLayout from "./components/ClientLayout";
@@ -67,6 +68,9 @@ import LoginPage from "./pages/auth/Login";
 import SignupPage from "./pages/auth/Signup";
 import AuthCallback from "./pages/auth/Callback"; // NOUVEL IMPORT
 import ResetPasswordPage from "./pages/auth/ResetPassword";
+import WaitlistPage from "./pages/prelaunch/Waitlist";
+import PrelaunchConfirmed from "./pages/prelaunch/Confirmed";
+import ActivatePrelaunch from "./pages/prelaunch/Activate";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/Dashboard";
@@ -82,14 +86,19 @@ import AdminMarketingCampaignsPage from "./pages/admin/MarketingCampaigns";
 import AdminReferralsPage from "./pages/admin/Referrals";
 import AdminSettlementDetail from "./pages/admin/SettlementDetail";
 import AdminPartnerDetail from "./pages/admin/PartnerDetail";
+import AdminPrelaunch from "./pages/admin/Prelaunch";
 
 export default function App() {
   return (
-    <Routes>
+    <LaunchBoundary>
+      <Routes>
       {/* Redirect root */}
       <Route path="/" element={<Navigate to="/auth" replace />} />
 
       {/* ─── AUTH ROUTES (Publiques) ─────────────────────────────────────── */}
+      <Route path="/waitlist" element={<WaitlistPage />} />
+      <Route path="/prelaunch-confirmed" element={<PrelaunchConfirmed />} />
+      <Route path="/activate" element={<ActivatePrelaunch />} />
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
@@ -181,10 +190,12 @@ export default function App() {
         <Route path="/admin/courier-applications" element={<AdminCourierApplicationsPage />} />
         <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
         <Route path="/admin/referrals" element={<AdminReferralsPage />} />
+        <Route path="/admin/prelaunch" element={<AdminPrelaunch />} />
       </Route>
 
       {/* ─── Catch all ───────────────────────────────────────────── */}
       <Route path="*" element={<Navigate to="/auth" replace />} />
-    </Routes>
+      </Routes>
+    </LaunchBoundary>
   );
 }

@@ -9,9 +9,10 @@ export function RoleGuard({
   role,
   children,
 }: PropsWithChildren<{ role: MobileRole }>) {
-  const { loading, session, profile } = useAuth();
+  const { loading, launched, session, profile } = useAuth();
 
   if (loading) return <LoadingScreen />;
+  if (!launched) return <Redirect href="/prelaunch" />;
   if (!session || !profile) return <Redirect href="/login" />;
   if (profile.role !== role) return <Redirect href="/" />;
   return children;

@@ -1,5 +1,12 @@
 import type { Handler } from "@netlify/functions";
 import { adaptNetlifyHandler } from "../netlify/functions/_lib/vercel-adapter.js";
+import {
+  appIsLaunched,
+  authenticatedUser,
+  userHasApplicationAccess,
+  userRole,
+} from "../netlify/functions/_lib/auth.js";
+import { handler as adminPrelaunch } from "../netlify/functions/admin-prelaunch.js";
 import { handler as cancelSubscription } from "../netlify/functions/cancel-subscription.js";
 import { handler as cancelMobileOrder } from "../netlify/functions/cancel-mobile-order.js";
 import { handler as clientCatalog } from "../netlify/functions/client-catalog.js";
@@ -13,14 +20,20 @@ import { handler as deleteAccount } from "../netlify/functions/delete-account.js
 import { handler as financialDocument } from "../netlify/functions/financial-document.js";
 import { handler as foodizPlus } from "../netlify/functions/foodiz-plus.js";
 import { handler as getSubscription } from "../netlify/functions/get-subscription.js";
+import { handler as launchStatus } from "../netlify/functions/launch-status.js";
 import { handler as partnerOrderAction } from "../netlify/functions/partner-order-action.js";
+import { handler as prelaunchActivate } from "../netlify/functions/prelaunch-activate.js";
+import { handler as prelaunchRegister } from "../netlify/functions/prelaunch-register.js";
 import { handler as rotateAdvantages } from "../netlify/functions/rotate-advantages.js";
+import { handler as sendLaunchAccess } from "../netlify/functions/send-launch-access.js";
 import { handler as stripeWebhook } from "../netlify/functions/stripe-webhook.js";
 import { handler as supportDiagnostic } from "../netlify/functions/support-diagnostic.js";
 import { handler as trackMarketingNotification } from "../netlify/functions/track-marketing-notification.js";
 import { handler as verifyDeliveryCode } from "../netlify/functions/verify-delivery-code.js";
 
 const handlers: Record<string, Handler> = {
+  "admin/prelaunch": adminPrelaunch,
+  "admin/prelaunch/send-launch-access": sendLaunchAccess,
   "cancel-subscription": cancelSubscription,
   "cancel-mobile-order": cancelMobileOrder,
   "client-catalog": clientCatalog,
@@ -34,7 +47,10 @@ const handlers: Record<string, Handler> = {
   "financial-document": financialDocument,
   "foodiz-plus": foodizPlus,
   "get-subscription": getSubscription,
+  "launch-status": launchStatus,
   "partner-order-action": partnerOrderAction,
+  "prelaunch/activate": prelaunchActivate,
+  "prelaunch/register": prelaunchRegister,
   "rotate-advantages": rotateAdvantages,
   "stripe-webhook": stripeWebhook,
   "support-diagnostic": supportDiagnostic,
@@ -46,6 +62,14 @@ const adaptedHandlers = Object.fromEntries(
   Object.entries(handlers).map(([name, handler]) => [name, adaptNetlifyHandler(handler)]),
 );
 
+const publicPrelaunchRoutes = new Set([
+  "launch-status",
+  "prelaunch/register",
+  "prelaunch/activate",
+  "stripe-webhook",
+  "rotate-advantages",
+]);
+
 export default {
   async fetch(request: Request) {
     const url = new URL(request.url);
@@ -54,6 +78,27 @@ export default {
 
     if (!target) {
       return Response.json({ error: "API route not found" }, { status: 404 });
+    }
+
+    if (!publicPrelaunchRoutes.has(functionName)) {
+      const headers = Object.fromEntries(request.headers.entries());
+      const user = await authenticatedUser(headers);
+      const admin = user ? await userRole(user.id) === "admin" : false;
+      if (!admin) {
+        const launched = await appIsLaunched();
+        const allowed = user ? await userHasApplicationAccess(user.id) : launched;
+        if (!allowed) {
+          return Response.json(
+            {
+              error: launched
+                ? "Activez votre accès Foodiz avant de continuer."
+                : "Foodiz ouvrira bientôt. Votre espace est temporairement verrouillé.",
+              code: launched ? "PRELAUNCH_ACTIVATION_REQUIRED" : "APP_NOT_LAUNCHED",
+            },
+            { status: 423 },
+          );
+        }
+      }
     }
 
     return target.fetch(request);

@@ -20,6 +20,7 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
   const [session, setSession] = useState<any>(undefined);
   const [role, setRole] = useState<AppRole | null | undefined>(undefined);
   const [validationRedirect, setValidationRedirect] = useState<string | null | undefined>(undefined);
+  const [prelaunchBlocked, setPrelaunchBlocked] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
     const loadAccess = async (currentSession: any) => {
@@ -27,6 +28,7 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
       if (!currentSession?.user) {
         setRole(null);
         setValidationRedirect(null);
+        setPrelaunchBlocked(false);
         return;
       }
 
@@ -39,10 +41,25 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
         setSession(null);
         setRole(null);
         setValidationRedirect(null);
+        setPrelaunchBlocked(false);
         return;
       }
       const currentRole = profile.role as AppRole;
       setRole(currentRole);
+
+      if (currentRole !== "admin") {
+        const { data: prelaunchProfile } = await supabase
+          .from("prelaunch_profiles")
+          .select("status")
+          .eq("user_id", currentSession.user.id)
+          .maybeSingle();
+        if (prelaunchProfile && prelaunchProfile.status !== "activated") {
+          setPrelaunchBlocked(true);
+          setValidationRedirect(null);
+          return;
+        }
+      }
+      setPrelaunchBlocked(false);
 
       if (!requireValidated) {
         setValidationRedirect(null);
@@ -83,7 +100,7 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
     return () => subscription.unsubscribe();
   }, [requireValidated]);
 
-  if (session === undefined || role === undefined || validationRedirect === undefined) {
+  if (session === undefined || role === undefined || validationRedirect === undefined || prelaunchBlocked === undefined) {
     return (
       <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
         <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
@@ -94,6 +111,10 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
 
   if (!session) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (prelaunchBlocked) {
+    return <Navigate to="/prelaunch-confirmed" replace />;
   }
 
   if (allowedRoles?.length && (!role || !allowedRoles.includes(role))) {
