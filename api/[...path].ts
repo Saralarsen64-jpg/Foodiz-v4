@@ -1,6 +1,8 @@
 import type { Handler } from "@netlify/functions";
 import { adaptNetlifyHandler } from "../netlify/functions/_lib/vercel-adapter.js";
 import { handler as cancelSubscription } from "../netlify/functions/cancel-subscription.js";
+import { handler as cancelMobileOrder } from "../netlify/functions/cancel-mobile-order.js";
+import { handler as clientCatalog } from "../netlify/functions/client-catalog.js";
 import { handler as courierDeliveries } from "../netlify/functions/courier-deliveries.js";
 import { handler as createBillingPortal } from "../netlify/functions/create-billing-portal.js";
 import { handler as createCheckoutSession } from "../netlify/functions/create-checkout-session.js";
@@ -20,6 +22,8 @@ import { handler as verifyDeliveryCode } from "../netlify/functions/verify-deliv
 
 const handlers: Record<string, Handler> = {
   "cancel-subscription": cancelSubscription,
+  "cancel-mobile-order": cancelMobileOrder,
+  "client-catalog": clientCatalog,
   "courier-deliveries": courierDeliveries,
   "create-billing-portal": createBillingPortal,
   "create-checkout-session": createCheckoutSession,

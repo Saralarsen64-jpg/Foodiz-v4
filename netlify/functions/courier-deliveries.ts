@@ -33,7 +33,7 @@ const handler: Handler = async (event) => {
     if (event.httpMethod === "GET") {
       const { data: orders, error } = await adminSupabase
         .from("orders")
-        .select("id,courier_earnings_cents,courier_prime_fund_cents,estimated_time_mins,client_latitude,client_longitude,restaurant:restaurants(name,address,postal_code,city,latitude,longitude),order_items(quantity)")
+        .select("id,delivery_fee_cents,courier_earnings_cents,courier_prime_fund_cents,estimated_time_mins,client_latitude,client_longitude,restaurant:restaurants(name,address,postal_code,city,latitude,longitude),order_items(quantity)")
         .eq("status", "ready")
         .is("courier_id", null)
         .eq("payment_status", "completed")
@@ -42,6 +42,7 @@ const handler: Handler = async (event) => {
       return reply(200, {
         deliveries: (orders || []).map((order: any) => ({
           id: order.id,
+          delivery_fee_cents: order.delivery_fee_cents,
           courier_earnings_cents: order.courier_earnings_cents,
           courier_prime_fund_cents: order.courier_prime_fund_cents,
           estimated_time_mins: order.estimated_time_mins,

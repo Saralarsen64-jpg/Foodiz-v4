@@ -34,6 +34,10 @@ const handler: Handler = async (event) => {
       const { data: updated, error } = await adminSupabase.from("orders").update({ status: "preparing", updated_at: new Date().toISOString() }).eq("id", orderId).eq("status", "pending").eq("payment_status", "completed").select("id").maybeSingle();
       if (error) throw error;
       if (!updated) return reply(409, { error: "ORDER_NOT_ACCEPTABLE" });
+      const { error: referralError } = await adminSupabase.rpc("complete_first_paid_referral", {
+        target_order_id: orderId,
+      });
+      if (referralError) throw referralError;
       await adminSupabase.from("notifications").insert({ user_id: order.client_id, title: "Commande acceptée", message: `Votre commande #${orderId.slice(0, 8)} est en préparation.`, type: "order", related_order_id: orderId });
       return reply(200, { status: "preparing" });
     }

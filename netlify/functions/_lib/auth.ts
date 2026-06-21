@@ -21,4 +21,3 @@ export async function authenticatedUser(
   const { data, error } = await adminSupabase.auth.getUser(token);
   return error ? null : data.user;
 }
-

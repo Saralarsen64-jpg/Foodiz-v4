@@ -80,7 +80,7 @@ export default function PartnerOrderDetail() {
                   <span className="text-foodiz-gold text-xs font-medium">x{p.quantity}</span>
                   <span className="text-sm text-foodiz-cream">{p.product?.name || "Produit"}</span>
                 </div>
-                <span className="text-foodiz-cream text-sm">{(p.total_price_cents / 100).toFixed(2).replace(".", ",")} €</span>
+                <span className="text-foodiz-cream text-sm">{((p.partner_total_price_cents ?? p.total_price_cents) / 100).toFixed(2).replace(".", ",")} €</span>
               </div>
             ))}
           </div>

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
+import { calculateClientUnitPriceCents } from "../../lib/engines/foodizEconomicEngine";
 
 export default function EstablishmentPage() {
   const { id } = useParams();
@@ -38,8 +39,8 @@ export default function EstablishmentPage() {
           id: product.id,
           name: product.name,
           desc: product.description || "",
-          price: product.partner_price_cents / 100,
-          points: Math.max(0, Math.round(product.partner_price_cents * 0.02)),
+          price: calculateClientUnitPriceCents(product.partner_price_cents) / 100,
+          points: 0,
           image: product.image_url || restaurant?.cover_image || "/images/auth-restaurant.jpg",
         });
         return acc;
@@ -160,9 +161,7 @@ export default function EstablishmentPage() {
                     </div>
                     
                     <div className="flex items-center justify-between mt-4">
-                      <span className="text-[10px] text-foodiz-gold/60 flex items-center gap-1 uppercase tracking-wider font-bold">
-                        <Star size={10} fill="currentColor" /> +{item.points} pts Foodiz
-                      </span>
+                      <span />
                       <button
                         onClick={() => addToCart(item)}
                         className="w-9 h-9 rounded-full bg-foodiz-gold text-foodiz-black flex items-center justify-center hover:bg-foodiz-gold-light transition-all shadow-lg shadow-foodiz-gold/20 active:scale-95"

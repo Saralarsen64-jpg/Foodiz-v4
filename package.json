@@ -8,6 +8,12 @@
     "typecheck": "tsc --noEmit",
     "typecheck:functions": "tsc -p tsconfig.functions.json",
     "test:security": "node --test tests/security/*.test.ts",
+    "test:economics": "node --test tests/economics/*.test.ts",
+    "test": "npm run test:security && npm run test:economics",
+    "mobile:start": "npm --prefix mobile run start",
+    "mobile:ios": "npm --prefix mobile run ios",
+    "mobile:android": "npm --prefix mobile run android",
+    "mobile:typecheck": "npm --prefix mobile run typecheck",
     "check": "npm run typecheck && npm run build",
     "build": "vite build",
     "preview": "vite preview"

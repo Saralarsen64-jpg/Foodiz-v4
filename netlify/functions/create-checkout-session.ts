@@ -2,6 +2,12 @@ import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { sendFinancialDocumentEmail } from "./_lib/financial-documents.js";
+import {
+  calculateClientUnitPriceCents,
+  calculateDistanceKm,
+  calculateFoodizOrder,
+  isValidCoordinates,
+} from "../../src/lib/engines/foodizEconomicEngine.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const supabase = createClient(
@@ -13,121 +19,6 @@ type CheckoutItem = {
   productId: string;
   quantity: number;
 };
-
-type OrderTotals = {
-  partnerTotalCents: number;
-  foodizRevenueCents: number;
-  courierEarningsCents: number;
-  courierPrimeFundCents: number;
-  loyaltyFundCents: number;
-  referralFundCents: number;
-  internalFeesCents: number;
-  systemReserveCents: number;
-  serviceFeeCents: number;
-  deliveryFeeCents: number;
-  finalClientTotalCents: number;
-};
-
-function calculateItemSplit(partnerPriceCents: number) {
-  if (partnerPriceCents >= 50 && partnerPriceCents <= 350) {
-    return {
-      supplementCents: 130,
-      courierDirectCents: 50,
-      courierPrimeCents: 10,
-      foodizRevenueCents: 40,
-      loyaltyFundCents: 10,
-      referralFundCents: 0,
-      internalFeesCents: 10,
-      systemReserveCents: 10,
-    };
-  }
-
-  if (partnerPriceCents >= 351 && partnerPriceCents <= 849) {
-    return {
-      supplementCents: 260,
-      courierDirectCents: 100,
-      courierPrimeCents: 10,
-      foodizRevenueCents: 100,
-      loyaltyFundCents: 20,
-      referralFundCents: 20,
-      internalFeesCents: 10,
-      systemReserveCents: 0,
-    };
-  }
-
-  return {
-    supplementCents: 360,
-    courierDirectCents: 120,
-    courierPrimeCents: 10,
-    foodizRevenueCents: 130,
-    loyaltyFundCents: 30,
-    referralFundCents: 30,
-    internalFeesCents: 20,
-    systemReserveCents: 20,
-  };
-}
-
-function calculateServiceFee(itemCount: number) {
-  if (itemCount === 1) return 199;
-  if (itemCount === 2) return 149;
-  if (itemCount === 3) return 119;
-  return 99;
-}
-
-function calculateDeliveryFee(distanceKm: number) {
-  if (distanceKm <= 1.5) return 199;
-  if (distanceKm <= 3.0) return 249;
-  if (distanceKm <= 4.0) return 350;
-  return 350 + Math.ceil((distanceKm - 4.0) * 50);
-}
-
-function calculateFoodizOrder(items: { partnerPriceCents: number }[], distanceKm: number): OrderTotals {
-  return items.reduce(
-    (totals, item) => {
-      const split = calculateItemSplit(item.partnerPriceCents);
-      return {
-        ...totals,
-        partnerTotalCents: totals.partnerTotalCents + item.partnerPriceCents,
-        foodizRevenueCents: totals.foodizRevenueCents + split.foodizRevenueCents,
-        courierEarningsCents: totals.courierEarningsCents + split.courierDirectCents,
-        courierPrimeFundCents: totals.courierPrimeFundCents + split.courierPrimeCents,
-        loyaltyFundCents: totals.loyaltyFundCents + split.loyaltyFundCents,
-        referralFundCents: totals.referralFundCents + split.referralFundCents,
-        internalFeesCents: totals.internalFeesCents + split.internalFeesCents,
-        systemReserveCents: totals.systemReserveCents + split.systemReserveCents,
-        finalClientTotalCents:
-          totals.finalClientTotalCents + item.partnerPriceCents + split.supplementCents,
-      };
-    },
-    {
-      partnerTotalCents: 0,
-      foodizRevenueCents: 0,
-      courierEarningsCents: 0,
-      courierPrimeFundCents: 0,
-      loyaltyFundCents: 0,
-      referralFundCents: 0,
-      internalFeesCents: 0,
-      systemReserveCents: 0,
-      serviceFeeCents: calculateServiceFee(items.length),
-      deliveryFeeCents: calculateDeliveryFee(distanceKm),
-      finalClientTotalCents: calculateServiceFee(items.length) + calculateDeliveryFee(distanceKm),
-    }
-  );
-}
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const radiusKm = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return radiusKm * c;
-}
 
 function bearerToken(event: Parameters<Handler>[0]) {
   const header = event.headers.authorization || event.headers.Authorization;
@@ -161,14 +52,16 @@ const handler: Handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ error: "Invalid session" }) };
     }
 
-    const { restaurantId, items, deliveryAddress, useAdvantage } = JSON.parse(event.body || "{}") as {
+    const { restaurantId, items, useAdvantage, quoteOnly, expectedTotalCents, paymentMode } = JSON.parse(event.body || "{}") as {
       restaurantId?: string;
       items?: CheckoutItem[];
-      deliveryAddress?: string;
       useAdvantage?: boolean;
+      quoteOnly?: boolean;
+      expectedTotalCents?: number;
+      paymentMode?: "checkout" | "mobile";
     };
 
-    if (!restaurantId || !Array.isArray(items) || items.length === 0 || !deliveryAddress) {
+    if (!restaurantId || !Array.isArray(items) || items.length === 0) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing checkout data" }) };
     }
 
@@ -199,7 +92,7 @@ const handler: Handler = async (event) => {
           .single(),
         supabase
           .from("profiles")
-          .select("id, email, latitude, longitude")
+          .select("id, email, address, postal_code, city, latitude, longitude")
           .eq("id", authData.user.id)
           .single(),
         supabase
@@ -217,6 +110,13 @@ const handler: Handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Client profile incomplete" }) };
     }
 
+    const deliveryAddress = [client.address, client.postal_code, client.city]
+      .filter(Boolean)
+      .join(", ");
+    if (!deliveryAddress) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Adresse de livraison requise" }) };
+    }
+
     if (!products || products.length !== productIds.length) {
       return { statusCode: 400, body: JSON.stringify({ error: "Invalid cart products" }) };
     }
@@ -228,16 +128,24 @@ const handler: Handler = async (event) => {
       });
     });
 
-    let distanceKm = 2;
-    if (client.latitude && client.longitude && restaurant.latitude && restaurant.longitude) {
-      distanceKm = calculateDistance(
-        Number(client.latitude),
-        Number(client.longitude),
-        Number(restaurant.latitude),
-        Number(restaurant.longitude)
-      );
+    if (
+      !isValidCoordinates(client.latitude, client.longitude) ||
+      !isValidCoordinates(restaurant.latitude, restaurant.longitude)
+    ) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: "Coordonnées de livraison invalides. Vérifiez votre adresse avant de commander.",
+        }),
+      };
     }
 
+    const distanceKm = calculateDistanceKm(
+      Number(client.latitude),
+      Number(client.longitude),
+      Number(restaurant.latitude),
+      Number(restaurant.longitude),
+    );
     const totals = calculateFoodizOrder(calculationItems, distanceKm);
     const { data: reservedRows } = await supabase
       .from("order_advantage_redemptions")
@@ -301,7 +209,10 @@ const handler: Handler = async (event) => {
         if (!eligibleProduct) {
           return { statusCode: 409, body: JSON.stringify({ error: "Ajoutez un produit éligible au panier pour utiliser cet avantage" }) };
         }
-        advantageDiscountCents = Math.min(faceValue, eligibleProduct.partner_price_cents);
+        advantageDiscountCents = Math.min(
+          faceValue,
+          calculateClientUnitPriceCents(eligibleProduct.partner_price_cents),
+        );
       } else {
         advantageDiscountCents = Math.min(faceValue, totals.finalClientTotalCents);
       }
@@ -309,6 +220,61 @@ const handler: Handler = async (event) => {
     }
 
     const amountToPayCents = Math.max(0, totals.finalClientTotalCents - advantageDiscountCents);
+
+    if (quoteOnly) {
+      const quotedItems = normalizedItems.map((cartItem) => {
+        const product = products.find((candidate) => candidate.id === cartItem.productId)!;
+        const unitPriceCents = calculateClientUnitPriceCents(product.partner_price_cents);
+        return {
+          productId: product.id,
+          name: product.name,
+          quantity: cartItem.quantity,
+          unitPriceCents,
+          totalPriceCents: unitPriceCents * cartItem.quantity,
+        };
+      });
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          quote: {
+            items: quotedItems,
+            clientItemsTotalCents: totals.clientItemsTotalCents,
+            serviceFeeCents: totals.serviceFeeCents,
+            deliveryFeeCents: totals.deliveryFeeCents,
+            advantageDiscountCents,
+            finalClientTotalCents: amountToPayCents,
+            distanceKm,
+          },
+        }),
+      };
+    }
+
+    if (
+      process.env.ALLOW_LIVE_PAYMENTS !== "true"
+      && process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
+    ) {
+      return {
+        statusCode: 503,
+        body: JSON.stringify({
+          error: "Les paiements réels sont désactivés pendant la phase de développement.",
+          code: "LIVE_PAYMENTS_DISABLED",
+        }),
+      };
+    }
+
+    if (
+      !Number.isInteger(expectedTotalCents) ||
+      expectedTotalCents !== amountToPayCents
+    ) {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({
+          error: "Le prix de la commande a changé. Rechargez le récapitulatif avant de payer.",
+          code: "CHECKOUT_PRICE_CHANGED",
+        }),
+      };
+    }
+
     const siteUrl = appOrigin(event);
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -357,12 +323,16 @@ const handler: Handler = async (event) => {
 
     const orderItems = normalizedItems.map((cartItem) => {
       const product = products.find((candidate) => candidate.id === cartItem.productId);
+      const partnerUnitPriceCents = product?.partner_price_cents || 0;
+      const clientUnitPriceCents = calculateClientUnitPriceCents(partnerUnitPriceCents);
       return {
         order_id: order.id,
         product_id: cartItem.productId,
         quantity: cartItem.quantity,
-        unit_price_cents: product?.partner_price_cents || 0,
-        total_price_cents: (product?.partner_price_cents || 0) * cartItem.quantity,
+        unit_price_cents: clientUnitPriceCents,
+        total_price_cents: clientUnitPriceCents * cartItem.quantity,
+        partner_unit_price_cents: partnerUnitPriceCents,
+        partner_total_price_cents: partnerUnitPriceCents * cartItem.quantity,
       };
     });
 
@@ -409,6 +379,41 @@ const handler: Handler = async (event) => {
         body: JSON.stringify({
           orderId: order.id,
           url: `${siteUrl}/client/orders/${order.id}`,
+        }),
+      };
+    }
+
+    if (paymentMode === "mobile") {
+      const paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: amountToPayCents,
+          currency: "eur",
+          receipt_email: client.email,
+          automatic_payment_methods: { enabled: true },
+          metadata: {
+            orderId: order.id,
+            clientId: authData.user.id,
+            restaurantId,
+            source: "foodiz_mobile",
+          },
+          description: `Commande Foodiz #${order.id.slice(0, 8)}`,
+        },
+        { idempotencyKey: `foodiz-mobile-payment-${order.id}` },
+      );
+
+      await supabase.from("order_payments").insert({
+        order_id: order.id,
+        stripe_payment_intent_id: paymentIntent.id,
+        amount_cents: amountToPayCents,
+        status: paymentIntent.status,
+        client_secret: paymentIntent.client_secret,
+      });
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          orderId: order.id,
+          clientSecret: paymentIntent.client_secret,
         }),
       };
     }

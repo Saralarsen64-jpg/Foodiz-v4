@@ -3,9 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, CheckCircle, MapPin, Loader } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { calculateDistance } from "../../lib/orders";
-import { calculateFoodizOrder } from "../../lib/engines/foodizEconomicEngine";
 import toast from "react-hot-toast";
+
+type CheckoutQuote = {
+  items: Array<{
+    productId: string;
+    name: string;
+    quantity: number;
+    unitPriceCents: number;
+    totalPriceCents: number;
+  }>;
+  clientItemsTotalCents: number;
+  serviceFeeCents: number;
+  deliveryFeeCents: number;
+  advantageDiscountCents: number;
+  finalClientTotalCents: number;
+  distanceKm: number;
+};
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -17,15 +31,15 @@ export default function CheckoutPage() {
   const [lockedAdvantage, setLockedAdvantage] = useState<any>(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [loading, setLoading] = useState(true);
-  const [distanceKm, setDistanceKm] = useState(2.0);
-  const [orderBreakdown, setOrderBreakdown] = useState<any>(null);
-  const [restaurantData, setRestaurantData] = useState<any>(null);
-  // Charger les données et calculer les montants
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+
+  // Le serveur recalcule les prix, la distance et tous les frais.
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
+        if (!user || !session.access_token) {
           toast.error("Veuillez vous connecter");
           navigate("/auth/login?role=client");
           return;
@@ -59,53 +73,30 @@ export default function CheckoutPage() {
             .join(', ');
           setDeliveryAddress(addr || 'Adresse non enregistrée');
 
-          // Récupérer les données du restaurant pour distance
-          if (establishmentId) {
-            const { data: restaurant } = await supabase
-              .from('restaurants')
-              .select('id, name, latitude, longitude, owner_id')
-              .eq('id', establishmentId)
-              .single();
-
-            if (restaurant) {
-              setRestaurantData(restaurant);
-              
-              // Calculer la distance
-              if (profile.latitude && profile.longitude && restaurant.latitude && restaurant.longitude) {
-                const distance = calculateDistance(
-                  profile.latitude,
-                  profile.longitude,
-                  restaurant.latitude,
-                  restaurant.longitude
-                );
-                setDistanceKm(distance);
-              }
-            }
-          }
         }
 
-        // Récupérer les vrais prix des produits pour le calcul
         if (items.length > 0 && establishmentId) {
-          const productIds = items.map(item => item.id);
-          const { data: products } = await supabase
-            .from('products')
-            .select('id, partner_price_cents')
-            .in('id', productIds)
-            .eq('restaurant_id', establishmentId);
-
-          if (products) {
-            // Construire les items pour le calcul avec les vrais prix partenaire
-            const itemsForCalculation = items.flatMap(cartItem => {
-              const product = products.find(p => p.id === cartItem.id);
-              return Array(cartItem.quantity).fill({
-                partnerPriceCents: product?.partner_price_cents || Math.round(cartItem.price * 100),
-              });
-            });
-
-            // Calculer le breakdown économique
-            const breakdown = calculateFoodizOrder(itemsForCalculation, distanceKm);
-            setOrderBreakdown(breakdown);
+          const response = await fetch("/api/create-checkout-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              restaurantId: establishmentId,
+              quoteOnly: true,
+              useAdvantage,
+              items: items.map((item) => ({
+                productId: item.id,
+                quantity: item.quantity,
+              })),
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.error || "Impossible de calculer la commande");
           }
+          setQuote(result.quote);
         }
 
         setLoading(false);
@@ -117,10 +108,10 @@ export default function CheckoutPage() {
     };
 
     loadData();
-  }, [establishmentId, items, navigate, distanceKm]);
+  }, [establishmentId, items, navigate, useAdvantage]);
 
   const handleConfirmOrder = async () => {
-    if (!establishmentId || items.length === 0 || !orderBreakdown) {
+    if (!establishmentId || items.length === 0 || !quote) {
       toast.error("Le panier est vide ou les données ne sont pas chargées");
       return;
     }
@@ -139,8 +130,8 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           restaurantId: establishmentId,
-          deliveryAddress,
           useAdvantage,
+          expectedTotalCents: quote.finalClientTotalCents,
           items: items.map((item) => ({
             productId: item.id,
             quantity: item.quantity,
@@ -163,14 +154,6 @@ export default function CheckoutPage() {
       setIsProcessing(false);
     }
   };
-
-  const lockedCatalog = Array.isArray(lockedAdvantage?.advantage_catalog) ? lockedAdvantage?.advantage_catalog[0] : lockedAdvantage?.advantage_catalog;
-  const estimatedAdvantageDiscountCents = useAdvantage && orderBreakdown && lockedCatalog
-    ? lockedCatalog.reward_type === "free_delivery"
-      ? Math.min(Number(lockedCatalog.face_value_cents || lockedAdvantage.points_cost || 0), orderBreakdown.deliveryFeeCents)
-      : Math.min(Number(lockedCatalog.face_value_cents || lockedAdvantage.points_cost || 0), orderBreakdown.finalClientTotalCents)
-    : 0;
-  const estimatedTotalCents = orderBreakdown ? Math.max(0, orderBreakdown.finalClientTotalCents - estimatedAdvantageDiscountCents) : 0;
 
   if (loading) {
     return (
@@ -229,39 +212,39 @@ export default function CheckoutPage() {
         <div className="foodiz-card p-4 space-y-3 border-foodiz-gold/20">
           <h3 className="foodiz-title text-sm">Résumé de votre commande</h3>
           
-          {items.map(item => (
-            <div key={item.id} className="flex items-center justify-between text-xs text-foodiz-gray py-2 border-b border-foodiz-gold/10">
+          {(quote?.items || []).map(item => (
+            <div key={item.productId} className="flex items-center justify-between text-xs text-foodiz-gray py-2 border-b border-foodiz-gold/10">
               <span>{item.quantity}x {item.name}</span>
-              <span className="text-foodiz-cream">{(item.price * item.quantity).toFixed(2)}€</span>
+              <span className="text-foodiz-cream">{(item.totalPriceCents / 100).toFixed(2)}€</span>
             </div>
           ))}
 
-          {orderBreakdown && (
+          {quote && (
             <div className="space-y-2 pt-3 border-t border-foodiz-gold/10">
               <div className="flex justify-between text-xs">
                 <span className="text-foodiz-gray">Prix articles</span>
-                <span className="text-foodiz-cream">{(orderBreakdown.partnerTotalCents / 100).toFixed(2)}€</span>
+                <span className="text-foodiz-cream">{(quote.clientItemsTotalCents / 100).toFixed(2)}€</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-foodiz-gray">Frais de service</span>
-                <span className="text-foodiz-cream">{(orderBreakdown.serviceFeeCents / 100).toFixed(2)}€</span>
+                <span className="text-foodiz-cream">{(quote.serviceFeeCents / 100).toFixed(2)}€</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-foodiz-gray">Livraison ({distanceKm.toFixed(1)}km)</span>
-                <span className="text-foodiz-cream">{(orderBreakdown.deliveryFeeCents / 100).toFixed(2)}€</span>
+                <span className="text-foodiz-gray">Livraison ({quote.distanceKm.toFixed(1)}km)</span>
+                <span className="text-foodiz-cream">{(quote.deliveryFeeCents / 100).toFixed(2)}€</span>
               </div>
 
-              {useAdvantage && lockedAdvantage && (
+              {useAdvantage && lockedAdvantage && quote.advantageDiscountCents > 0 && (
                 <div className="flex justify-between text-xs text-foodiz-green">
                   <span>Avantage Foodiz Club</span>
-                  <span>-{(estimatedAdvantageDiscountCents / 100).toFixed(2)}€ estimés</span>
+                  <span>-{(quote.advantageDiscountCents / 100).toFixed(2)}€</span>
                 </div>
               )}
 
               <div className="flex justify-between text-sm font-bold pt-2 border-t border-foodiz-gold/20">
                 <span className="text-foodiz-cream">TOTAL</span>
                 <span className="text-foodiz-gold">
-                  {(estimatedTotalCents / 100).toFixed(2)}€
+                  {(quote.finalClientTotalCents / 100).toFixed(2)}€
                 </span>
               </div>
             </div>
@@ -287,7 +270,7 @@ export default function CheckoutPage() {
         {/* Bouton validation */}
         <button
           onClick={handleConfirmOrder}
-          disabled={isProcessing || !orderBreakdown}
+          disabled={isProcessing || !quote}
           className="w-full foodiz-btn py-4 flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {isProcessing ? (
@@ -295,8 +278,8 @@ export default function CheckoutPage() {
               <Loader size={18} className="animate-spin" />
               Paiement en cours...
             </>
-          ) : orderBreakdown ? (
-            `Payer ma commande ${(estimatedTotalCents / 100).toFixed(2)}€`
+          ) : quote ? (
+            `Payer ma commande ${(quote.finalClientTotalCents / 100).toFixed(2)}€`
           ) : (
             'Chargement...'
           )}

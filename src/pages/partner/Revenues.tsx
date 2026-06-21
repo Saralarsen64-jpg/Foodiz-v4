@@ -14,7 +14,7 @@ export default function PartnerRevenues() {
     if (!user) return;
     const { data: restaurant } = await supabase.from("restaurants").select("id").eq("owner_id", user.id).maybeSingle();
     if (!restaurant) { setLoading(false); return; }
-    const { data } = await supabase.from("orders").select("id,partner_total_cents,final_client_total_cents,delivered_at,created_at,order_items(quantity,total_price_cents,product:products(name))").eq("restaurant_id", restaurant.id).eq("status", "delivered").order("delivered_at", { ascending: false });
+    const { data } = await supabase.from("orders").select("id,partner_total_cents,final_client_total_cents,delivered_at,created_at,order_items(quantity,total_price_cents,partner_total_price_cents,product:products(name))").eq("restaurant_id", restaurant.id).eq("status", "delivered").order("delivered_at", { ascending: false });
     setOrders(data || []); setLoading(false);
   })(); }, []);
 
@@ -27,7 +27,7 @@ export default function PartnerRevenues() {
     for (const order of orders) for (const item of order.order_items || []) {
       const name = item.product?.name || "Produit archivé";
       const current = productMap.get(name) || { name, qty: 0, revenue: 0 };
-      current.qty += item.quantity || 0; current.revenue += (item.total_price_cents || 0) / 100; productMap.set(name, current);
+      current.qty += item.quantity || 0; current.revenue += (item.partner_total_price_cents ?? item.total_price_cents ?? 0) / 100; productMap.set(name, current);
     }
     const months = Array.from({ length: 6 }, (_, offset) => { const date = new Date(now.getFullYear(), now.getMonth() - 5 + offset, 1); const value = orders.filter((order) => { const delivered = new Date(order.delivered_at || order.created_at); return delivered.getMonth() === date.getMonth() && delivered.getFullYear() === date.getFullYear(); }).reduce((total, order) => total + (order.partner_total_cents || 0), 0) / 100; return { label: date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", ""), value }; });
     return { monthRevenue: sum(monthOrders), yearRevenue: sum(yearOrders), monthCount: monthOrders.length, averageBasket: monthOrders.length ? sum(monthOrders) / monthOrders.length : 0, months, topProducts: [...productMap.values()].sort((a, b) => b.qty - a.qty).slice(0, 5) };
