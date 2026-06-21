@@ -39,11 +39,25 @@ const handler: Handler = async (event) => {
     },
     { total: 0, clients: 0, drivers: 0, partners: 0 },
   );
+  const cities = Object.entries(
+    profiles.reduce<Record<string, number>>((summary, profile) => {
+      const city = String(profile.city || "Non renseignée").trim() || "Non renseignée";
+      summary[city] = (summary[city] || 0) + 1;
+      return summary;
+    }, {}),
+  )
+    .map(([city, count]) => ({ city, count }))
+    .sort((left, right) => right.count - left.count || left.city.localeCompare(right.city, "fr"));
+
+  const statuses = profiles.reduce<Record<string, number>>((summary, profile) => {
+    summary[profile.status] = (summary[profile.status] || 0) + 1;
+    return summary;
+  }, {});
 
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-    body: JSON.stringify({ profiles, counts }),
+    body: JSON.stringify({ profiles, counts, cities, statuses }),
   };
 };
 

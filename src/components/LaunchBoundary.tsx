@@ -4,6 +4,10 @@ import { supabase } from "../lib/supabase";
 
 const ALWAYS_AVAILABLE = ["/waitlist", "/prelaunch-confirmed", "/activate", "/admin-auth", "/admin/auth"];
 
+function isAdminPath(pathname: string) {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
 export default function LaunchBoundary({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [launched, setLaunched] = useState<boolean | null>(null);
@@ -57,7 +61,7 @@ export default function LaunchBoundary({ children }: { children: ReactNode }) {
 
   const availableBeforeLaunch = ALWAYS_AVAILABLE.some(
     (path) => location.pathname === path || location.pathname.startsWith(`${path}/`),
-  ) || location.pathname.startsWith("/admin/");
+  ) || isAdminPath(location.pathname);
 
   if (!launched && !availableBeforeLaunch) {
     if (sessionRole === "admin") return <Navigate to="/admin" replace />;

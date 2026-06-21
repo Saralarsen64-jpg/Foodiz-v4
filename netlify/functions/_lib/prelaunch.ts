@@ -5,6 +5,15 @@ export function normalizeEmail(value: unknown) {
   return String(value || "").trim().toLowerCase();
 }
 
+export function normalizeFoodizPhone(value: unknown) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (/^0[1-9]\d{8}$/.test(digits)) return `+33${digits.slice(1)}`;
+  if (/^33[1-9]\d{8}$/.test(digits)) return `+${digits}`;
+  if (/^0033[1-9]\d{8}$/.test(digits)) return `+${digits.slice(2)}`;
+  if (/^[1-9]\d{7,14}$/.test(digits)) return `+${digits}`;
+  return null;
+}
+
 export function cleanText(value: unknown, maxLength = 120) {
   return String(value || "").trim().replace(/\s+/g, " ").slice(0, maxLength);
 }

@@ -14,7 +14,7 @@ import {
   UsersRound,
   Hourglass,
 } from "lucide-react";
-import Logo from "./Logo";
+import AdminBrandMark from "./AdminBrandMark";
 import { cn } from "../utils/cn";
 
 const ADMIN_ITEMS = [
@@ -48,7 +48,11 @@ export default function AdminShell({
       <div className="grid lg:grid-cols-[280px_1fr] min-h-screen">
         <aside className="hidden lg:flex flex-col border-r border-foodiz-gold/10 bg-[linear-gradient(180deg,rgba(17,17,17,0.98),rgba(5,5,5,1))] p-6 sticky top-0 h-screen">
           <div className="flex items-center gap-3 mb-8">
-            <Logo size="md" />
+            <AdminBrandMark size="md" />
+            <div>
+              <p className="text-[10px] uppercase tracking-[.22em] text-foodiz-gold font-bold">Foodiz</p>
+              <p className="text-xs text-foodiz-gray mt-1">Administration</p>
+            </div>
           </div>
 
           <div className="rounded-[1.6rem] border border-foodiz-gold/10 bg-white/[0.02] p-4 mb-6">
@@ -98,7 +102,7 @@ export default function AdminShell({
                 </div>
               </div>
               <div className="lg:hidden">
-                <Logo size="sm" />
+                <AdminBrandMark size="sm" />
               </div>
             </div>
           </header>

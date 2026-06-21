@@ -3,6 +3,7 @@ import { adminSupabase, appIsLaunched } from "./_lib/auth.js";
 import {
   cleanText,
   normalizeEmail,
+  normalizeFoodizPhone,
   requestFingerprint,
   sendPrelaunchEmail,
   sha256,
@@ -17,8 +18,6 @@ const roleToAuthRole: Record<PublicRole, "client" | "courier" | "partner"> = {
 };
 
 const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const validPhone = /^[+()\d\s.-]{8,24}$/;
-
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -46,7 +45,8 @@ const handler: Handler = async (event) => {
   const firstName = cleanText(input.firstName, 80);
   const lastName = cleanText(input.lastName, 80);
   const email = normalizeEmail(input.email);
-  const phone = cleanText(input.phone, 30);
+  const submittedPhone = cleanText(input.phone, 30);
+  const phone = normalizeFoodizPhone(submittedPhone);
   const city = cleanText(input.city, 100);
   const password = String(input.password || "");
   const passwordConfirmation = String(input.passwordConfirmation || "");
@@ -55,7 +55,7 @@ const handler: Handler = async (event) => {
   if (!roleToAuthRole[role]) {
     return { statusCode: 400, body: JSON.stringify({ error: "Rôle invalide." }) };
   }
-  if (!firstName || !lastName || !city || !validEmail.test(email) || !validPhone.test(phone)) {
+  if (!firstName || !lastName || !city || !validEmail.test(email) || !phone) {
     return { statusCode: 400, body: JSON.stringify({ error: "Vérifiez vos informations personnelles." }) };
   }
   if (password.length < 10 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
@@ -116,6 +116,35 @@ const handler: Handler = async (event) => {
     return { statusCode: 409, body: JSON.stringify({ error: "Cette adresse est déjà pré-inscrite." }) };
   }
 
+  if (role === "client" || role === "livreur") {
+    const authRole = roleToAuthRole[role];
+    const [{ data: existingProfile }, { data: existingPrelaunch }] = await Promise.all([
+      adminSupabase
+        .from("profiles")
+        .select("id")
+        .eq("phone_normalized", phone)
+        .in("role", ["client", "courier"])
+        .limit(1)
+        .maybeSingle(),
+      adminSupabase
+        .from("prelaunch_profiles")
+        .select("id")
+        .eq("phone_normalized", phone)
+        .in("role", ["client", "livreur"])
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    if (existingProfile || existingPrelaunch) {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({ error: "Ce numéro de téléphone est déjà associé à un compte Foodiz." }),
+      };
+    }
+    if (!authRole) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Rôle invalide." }) };
+    }
+  }
+
   const authRole = roleToAuthRole[role];
   const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
     email,
@@ -137,9 +166,17 @@ const handler: Handler = async (event) => {
 
   if (authError || !authData.user) {
     const duplicate = authError?.message.toLowerCase().includes("already");
+    const duplicatePhone = authError?.message.toLowerCase().includes("phone")
+      || authError?.message.toLowerCase().includes("duplicate key");
     return {
-      statusCode: duplicate ? 409 : 500,
-      body: JSON.stringify({ error: duplicate ? "Cette adresse possède déjà un compte Foodiz." : "Impossible de créer votre pré-inscription." }),
+      statusCode: duplicate || duplicatePhone ? 409 : 500,
+      body: JSON.stringify({
+        error: duplicatePhone
+          ? "Ce numéro de téléphone est déjà associé à un compte Foodiz."
+          : duplicate
+            ? "Cette adresse possède déjà un compte Foodiz."
+            : "Impossible de créer votre pré-inscription.",
+      }),
     };
   }
 

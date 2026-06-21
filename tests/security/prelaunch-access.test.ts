@@ -26,6 +26,18 @@ const sendLaunchAccess = readFileSync(
   new URL("../../netlify/functions/send-launch-access.ts", import.meta.url),
   "utf8",
 );
+const launchBoundary = readFileSync(
+  new URL("../../src/components/LaunchBoundary.tsx", import.meta.url),
+  "utf8",
+);
+const uniquePhoneMigration = readFileSync(
+  new URL("../../supabase/migrations/33_unique_phone_identity_for_clients_and_couriers.sql", import.meta.url),
+  "utf8",
+);
+const prelaunchHelpers = readFileSync(
+  new URL("../../netlify/functions/_lib/prelaunch.ts", import.meta.url),
+  "utf8",
+);
 
 test("le statut de lancement démarre fermé", () => {
   assert.match(migration, /'launch_status', '\{"launched": false\}'::jsonb/);
@@ -85,4 +97,30 @@ test("l’activation renvoie la connexion correspondant au rôle", () => {
   assert.match(activateApi, /loginPath/);
   assert.match(activateApi, /role === "livreur" \? "courier"/);
   assert.match(activateApi, /role === "partenaire" \? "partner"/);
+});
+
+test("la route exacte /admin et ses sous-routes restent accessibles avant lancement", () => {
+  assert.match(launchBoundary, /pathname === "\/admin"/);
+  assert.match(launchBoundary, /pathname\.startsWith\("\/admin\/"\)/);
+  assert.match(launchBoundary, /isAdminPath\(location\.pathname\)/);
+});
+
+test("les formats français équivalents partagent une identité téléphonique", () => {
+  assert.match(uniquePhoneMigration, /normalize_foodiz_phone/);
+  assert.match(uniquePhoneMigration, /\+33.*substring/);
+  assert.match(prelaunchHelpers, /normalizeFoodizPhone/);
+  assert.match(prelaunchHelpers, /`\+33\$\{digits\.slice\(1\)\}`/);
+});
+
+test("un téléphone ne peut appartenir qu’à un client ou livreur Foodiz", () => {
+  assert.match(uniquePhoneMigration, /profiles_client_courier_phone_unique/);
+  assert.match(uniquePhoneMigration, /prelaunch_client_courier_phone_unique/);
+  assert.match(uniquePhoneMigration, /role IN \('client', 'courier'\)/);
+  assert.match(uniquePhoneMigration, /role IN \('client', 'livreur'\)/);
+  assert.match(registerApi, /Ce numéro de téléphone est déjà associé à un compte Foodiz/);
+});
+
+test("la migration refuse les doublons historiques au lieu de les modifier", () => {
+  assert.match(uniquePhoneMigration, /HAVING count\(\*\) > 1/);
+  assert.match(uniquePhoneMigration, /Cannot enable unique phone identity/);
 });
