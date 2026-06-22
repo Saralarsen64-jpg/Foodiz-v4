@@ -71,6 +71,7 @@ import ResetPasswordPage from "./pages/auth/ResetPassword";
 import WaitlistPage from "./pages/prelaunch/Waitlist";
 import PrelaunchConfirmed from "./pages/prelaunch/Confirmed";
 import ActivatePrelaunch from "./pages/prelaunch/Activate";
+import PrelaunchCourierDocuments from "./pages/prelaunch/CourierDocuments";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/Dashboard";
@@ -98,6 +99,7 @@ export default function App() {
       {/* ─── AUTH ROUTES (Publiques) ─────────────────────────────────────── */}
       <Route path="/waitlist" element={<WaitlistPage />} />
       <Route path="/prelaunch-confirmed" element={<PrelaunchConfirmed />} />
+      <Route path="/courier-documents" element={<PrelaunchCourierDocuments />} />
       <Route path="/activate" element={<ActivatePrelaunch />} />
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />

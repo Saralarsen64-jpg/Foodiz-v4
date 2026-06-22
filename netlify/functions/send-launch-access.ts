@@ -30,7 +30,7 @@ const handler: Handler = async (event) => {
 
   const { data: profiles, error } = await adminSupabase
     .from("prelaunch_profiles")
-    .select("id,user_id,email,first_name,status")
+    .select("id,user_id,email,first_name,status,role")
     .eq("status", "prelaunch_pending")
     .order("created_at")
     .limit(100);
@@ -40,9 +40,22 @@ const handler: Handler = async (event) => {
 
   const appUrl = (process.env.APP_URL || "https://www.foodiz.co").replace(/\/$/, "");
   let sent = 0;
+  let skippedUnvalidatedCouriers = 0;
   const failed: string[] = [];
 
   for (const profile of profiles || []) {
+    if (profile.role === "livreur") {
+      const { data: courierApplication } = await adminSupabase
+        .from("courier_applications")
+        .select("status,document_review_status")
+        .eq("user_id", profile.user_id)
+        .maybeSingle();
+      if (courierApplication?.status !== "validated" || courierApplication.document_review_status !== "approved") {
+        skippedUnvalidatedCouriers += 1;
+        continue;
+      }
+    }
+
     const token = createLaunchToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const activationUrl = `${appUrl}/activate?token=${encodeURIComponent(token.raw)}`;
@@ -78,7 +91,12 @@ const handler: Handler = async (event) => {
   return {
     statusCode: failed.length ? 207 : 200,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sent, failed: failed.length, failedProfileIds: failed }),
+    body: JSON.stringify({
+      sent,
+      skippedUnvalidatedCouriers,
+      failed: failed.length,
+      failedProfileIds: failed,
+    }),
   };
 };
 

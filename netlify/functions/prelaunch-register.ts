@@ -2,6 +2,7 @@ import type { Handler } from "@netlify/functions";
 import { adminSupabase, appIsLaunched } from "./_lib/auth.js";
 import {
   cleanText,
+  createLaunchToken,
   normalizeEmail,
   normalizeFoodizPhone,
   requestFingerprint,
@@ -76,6 +77,8 @@ const handler: Handler = async (event) => {
   const siret = cleanText(input.siret, 20).replace(/\s+/g, "");
   const vehicleType = cleanText(input.vehicleType, 30);
   const availability = cleanText(input.availability, 30);
+  const address = cleanText(input.address, 180);
+  const postalCode = cleanText(input.postalCode, 10);
 
   if (role === "partenaire" && (
     !establishmentName
@@ -85,11 +88,12 @@ const handler: Handler = async (event) => {
   }
   if (role === "livreur" && (
     !/^[0-9]{14}$/.test(siret)
-    ||
-    !["velo", "scooter", "voiture", "autre"].includes(vehicleType)
+    || !address
+    || !/^[0-9]{5}$/.test(postalCode)
+    || !["velo", "scooter", "voiture", "autre"].includes(vehicleType)
     || !["journee", "soiree", "nuit", "week_end"].includes(availability)
   )) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Renseignez un SIRET valide de 14 chiffres, votre véhicule et vos disponibilités." }) };
+    return { statusCode: 400, body: JSON.stringify({ error: "Renseignez un SIRET valide, votre adresse professionnelle, votre véhicule et vos disponibilités." }) };
   }
 
   const fingerprint = requestFingerprint(event.headers);
@@ -181,6 +185,10 @@ const handler: Handler = async (event) => {
   }
 
   const userId = authData.user.id;
+  const courierUploadToken = role === "livreur" ? createLaunchToken() : null;
+  const courierUploadTokenExpiresAt = role === "livreur"
+    ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    : null;
   try {
     const { data: profile, error: profileError } = await adminSupabase
       .from("prelaunch_profiles")
@@ -213,10 +221,32 @@ const handler: Handler = async (event) => {
       const { error } = await adminSupabase.from("prelaunch_driver_details").insert({
         prelaunch_profile_id: profile.id,
         siret,
+        legal_name: `${firstName} ${lastName}`.trim(),
+        address,
+        postal_code: postalCode,
         vehicle_type: vehicleType,
         availability,
+        document_review_status: "documents_required",
+        document_upload_token_hash: courierUploadToken?.hash,
+        document_upload_token_expires_at: courierUploadTokenExpiresAt,
       });
       if (error) throw error;
+
+      const { error: applicationError } = await adminSupabase
+        .from("courier_applications")
+        .update({
+          legal_name: `${firstName} ${lastName}`.trim(),
+          siret,
+          address,
+          postal_code: postalCode,
+          city,
+          vehicle_type: vehicleType,
+          status: "pending",
+          document_review_status: "documents_required",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+      if (applicationError) throw applicationError;
     }
   } catch (error) {
     await adminSupabase.auth.admin.deleteUser(userId);
@@ -229,7 +259,9 @@ const handler: Handler = async (event) => {
       to: email,
       subject: "Votre pré-inscription Foodiz est confirmée",
       headline: `Bienvenue ${firstName}`,
-      body: "Votre pré-inscription est bien enregistrée. Vous recevrez votre accès dès le lancement officiel de Foodiz.",
+      body: role === "livreur"
+        ? "Votre compte livreur est créé. Votre accès aux courses restera bloqué jusqu’à la validation de vos justificatifs par Foodiz."
+        : "Votre pré-inscription est bien enregistrée. Vous recevrez votre accès dès le lancement officiel de Foodiz.",
     });
   } catch (error) {
     console.error("Prelaunch confirmation email failed:", error);
@@ -240,7 +272,11 @@ const handler: Handler = async (event) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       registered: true,
-      message: "Votre pré-inscription est bien enregistrée. Vous recevrez votre accès dès le lancement officiel de Foodiz.",
+      courierDocumentUploadToken: courierUploadToken?.raw,
+      courierDocumentUploadExpiresAt: courierUploadTokenExpiresAt,
+      message: role === "livreur"
+        ? "Votre compte est créé. Transmettez maintenant vos trois justificatifs obligatoires."
+        : "Votre pré-inscription est bien enregistrée. Vous recevrez votre accès dès le lancement officiel de Foodiz.",
     }),
   };
 };

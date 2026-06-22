@@ -124,15 +124,16 @@ export default function CurrentDeliveryScreen() {
           distanceInterval: 20,
         },
         (position) => {
-          void supabase
-            .from('delivery_tracking')
-            .update({
-              current_latitude: position.coords.latitude,
-              current_longitude: position.coords.longitude,
-              current_location_name: 'Position GPS du livreur',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('order_id', order.id);
+          void foodizApi('courier-delivery-action', {
+            method: 'POST',
+            body: JSON.stringify({
+              orderId: order.id,
+              action: 'location',
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracyMeters: position.coords.accuracy,
+            }),
+          }).catch(() => undefined);
         },
       );
     });
@@ -151,32 +152,39 @@ export default function CurrentDeliveryScreen() {
     if (!next || next === 'delivered') return;
     setBusy(true);
     try {
+      let position: Location.LocationObject | null = null;
+      if (next === 'picked_up' || next === 'at_customer') {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (permission.status !== 'granted') {
+          throw new Error('La localisation précise est obligatoire pour cette étape.');
+        }
+        position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+      }
+
+      await foodizApi('courier-delivery-action', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId: order.id,
+          action: next,
+          ...(position
+            ? {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracyMeters: position.coords.accuracy,
+              }
+            : {}),
+        }),
+      });
+
       const orderStatus =
         next === 'picked_up'
           ? 'picked_up'
           : next === 'in_transit' || next === 'at_customer'
             ? 'delivering'
-            : null;
-
-      if (orderStatus && orderStatus !== order.status) {
-        const { error } = await supabase
-          .from('orders')
-          .update({ status: orderStatus })
-          .eq('id', order.id);
-        if (error) throw error;
-        setOrder({ ...order, status: orderStatus });
-      }
-
-      const { error } = await supabase
-        .from('delivery_tracking')
-        .update({
-          status: next,
-          ...(next === 'picked_up'
-            ? { pickup_at: new Date().toISOString() }
-            : {}),
-        })
-        .eq('order_id', order.id);
-      if (error) throw error;
+            : order.status;
+      setOrder({ ...order, status: orderStatus });
       setStep(next);
     } catch (error) {
       Alert.alert(

@@ -27,7 +27,7 @@ export default function AdminDashboard() {
       supabase.from("partner_subscriptions").select("status"),
       supabase.from("admin_financial_account_balances").select("*").single(),
       supabase.from("admin_weekly_payables").select("amount_cents"),
-      supabase.from("order_financial_ledger").select("client_collected_cents,foodiz_revenue_cents,partner_cents,courier_earnings_cents,courier_prime_cents,delivery_fee_cents,loyalty_fund_cents,created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("order_financial_ledger").select("client_collected_cents,foodiz_revenue_cents,partner_cents,courier_earnings_cents,courier_prime_cents,courier_penalty_cents,delivery_fee_cents,loyalty_fund_cents,created_at").order("created_at", { ascending: false }).limit(200),
       fetch("/api/admin/prelaunch", {
         headers: { Authorization: `Bearer ${session?.access_token || ""}` },
       }),
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
   const allocation = useMemo(() => {
     const totals = ledger.reduce((acc, row) => ({
       partner: acc.partner + Number(row.partner_cents || 0),
-      courier: acc.courier + Number(row.delivery_fee_cents || 0) + Number(row.courier_earnings_cents || 0) + Number(row.courier_prime_cents || 0),
+      courier: acc.courier + Number(row.delivery_fee_cents || 0) + Number(row.courier_earnings_cents || 0) + Number(row.courier_prime_cents || 0) - Number(row.courier_penalty_cents || 0),
       foodiz: acc.foodiz + Number(row.foodiz_revenue_cents || 0),
       loyalty: acc.loyalty + Number(row.loyalty_fund_cents || 0),
     }), { partner: 0, courier: 0, foodiz: 0, loyalty: 0 });

@@ -62,24 +62,17 @@ const handler: Handler = async (event) => {
     };
   }
 
-  const deliveredAt = new Date().toISOString();
-  const { error: orderError } = await adminSupabase
-    .from("orders")
-    .update({ status: "delivered", delivered_at: deliveredAt })
-    .eq("id", orderId)
-    .eq("courier_id", user.id)
-    .eq("status", "delivering");
-
-  if (orderError) {
+  const { data: completionResult, error: completionError } = await adminSupabase
+    .rpc("complete_courier_delivery", {
+      target_order_id: orderId,
+      target_courier_id: user.id,
+    });
+  if (completionError) {
+    console.error("Atomic delivery completion failed", orderId, completionError);
     return { statusCode: 500, body: JSON.stringify({ error: "Delivery update failed" }) };
   }
 
   await Promise.all([
-    adminSupabase.from("delivery_tracking").update({
-      status: "delivered",
-      dropoff_at: deliveredAt,
-      actual_delivery_at: deliveredAt,
-    }).eq("order_id", orderId).eq("courier_id", user.id),
     adminSupabase.from("client_delivery_codes").delete().eq("order_id", orderId),
     adminSupabase.from("delivery_code_verifications").delete().eq("order_id", orderId),
     adminSupabase.from("notifications").insert({
@@ -91,7 +84,13 @@ const handler: Handler = async (event) => {
     }),
   ]);
 
-  return { statusCode: 200, body: JSON.stringify({ delivered: true }) };
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      delivered: true,
+      delayAdjustment: completionResult?.delayAdjustment || null,
+    }),
+  };
 };
 
 export { handler };

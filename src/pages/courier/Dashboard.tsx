@@ -19,11 +19,11 @@ export default function CourierDashboard() {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const [{ data: profile }, { data: delivered }, { data: active }] = await Promise.all([
       supabase.from("profiles").select("full_name, courier_online").eq("id", user.id).single(),
-      supabase.from("orders").select("courier_earnings_cents, courier_prime_fund_cents").eq("courier_id", user.id).eq("status", "delivered").gte("delivered_at", today.toISOString()),
+      supabase.from("orders").select("delivery_fee_cents, courier_earnings_cents, courier_prime_fund_cents, courier_delay_penalty_cents").eq("courier_id", user.id).eq("status", "delivered").gte("delivered_at", today.toISOString()),
       supabase.from("orders").select("id, status, delivery_address, restaurant:restaurants(name)").eq("courier_id", user.id).in("status", ["pickup", "picked_up", "delivering"]).limit(1).maybeSingle(),
     ]);
     setName(profile?.full_name?.split(" ")[0] || "Livreur"); setOnline(Boolean(profile?.courier_online));
-    setTodayDeliveries(delivered?.length || 0); setTodayEarnings((delivered || []).reduce((sum, order) => sum + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0), 0) / 100);
+    setTodayDeliveries(delivered?.length || 0); setTodayEarnings((delivered || []).reduce((sum, order) => sum + (order.delivery_fee_cents || 0) + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0) - (order.courier_delay_penalty_cents || 0), 0) / 100);
     setActiveOrder(active);
     if (profile?.courier_online) {
       const { data: { session } } = await supabase.auth.getSession();

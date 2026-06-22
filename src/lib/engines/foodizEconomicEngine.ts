@@ -126,30 +126,6 @@ export function isValidCoordinates(latitude: unknown, longitude: unknown): boole
   );
 }
 
-export function calculateDistanceKm(
-  latitudeA: number,
-  longitudeA: number,
-  latitudeB: number,
-  longitudeB: number,
-): number {
-  if (
-    !isValidCoordinates(latitudeA, longitudeA) ||
-    !isValidCoordinates(latitudeB, longitudeB)
-  ) {
-    throw new Error("Valid coordinates are required to calculate delivery distance");
-  }
-
-  const radiusKm = 6371;
-  const dLat = ((latitudeB - latitudeA) * Math.PI) / 180;
-  const dLon = ((longitudeB - longitudeA) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((latitudeA * Math.PI) / 180) *
-      Math.cos((latitudeB * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return radiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 export function calculateFoodizOrder(
   items: { partnerPriceCents: number }[],
   distanceKm: number,

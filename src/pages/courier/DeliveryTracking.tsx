@@ -16,6 +16,35 @@ const STEPS: { key: DeliveryStep; label: string }[] = [
   { key: "delivered", label: "Livraison terminée" },
 ];
 
+async function courierDeliveryAction(body: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const response = await fetch("/api/courier-delivery-action", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token || ""}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "Étape impossible.");
+  return payload;
+}
+
+function currentPosition() {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("La géolocalisation n’est pas disponible sur cet appareil."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 15000,
+    });
+  });
+}
+
 export default function DeliveryTrackingPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -32,7 +61,8 @@ export default function DeliveryTrackingPage() {
     if (!id) return;
     const { data } = await supabase.from("orders").select(`
       id, status, courier_id, delivery_address, client_latitude, client_longitude,
-      courier_earnings_cents, courier_prime_fund_cents, created_at,
+      delivery_fee_cents, courier_earnings_cents, courier_prime_fund_cents,
+      courier_delay_penalty_cents, client_delay_reward_points, created_at,
       restaurant:restaurants(name, address, postal_code, city, latitude, longitude),
       order_items(id, quantity, product:products(name))
     `).eq("id", id).single();
@@ -62,18 +92,23 @@ export default function DeliveryTrackingPage() {
       if (now - lastLocationUpdate.current < 5000) return;
       lastLocationUpdate.current = now;
       setLocationError("");
-      await supabase.from("delivery_tracking").update({
-        current_latitude: position.coords.latitude,
-        current_longitude: position.coords.longitude,
-        current_location_name: "Position GPS du livreur",
-        updated_at: new Date().toISOString(),
-      }).eq("order_id", id);
-      setTracking((current: any) => ({ ...current, current_latitude: position.coords.latitude, current_longitude: position.coords.longitude }));
+      try {
+        await courierDeliveryAction({
+          orderId: id,
+          action: "location",
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
+        });
+        setTracking((current: any) => ({ ...current, current_latitude: position.coords.latitude, current_longitude: position.coords.longitude }));
+      } catch {
+        setLocationError("La position n’a pas pu être synchronisée avec Foodiz.");
+      }
     }, () => setLocationError("Activez la localisation pour partager votre progression avec le client."), { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
     return () => navigator.geolocation.clearWatch(watchId);
   }, [id, step]);
 
-  const earnings = ((order?.courier_earnings_cents || 0) + (order?.courier_prime_fund_cents || 0)) / 100;
+  const earnings = ((order?.delivery_fee_cents || 0) + (order?.courier_earnings_cents || 0) + (order?.courier_prime_fund_cents || 0) - (order?.courier_delay_penalty_cents || 0)) / 100;
   const currentIndex = STEPS.findIndex((item) => item.key === step);
   const progress = ((currentIndex + 1) / STEPS.length) * 100;
   const clientName = order?.client?.display_name || order?.client?.first_name || "Client Foodiz";
@@ -83,21 +118,23 @@ export default function DeliveryTrackingPage() {
     if (!id) return;
     setBusy(true);
     try {
-      const now = new Date().toISOString();
-      const orderStatus = next === "picked_up" ? "picked_up" : next === "in_transit" || next === "at_customer" ? "delivering" : undefined;
-      if (orderStatus) {
-        const { error } = await supabase.from("orders").update({ status: orderStatus }).eq("id", id);
-        if (error) throw error;
-      }
-      const { error } = await supabase.from("delivery_tracking").update({
-        status: next,
-        ...(next === "picked_up" ? { pickup_at: now } : {}),
-        ...(next === "at_customer" ? { estimated_arrival_at: now } : {}),
-      }).eq("order_id", id);
-      if (error) throw error;
+      const position = next === "picked_up" || next === "at_customer"
+        ? await currentPosition()
+        : null;
+      await courierDeliveryAction({
+        orderId: id,
+        action: next,
+        ...(position ? {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
+        } : {}),
+      });
       setStep(next);
-    } catch {
-      toast.error("Impossible de valider cette étape. Réessayez.");
+      if (next === "picked_up") setOrder((current: any) => ({ ...current, status: "picked_up" }));
+      if (next === "in_transit" || next === "at_customer") setOrder((current: any) => ({ ...current, status: "delivering" }));
+    } catch (error: any) {
+      toast.error(error.message || "Impossible de valider cette étape. Réessayez.");
     } finally {
       setBusy(false);
     }
@@ -127,6 +164,7 @@ export default function DeliveryTrackingPage() {
         throw new Error(payload.remainingAttempts !== undefined ? `Code incorrect. ${payload.remainingAttempts} essai(s) restant(s).` : "Code incorrect.");
       }
       setStep("delivered");
+      await loadDelivery();
     } catch (error: any) {
       setCodeError(error.message || "Code incorrect.");
       setEnteredCode(["", "", "", "", "", ""]);

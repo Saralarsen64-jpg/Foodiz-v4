@@ -1,5 +1,6 @@
 import { Handler } from "@netlify/functions";
 import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
+import { calculateRoute, type RouteResult } from "./_lib/routingProvider.js";
 
 const reply = (statusCode: number, body: unknown) => ({
   statusCode,
@@ -7,54 +8,121 @@ const reply = (statusCode: number, body: unknown) => ({
   body: JSON.stringify(body),
 });
 
-function distanceKm(lat1?: number | null, lon1?: number | null, lat2?: number | null, lon2?: number | null) {
-  if (![lat1, lon1, lat2, lon2].every((value) => typeof value === "number")) return null;
-  const radius = 6371;
-  const dLat = (((lat2 as number) - (lat1 as number)) * Math.PI) / 180;
-  const dLon = (((lon2 as number) - (lon1 as number)) * Math.PI) / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(((lat1 as number) * Math.PI) / 180) * Math.cos(((lat2 as number) * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+function validNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+async function dispatchRoute(order: any): Promise<RouteResult | null> {
+  if (validNumber(order.delivery_route_distance_meters)) {
+    const durationSeconds = validNumber(order.delivery_route_duration_seconds)
+      ? order.delivery_route_duration_seconds
+      : null;
+    return {
+      distanceMeters: order.delivery_route_distance_meters,
+      distanceKm: order.delivery_route_distance_meters / 1_000,
+      durationSeconds,
+      durationMinutes: durationSeconds === null ? null : Math.ceil(durationSeconds / 60),
+      geometry: null,
+      provider: order.delivery_route_provider || "stored",
+      requestedProvider: order.delivery_route_provider || "stored",
+      isFallback: order.delivery_route_is_fallback === true,
+    };
+  }
+
+  const restaurant = Array.isArray(order.restaurant)
+    ? order.restaurant[0]
+    : order.restaurant;
+  const coordinates = [
+    restaurant?.latitude,
+    restaurant?.longitude,
+    order.client_latitude,
+    order.client_longitude,
+  ].map(Number);
+  if (!coordinates.every(Number.isFinite)) return null;
+
+  const route = await calculateRoute(
+    { latitude: coordinates[0], longitude: coordinates[1] },
+    { latitude: coordinates[2], longitude: coordinates[3] },
+  );
+
+  const { error } = await adminSupabase
+    .from("orders")
+    .update({
+      estimated_time_mins: route.durationMinutes,
+      delivery_route_distance_meters: route.distanceMeters,
+      delivery_route_duration_seconds: route.durationSeconds,
+      delivery_route_provider: route.provider,
+      delivery_route_is_fallback: route.isFallback,
+      delivery_route_calculated_at: new Date().toISOString(),
+    })
+    .eq("id", order.id)
+    .is("delivery_route_distance_meters", null);
+  if (error) {
+    console.error("[routing] Dispatch route snapshot could not be stored", {
+      orderId: order.id,
+      message: error.message,
+    });
+  }
+  return route;
 }
 
 async function eligibleCourier(userId: string) {
   const [{ data: profile }, { data: application }] = await Promise.all([
     adminSupabase.from("profiles").select("courier_online").eq("id", userId).maybeSingle(),
-    adminSupabase.from("courier_applications").select("status").eq("user_id", userId).maybeSingle(),
+    adminSupabase.from("courier_applications").select("status,document_review_status,dispatch_priority_score").eq("user_id", userId).maybeSingle(),
   ]);
-  return application?.status === "validated" && profile?.courier_online === true;
+  if (
+    application?.status !== "validated"
+    || application.document_review_status !== "approved"
+    || profile?.courier_online !== true
+  ) return null;
+  return { priorityScore: Number(application.dispatch_priority_score ?? 100) };
 }
 
 const handler: Handler = async (event) => {
   try {
     const user = await authenticatedUser(event.headers);
     if (!user) return reply(401, { error: "Unauthorized" });
-    if (!(await eligibleCourier(user.id))) return reply(403, { error: "COURIER_NOT_AVAILABLE" });
+    const eligibility = await eligibleCourier(user.id);
+    if (!eligibility) return reply(403, { error: "COURIER_NOT_AVAILABLE" });
 
     if (event.httpMethod === "GET") {
+      const deliveryLimit = eligibility.priorityScore >= 90 ? 20 : eligibility.priorityScore >= 70 ? 12 : 6;
       const { data: orders, error } = await adminSupabase
         .from("orders")
-        .select("id,delivery_fee_cents,courier_earnings_cents,courier_prime_fund_cents,estimated_time_mins,client_latitude,client_longitude,restaurant:restaurants(name,address,postal_code,city,latitude,longitude),order_items(quantity)")
+        .select("id,delivery_fee_cents,courier_earnings_cents,courier_prime_fund_cents,estimated_time_mins,client_latitude,client_longitude,delivery_route_distance_meters,delivery_route_duration_seconds,delivery_route_provider,delivery_route_is_fallback,restaurant:restaurants(name,address,postal_code,city,latitude,longitude),order_items(quantity)")
         .eq("status", "ready")
         .is("courier_id", null)
         .eq("payment_status", "completed")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true })
+        .limit(deliveryLimit);
       if (error) throw error;
-      return reply(200, {
-        deliveries: (orders || []).map((order: any) => ({
+      const deliveries = await Promise.all((orders || []).map(async (order: any) => {
+        const route = await dispatchRoute(order);
+        const restaurant = Array.isArray(order.restaurant)
+          ? order.restaurant[0]
+          : order.restaurant;
+        return {
           id: order.id,
           delivery_fee_cents: order.delivery_fee_cents,
           courier_earnings_cents: order.courier_earnings_cents,
           courier_prime_fund_cents: order.courier_prime_fund_cents,
-          estimated_time_mins: order.estimated_time_mins,
+          estimated_time_mins: route?.durationMinutes ?? order.estimated_time_mins ?? null,
           item_count: (order.order_items || []).reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
-          distance_km: distanceKm(order.restaurant?.latitude, order.restaurant?.longitude, order.client_latitude, order.client_longitude),
+          distance_km: route?.distanceKm ?? null,
+          routing_provider: route?.provider ?? null,
+          routing_fallback: route?.isFallback ?? false,
           restaurant: {
-            name: order.restaurant?.name,
-            address: order.restaurant?.address,
-            postal_code: order.restaurant?.postal_code,
-            city: order.restaurant?.city,
+            name: restaurant?.name,
+            address: restaurant?.address,
+            postal_code: restaurant?.postal_code,
+            city: restaurant?.city,
           },
-        })),
+        };
+      }));
+      return reply(200, {
+        dispatchPriorityScore: eligibility.priorityScore,
+        deliveries,
       });
     }
 

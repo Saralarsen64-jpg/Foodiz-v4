@@ -2,9 +2,9 @@ import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { sendFinancialDocumentEmail } from "./_lib/financial-documents.js";
+import { calculateRoute } from "./_lib/routingProvider.js";
 import {
   calculateClientUnitPriceCents,
-  calculateDistanceKm,
   calculateFoodizOrder,
   isValidCoordinates,
 } from "../../src/lib/engines/foodizEconomicEngine.js";
@@ -140,12 +140,17 @@ const handler: Handler = async (event) => {
       };
     }
 
-    const distanceKm = calculateDistanceKm(
-      Number(client.latitude),
-      Number(client.longitude),
-      Number(restaurant.latitude),
-      Number(restaurant.longitude),
+    const route = await calculateRoute(
+      {
+        latitude: Number(restaurant.latitude),
+        longitude: Number(restaurant.longitude),
+      },
+      {
+        latitude: Number(client.latitude),
+        longitude: Number(client.longitude),
+      },
     );
+    const distanceKm = route.distanceKm;
     const totals = calculateFoodizOrder(calculationItems, distanceKm);
     const { data: reservedRows } = await supabase
       .from("order_advantage_redemptions")
@@ -244,6 +249,7 @@ const handler: Handler = async (event) => {
             advantageDiscountCents,
             finalClientTotalCents: amountToPayCents,
             distanceKm,
+            estimatedTimeMins: route.durationMinutes,
           },
         }),
       };
@@ -299,7 +305,12 @@ const handler: Handler = async (event) => {
         system_reserve_cents: totals.systemReserveCents,
         points_redeemed_cents: 0,
         advantage_discount_cents: advantageDiscountCents,
-        estimated_time_mins: 30,
+        estimated_time_mins: route.durationMinutes,
+        delivery_route_distance_meters: route.distanceMeters,
+        delivery_route_duration_seconds: route.durationSeconds,
+        delivery_route_provider: route.provider,
+        delivery_route_is_fallback: route.isFallback,
+        delivery_route_calculated_at: new Date().toISOString(),
       })
       .select("id")
       .single();

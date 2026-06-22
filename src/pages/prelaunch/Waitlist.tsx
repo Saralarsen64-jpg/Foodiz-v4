@@ -5,6 +5,8 @@ import {
   Building2,
   Check,
   ChevronDown,
+  FileCheck2,
+  FileText,
   Eye,
   EyeOff,
   LoaderCircle,
@@ -17,6 +19,7 @@ import {
   User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 
 type Role = "client" | "livreur" | "partenaire";
 
@@ -39,9 +42,47 @@ const initialForm = {
   siret: "",
   vehicleType: "velo",
   availability: "journee",
+  address: "",
+  postalCode: "",
   marketingConsent: false,
   companyWebsite: "",
 };
+
+type CourierDocumentType = "identity_front" | "identity_back" | "activity_proof";
+type CourierFiles = Record<CourierDocumentType, File | null>;
+
+const emptyCourierFiles: CourierFiles = {
+  identity_front: null,
+  identity_back: null,
+  activity_proof: null,
+};
+
+async function validateCourierFile(file: File, allowPdf: boolean) {
+  const validTypes = allowPdf
+    ? ["image/jpeg", "image/png", "application/pdf"]
+    : ["image/jpeg", "image/png"];
+  if (!validTypes.includes(file.type)) throw new Error(allowPdf ? "Utilisez un fichier JPG, PNG ou PDF." : "Utilisez une photo JPG ou PNG.");
+  if (file.size <= 0 || file.size > 8 * 1024 * 1024) throw new Error("Chaque document doit peser moins de 8 Mo.");
+  if (!file.type.startsWith("image/")) return;
+
+  await new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      if (Math.min(image.naturalWidth, image.naturalHeight) < 720) {
+        reject(new Error("La photo est trop petite. Reprenez-la avec une meilleure résolution."));
+        return;
+      }
+      resolve();
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Cette image ne peut pas être lue."));
+    };
+    image.src = url;
+  });
+}
 
 function InputShell({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
@@ -122,13 +163,59 @@ function SelectField({
   );
 }
 
+function DocumentField({
+  label,
+  description,
+  file,
+  allowPdf = false,
+  onFile,
+}: {
+  label: string;
+  description: string;
+  file: File | null;
+  allowPdf?: boolean;
+  onFile: (file: File) => Promise<void>;
+}) {
+  return (
+    <label className="block cursor-pointer rounded-2xl border border-foodiz-gold/25 bg-foodiz-black p-4 transition hover:border-foodiz-gold/60">
+      <input
+        type="file"
+        accept={allowPdf ? "image/jpeg,image/png,application/pdf" : "image/jpeg,image/png"}
+        capture={allowPdf ? undefined : "environment"}
+        required
+        className="sr-only"
+        onChange={(event) => {
+          const selected = event.target.files?.[0];
+          if (selected) void onFile(selected);
+        }}
+      />
+      <div className="flex items-start gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
+          file ? "border-foodiz-green/30 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/25 bg-foodiz-gold/5 text-foodiz-gold"
+        }`}>
+          {file ? <FileCheck2 size={19} /> : <FileText size={19} />}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-foodiz-cream">{label}</span>
+          <span className="mt-1 block text-[10px] leading-relaxed text-foodiz-gray">{file ? file.name : description}</span>
+        </span>
+      </div>
+    </label>
+  );
+}
+
 export default function WaitlistPage() {
   const navigate = useNavigate();
-  const [role, setRole] = useState<Role>("client");
+  const [role, setRole] = useState<Role>(() => window.sessionStorage.getItem("foodiz-courier-upload-token") ? "livreur" : "client");
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [courierFiles, setCourierFiles] = useState<CourierFiles>(emptyCourierFiles);
+  const [pendingCourierUploadToken, setPendingCourierUploadToken] = useState(
+    () => window.sessionStorage.getItem("foodiz-courier-upload-token") || "",
+  );
+  const [submissionStep, setSubmissionStep] = useState("");
 
   const buttonLabel = useMemo(() => {
     if (role === "livreur") return "Pré-inscrire mon profil livreur";
@@ -141,23 +228,108 @@ export default function WaitlistPage() {
     setError("");
   };
 
+  const selectCourierFile = async (documentType: CourierDocumentType, file: File) => {
+    try {
+      await validateCourierFile(file, documentType === "activity_proof");
+      setCourierFiles((current) => ({ ...current, [documentType]: file }));
+      setError("");
+    } catch (fileError: any) {
+      setError(fileError.message || "Document invalide.");
+    }
+  };
+
+  const uploadCourierDocuments = async (uploadToken: string) => {
+    const entries = Object.entries(courierFiles) as [CourierDocumentType, File | null][];
+    if (entries.some(([, file]) => !file)) {
+      throw new Error("Ajoutez le recto, le verso de votre pièce d’identité et votre justificatif d’activité.");
+    }
+
+    const uploaded: Array<{
+      documentType: CourierDocumentType;
+      storagePath: string;
+      originalName: string;
+      mimeType: string;
+      sizeBytes: number;
+    }> = [];
+
+    for (const [documentType, file] of entries) {
+      if (!file) continue;
+      setSubmissionStep(`Transfert sécurisé : ${uploaded.length + 1}/3`);
+      const prepareResponse = await fetch("/api/prelaunch/courier-documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "prepare",
+          uploadToken,
+          documentType,
+          fileName: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+        }),
+      });
+      const prepared = await prepareResponse.json();
+      if (!prepareResponse.ok) throw new Error(prepared.error || "Le dépôt sécurisé a échoué.");
+
+      const { error: uploadError } = await supabase.storage
+        .from("courier-documents")
+        .uploadToSignedUrl(prepared.path, prepared.token, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+      uploaded.push({
+        documentType,
+        storagePath: prepared.path,
+        originalName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+      });
+    }
+
+    setSubmissionStep("Enregistrement du dossier…");
+    const completeResponse = await fetch("/api/prelaunch/courier-documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete", uploadToken, documents: uploaded }),
+    });
+    const completed = await completeResponse.json();
+    if (!completeResponse.ok) throw new Error(completed.error || "Le dossier n’a pas pu être finalisé.");
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     setError("");
     try {
-      const response = await fetch("/api/prelaunch/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, role }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Votre pré-inscription a échoué.");
-      navigate("/prelaunch-confirmed", { replace: true });
+      let uploadToken = role === "livreur" ? pendingCourierUploadToken : "";
+      if (!uploadToken) {
+        setSubmissionStep("Création du compte sécurisé…");
+        const response = await fetch("/api/prelaunch/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...form, role }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Votre pré-inscription a échoué.");
+        uploadToken = String(payload.courierDocumentUploadToken || "");
+        if (role === "livreur") {
+          if (!uploadToken) throw new Error("Le dépôt des justificatifs n’a pas pu être préparé.");
+          setPendingCourierUploadToken(uploadToken);
+          window.sessionStorage.setItem("foodiz-courier-upload-token", uploadToken);
+        }
+      }
+
+      if (role === "livreur") {
+        await uploadCourierDocuments(uploadToken);
+        window.sessionStorage.removeItem("foodiz-courier-upload-token");
+        setPendingCourierUploadToken("");
+      }
+      navigate(`/prelaunch-confirmed${role === "livreur" ? "?role=livreur" : ""}`, { replace: true });
     } catch (submitError: any) {
       setError(submitError.message || "Votre pré-inscription a échoué.");
     } finally {
       setSubmitting(false);
+      setSubmissionStep("");
     }
   };
 
@@ -290,6 +462,24 @@ export default function WaitlistPage() {
                   autoComplete="off"
                 />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Field
+                    icon={<MapPin size={17} />}
+                    name="address"
+                    value={form.address}
+                    onChange={update}
+                    placeholder="Adresse professionnelle"
+                    autoComplete="street-address"
+                  />
+                  <Field
+                    icon={<MapPin size={17} />}
+                    name="postalCode"
+                    value={form.postalCode}
+                    onChange={update}
+                    placeholder="Code postal"
+                    autoComplete="postal-code"
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <SelectField
                     icon={<Bike size={17} />}
                     name="vehicleType"
@@ -315,6 +505,31 @@ export default function WaitlistPage() {
                     ]}
                   />
                 </div>
+                <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/[.04] p-4">
+                  <p className="text-xs font-semibold text-foodiz-cream">Justificatifs obligatoires</p>
+                  <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">
+                    Prenez des photos nettes, sans reflet et avec les quatre bords visibles. Les fichiers sont conservés dans un espace privé et examinés uniquement par Foodiz.
+                  </p>
+                </div>
+                <DocumentField
+                  label="Pièce d’identité — recto"
+                  description="Photographier le recto depuis votre téléphone"
+                  file={courierFiles.identity_front}
+                  onFile={(file) => selectCourierFile("identity_front", file)}
+                />
+                <DocumentField
+                  label="Pièce d’identité — verso"
+                  description="Photographier le verso depuis votre téléphone"
+                  file={courierFiles.identity_back}
+                  onFile={(file) => selectCourierFile("identity_back", file)}
+                />
+                <DocumentField
+                  label="Justificatif officiel d’activité"
+                  description="Avis SIRENE/RNE, attestation INSEE, extrait K/Kbis ou document équivalent"
+                  file={courierFiles.activity_proof}
+                  allowPdf
+                  onFile={(file) => selectCourierFile("activity_proof", file)}
+                />
               </div>
             )}
 
@@ -377,7 +592,7 @@ export default function WaitlistPage() {
               }}
             >
               {submitting ? <LoaderCircle size={19} className="animate-spin" /> : <ArrowRight size={19} />}
-              {submitting ? "Pré-inscription en cours…" : buttonLabel}
+              {submitting ? submissionStep || "Pré-inscription en cours…" : pendingCourierUploadToken && role === "livreur" ? "Reprendre l’envoi des justificatifs" : buttonLabel}
             </button>
           </form>
 

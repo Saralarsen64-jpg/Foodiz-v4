@@ -7,10 +7,13 @@ import {
   userRole,
 } from "../netlify/functions/_lib/auth.js";
 import { handler as adminPrelaunch } from "../netlify/functions/admin-prelaunch.js";
+import { handler as adminCourierApplications } from "../netlify/functions/admin-courier-applications.js";
 import { handler as cancelSubscription } from "../netlify/functions/cancel-subscription.js";
 import { handler as cancelMobileOrder } from "../netlify/functions/cancel-mobile-order.js";
 import { handler as clientCatalog } from "../netlify/functions/client-catalog.js";
 import { handler as courierDeliveries } from "../netlify/functions/courier-deliveries.js";
+import { handler as courierDeliveryAction } from "../netlify/functions/courier-delivery-action.js";
+import { handler as courierDocuments } from "../netlify/functions/courier-documents.js";
 import { handler as createBillingPortal } from "../netlify/functions/create-billing-portal.js";
 import { handler as createCheckoutSession } from "../netlify/functions/create-checkout-session.js";
 import { handler as createPaymentIntent } from "../netlify/functions/create-payment-intent.js";
@@ -24,6 +27,7 @@ import { handler as launchStatus } from "../netlify/functions/launch-status.js";
 import { handler as partnerOrderAction } from "../netlify/functions/partner-order-action.js";
 import { handler as prelaunchActivate } from "../netlify/functions/prelaunch-activate.js";
 import { handler as prelaunchRegister } from "../netlify/functions/prelaunch-register.js";
+import { handler as prelaunchCourierDocuments } from "../netlify/functions/prelaunch-courier-documents.js";
 import { handler as rotateAdvantages } from "../netlify/functions/rotate-advantages.js";
 import { handler as sendLaunchAccess } from "../netlify/functions/send-launch-access.js";
 import { handler as stripeWebhook } from "../netlify/functions/stripe-webhook.js";
@@ -32,12 +36,15 @@ import { handler as trackMarketingNotification } from "../netlify/functions/trac
 import { handler as verifyDeliveryCode } from "../netlify/functions/verify-delivery-code.js";
 
 const handlers: Record<string, Handler> = {
+  "admin/courier-applications": adminCourierApplications,
   "admin/prelaunch": adminPrelaunch,
   "admin/prelaunch/send-launch-access": sendLaunchAccess,
   "cancel-subscription": cancelSubscription,
   "cancel-mobile-order": cancelMobileOrder,
   "client-catalog": clientCatalog,
   "courier-deliveries": courierDeliveries,
+  "courier-delivery-action": courierDeliveryAction,
+  "courier-documents": courierDocuments,
   "create-billing-portal": createBillingPortal,
   "create-checkout-session": createCheckoutSession,
   "create-payment-intent": createPaymentIntent,
@@ -50,6 +57,7 @@ const handlers: Record<string, Handler> = {
   "launch-status": launchStatus,
   "partner-order-action": partnerOrderAction,
   "prelaunch/activate": prelaunchActivate,
+  "prelaunch/courier-documents": prelaunchCourierDocuments,
   "prelaunch/register": prelaunchRegister,
   "rotate-advantages": rotateAdvantages,
   "stripe-webhook": stripeWebhook,
@@ -65,6 +73,7 @@ const adaptedHandlers = Object.fromEntries(
 const publicPrelaunchRoutes = new Set([
   "launch-status",
   "prelaunch/register",
+  "prelaunch/courier-documents",
   "prelaunch/activate",
   "stripe-webhook",
   "rotate-advantages",
