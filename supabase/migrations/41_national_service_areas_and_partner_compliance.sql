@@ -757,12 +757,14 @@ BEGIN
     RAISE EXCEPTION 'A reason is required';
   END IF;
 
-  SELECT restaurant, to_jsonb(restaurant)
-  INTO restaurant_row, previous_restaurant
-  FROM public.restaurants restaurant
+  SELECT *
+  INTO restaurant_row
+  FROM public.restaurants
   WHERE id = target_restaurant_id
   FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Restaurant not found'; END IF;
+
+  previous_restaurant := to_jsonb(restaurant_row);
 
   SELECT * INTO application_row
   FROM public.partner_applications
