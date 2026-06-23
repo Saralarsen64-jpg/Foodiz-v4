@@ -41,7 +41,13 @@ export async function appIsLaunched(): Promise<boolean> {
 }
 
 export async function userHasApplicationAccess(userId: string): Promise<boolean> {
-  if (await userRole(userId) === "admin") return true;
+  const { data: profile } = await adminSupabase
+    .from("profiles")
+    .select("role,status")
+    .eq("id", userId)
+    .maybeSingle();
+  if (profile?.role === "admin") return true;
+  if (["suspended", "rejected"].includes(profile?.status || "")) return false;
   if (!(await appIsLaunched())) return false;
 
   const { data: prelaunchProfile } = await adminSupabase

@@ -8,7 +8,7 @@
       "android"
     ],
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/foodiz-app-icon.png",
     "scheme": "foodiz",
     "userInterfaceStyle": "dark",
     "ios": {
@@ -26,16 +26,14 @@
         "ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#111111",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0B0B0B",
+        "foregroundImage": "./assets/images/foodiz-app-icon.png"
       },
       "predictiveBackGestureEnabled": true
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/foodiz-app-icon.png"
     },
     "plugins": [
       "expo-router",
@@ -43,9 +41,11 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#111111",
+          "image": "./assets/images/foodiz-app-icon.png",
+          "imageWidth": 180,
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 96
+            "image": "./assets/images/foodiz-app-icon.png",
+            "imageWidth": 180
           }
         }
       ],

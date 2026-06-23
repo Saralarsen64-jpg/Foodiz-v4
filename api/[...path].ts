@@ -8,16 +8,18 @@ import {
 } from "../netlify/functions/_lib/auth.js";
 import { handler as adminPrelaunch } from "../netlify/functions/admin-prelaunch.js";
 import { handler as adminCourierApplications } from "../netlify/functions/admin-courier-applications.js";
+import { handler as adminOrderAction } from "../netlify/functions/admin-order-action.js";
+import { handler as addressManagement } from "../netlify/functions/address-management.js";
 import { handler as cancelSubscription } from "../netlify/functions/cancel-subscription.js";
 import { handler as cancelMobileOrder } from "../netlify/functions/cancel-mobile-order.js";
 import { handler as clientCatalog } from "../netlify/functions/client-catalog.js";
 import { handler as courierDeliveries } from "../netlify/functions/courier-deliveries.js";
 import { handler as courierDeliveryAction } from "../netlify/functions/courier-delivery-action.js";
 import { handler as courierDocuments } from "../netlify/functions/courier-documents.js";
+import { handler as courierPresence } from "../netlify/functions/courier-presence.js";
 import { handler as createBillingPortal } from "../netlify/functions/create-billing-portal.js";
 import { handler as createCheckoutSession } from "../netlify/functions/create-checkout-session.js";
 import { handler as createPaymentIntent } from "../netlify/functions/create-payment-intent.js";
-import { handler as createPayout } from "../netlify/functions/create-payout.js";
 import { handler as createSubscription } from "../netlify/functions/create-subscription.js";
 import { handler as deleteAccount } from "../netlify/functions/delete-account.js";
 import { handler as financialDocument } from "../netlify/functions/financial-document.js";
@@ -36,7 +38,9 @@ import { handler as trackMarketingNotification } from "../netlify/functions/trac
 import { handler as verifyDeliveryCode } from "../netlify/functions/verify-delivery-code.js";
 
 const handlers: Record<string, Handler> = {
+  "address-management": addressManagement,
   "admin/courier-applications": adminCourierApplications,
+  "admin/order-action": adminOrderAction,
   "admin/prelaunch": adminPrelaunch,
   "admin/prelaunch/send-launch-access": sendLaunchAccess,
   "cancel-subscription": cancelSubscription,
@@ -45,10 +49,10 @@ const handlers: Record<string, Handler> = {
   "courier-deliveries": courierDeliveries,
   "courier-delivery-action": courierDeliveryAction,
   "courier-documents": courierDocuments,
+  "courier-presence": courierPresence,
   "create-billing-portal": createBillingPortal,
   "create-checkout-session": createCheckoutSession,
   "create-payment-intent": createPaymentIntent,
-  "create-payout": createPayout,
   "create-subscription": createSubscription,
   "delete-account": deleteAccount,
   "financial-document": financialDocument,

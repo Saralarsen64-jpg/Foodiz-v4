@@ -33,7 +33,7 @@ const handler: Handler = async (event) => {
 
     const { data: payment } = await adminSupabase
       .from("order_payments")
-      .select("stripe_payment_intent_id")
+      .select("stripe_payment_intent_id,stripe_checkout_session_id")
       .eq("order_id", orderId)
       .maybeSingle();
 
@@ -41,6 +41,12 @@ const handler: Handler = async (event) => {
       const intent = await stripe.paymentIntents.retrieve(payment.stripe_payment_intent_id);
       if (!["succeeded", "canceled"].includes(intent.status)) {
         await stripe.paymentIntents.cancel(intent.id);
+      }
+    }
+    if (payment?.stripe_checkout_session_id) {
+      const checkout = await stripe.checkout.sessions.retrieve(payment.stripe_checkout_session_id);
+      if (checkout.status === "open") {
+        await stripe.checkout.sessions.expire(checkout.id);
       }
     }
 
@@ -59,7 +65,7 @@ const handler: Handler = async (event) => {
       .update({
         status: "cancelled",
         payment_status: "failed",
-        cancellation_reason: "Paiement mobile annulé par le client",
+        cancellation_reason: "Paiement annulé par le client",
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -70,7 +76,7 @@ const handler: Handler = async (event) => {
     return reply(200, { cancelled: true });
   } catch (error) {
     console.error("Cancel mobile order failed", error);
-    return reply(500, { error: "MOBILE_ORDER_CANCELLATION_FAILED" });
+    return reply(500, { error: "ORDER_CANCELLATION_FAILED" });
   }
 };
 

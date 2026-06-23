@@ -2,9 +2,11 @@ import {
   createContext,
   type PropsWithChildren,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
+import * as SecureStore from 'expo-secure-store';
 
 export type MobileCartItem = {
   productId: string;
@@ -28,11 +30,44 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
+const CART_STORAGE_KEY = 'foodiz_mobile_cart_v1';
 
 export function CartProvider({ children }: PropsWithChildren) {
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [restaurantName, setRestaurantName] = useState<string | null>(null);
   const [items, setItems] = useState<MobileCartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void SecureStore.getItemAsync(CART_STORAGE_KEY)
+      .then((stored) => {
+        if (!active || !stored) return;
+        const parsed = JSON.parse(stored) as {
+          restaurantId?: string | null;
+          restaurantName?: string | null;
+          items?: MobileCartItem[];
+        };
+        setRestaurantId(parsed.restaurantId || null);
+        setRestaurantName(parsed.restaurantName || null);
+        setItems(Array.isArray(parsed.items) ? parsed.items : []);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setHydrated(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    void SecureStore.setItemAsync(
+      CART_STORAGE_KEY,
+      JSON.stringify({ restaurantId, restaurantName, items }),
+    );
+  }, [hydrated, items, restaurantId, restaurantName]);
 
   const value = useMemo<CartContextValue>(
     () => ({

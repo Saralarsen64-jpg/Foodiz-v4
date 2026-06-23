@@ -1,14 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, MapPin, Plus, Trash2, Home, Briefcase } from "lucide-react";
+import { ChevronLeft, MapPin, Plus, Trash2, Home, Briefcase, CheckCircle2, Loader } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
+import toast from "react-hot-toast";
 
 export default function AddressesPage() {
   const navigate = useNavigate();
   const [addresses, setAddresses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newAddress, setNewAddress] = useState({ label: "Maison", full_address: "" });
+  const [newAddress, setNewAddress] = useState({
+    label: "Maison",
+    address: "",
+    postalCode: "",
+    city: "",
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchAddresses();
@@ -17,25 +24,87 @@ export default function AddressesPage() {
   const fetchAddresses = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase.from('client_addresses').select('*').eq('user_id', user.id);
+      const { data } = await supabase
+        .from("client_addresses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
       if (data) setAddresses(data);
     }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && newAddress.full_address) {
-      await supabase.from('client_addresses').insert({ user_id: user.id, ...newAddress });
-      setNewAddress({ label: "Maison", full_address: "" });
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Session expirée.");
+      const response = await fetch("/api/address-management", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action: "save",
+          ...newAddress,
+          makeDefault: true,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Adresse invalide.");
+      setNewAddress({ label: "Maison", address: "", postalCode: "", city: "" });
       setShowForm(false);
-      fetchAddresses();
+      toast.success("Adresse vérifiée et utilisée pour vos livraisons.");
+      await fetchAddresses();
+    } catch (error: any) {
+      toast.error(error.message || "Impossible d'enregistrer l'adresse.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('client_addresses').delete().eq('id', id);
-    fetchAddresses();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch("/api/address-management", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({ action: "delete", addressId: id }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error);
+      await fetchAddresses();
+    } catch (error: any) {
+      toast.error(error.message || "Suppression impossible.");
+    }
+  };
+
+  const setDefault = async (id: string) => {
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch("/api/address-management", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({ action: "set_default", addressId: id }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error);
+      toast.success("Adresse de livraison sélectionnée.");
+      await fetchAddresses();
+    } catch (error: any) {
+      toast.error(error.message || "Sélection impossible.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -59,8 +128,16 @@ export default function AddressesPage() {
               <option value="Travail">Travail</option>
               <option value="Autre">Autre</option>
             </select>
-            <input type="text" placeholder="Adresse complète..." required value={newAddress.full_address} onChange={e => setNewAddress({...newAddress, full_address: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
-            <button type="submit" className="w-full foodiz-btn py-3 text-sm">Enregistrer l'adresse</button>
+            <input type="text" placeholder="Numéro et rue" required value={newAddress.address} onChange={e => setNewAddress({...newAddress, address: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="text" inputMode="numeric" placeholder="Code postal" required value={newAddress.postalCode} onChange={e => setNewAddress({...newAddress, postalCode: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
+              <input type="text" placeholder="Ville" required value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
+            </div>
+            <p className="text-[10px] leading-relaxed text-foodiz-gray">L'adresse est vérifiée côté serveur avant d'être utilisée pour calculer la livraison.</p>
+            <button type="submit" disabled={saving} className="w-full foodiz-btn py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+              {saving && <Loader size={15} className="animate-spin" />}
+              Vérifier et utiliser cette adresse
+            </button>
           </form>
         )}
 
@@ -75,12 +152,16 @@ export default function AddressesPage() {
                 </div>
                 <div>
                   <p className="text-foodiz-cream text-sm font-bold">{addr.label}</p>
-                  <p className="text-foodiz-gray text-xs">{addr.full_address}</p>
+                  <p className="text-foodiz-gray text-xs">{[addr.address_line || addr.full_address, addr.postal_code, addr.city].filter(Boolean).join(", ")}</p>
+                  {addr.is_default && <p className="mt-1 flex items-center gap-1 text-[10px] text-foodiz-green"><CheckCircle2 size={11}/>Adresse de livraison active</p>}
                 </div>
               </div>
-              <button onClick={() => handleDelete(addr.id)} className="text-foodiz-gray hover:text-foodiz-red transition-colors p-2">
-                <Trash2 size={18} />
-              </button>
+              <div className="flex items-center gap-1">
+                {!addr.is_default && <button disabled={saving} onClick={() => setDefault(addr.id)} className="rounded-lg px-2 py-1 text-[10px] text-foodiz-gold hover:bg-foodiz-gold/10">Utiliser</button>}
+                <button disabled={addr.is_default} onClick={() => handleDelete(addr.id)} className="text-foodiz-gray hover:text-foodiz-red transition-colors p-2 disabled:opacity-20" title={addr.is_default ? "Choisissez une autre adresse avant de supprimer celle-ci" : "Supprimer"}>
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
           ))
         )}

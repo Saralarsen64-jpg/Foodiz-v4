@@ -21,13 +21,9 @@ export default function MarketPage() {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('latitude, longitude').eq('id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('latitude, longitude, city').eq('id', user.id).single();
         if (profile?.latitude && profile?.longitude) {
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${profile.latitude}&lon=${profile.longitude}`);
-            const data = await res.json();
-            setCityName(data.address.city || data.address.town || "votre position");
-          } catch(e) {}
+          setCityName(profile.city || "votre adresse");
 
           // On récupère les établissements (ici on prend tous les actifs, tu pourras filtrer par catégorie plus tard si besoin)
           const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true).or('cuisine_type.ilike.%market%,cuisine_type.ilike.%épicerie%');
@@ -36,7 +32,7 @@ export default function MarketPage() {
               if (r.latitude && r.longitude) {
                 return getDistanceFromLatLonInKm(profile.latitude, profile.longitude, r.latitude, r.longitude) <= 10;
               }
-              return true;
+              return false;
             });
             const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant: any) => restaurant.id));
             setMarkets(filtered.map((market: any) => {

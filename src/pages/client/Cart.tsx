@@ -53,7 +53,7 @@ export default function CartPage() {
       <div className="fixed bottom-0 left-0 w-full bg-foodiz-card border-t border-foodiz-gold/20 p-4 z-40">
         <div className="max-w-lg mx-auto">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-foodiz-gray text-sm">Total</span>
+            <span className="text-foodiz-gray text-sm">Sous-total articles</span>
             <span className="text-foodiz-cream text-2xl font-serif italic font-bold">{subtotal.toFixed(2)} €</span>
           </div>
           <button onClick={() => navigate("/client/checkout")} className="w-full foodiz-btn py-4 flex items-center justify-center gap-2 text-lg">

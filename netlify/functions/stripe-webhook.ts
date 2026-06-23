@@ -90,6 +90,33 @@ async function attributeCampaignConversion(orderId: string, clientId: string, re
   await supabase.from("marketing_campaigns").update({ converted_orders_count: count || 0 }).eq("id", delivery.campaign_id);
 }
 
+async function cancelUnpaidOrder(orderId: string, paymentStatus: string) {
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id,client_id,status,payment_status")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order || order.status !== "pending" || order.payment_status !== "pending") return;
+
+  await Promise.all([
+    supabase.rpc("release_order_advantage", { target_order_id: orderId }),
+    supabase.from("client_delivery_codes").delete().eq("order_id", orderId),
+    supabase.from("delivery_code_verifications").delete().eq("order_id", orderId),
+    supabase.from("order_payments").update({ status: paymentStatus, updated_at: new Date().toISOString() }).eq("order_id", orderId),
+  ]);
+  await supabase
+    .from("orders")
+    .update({
+      status: "cancelled",
+      payment_status: "failed",
+      cancellation_reason: "Paiement non finalisé",
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .eq("payment_status", "pending");
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -114,6 +141,14 @@ const handler: Handler = async (event) => {
         if (session.mode === "subscription" && session.subscription) {
           const subscription = await stripe.subscriptions.retrieve(stripeId(session.subscription) || "");
           await syncPartnerSubscription(subscription, session.id);
+        }
+        break;
+      }
+
+      case "checkout.session.expired": {
+        const session = stripeEvent.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.orderId) {
+          await cancelUnpaidOrder(session.metadata.orderId, "checkout_expired");
         }
         break;
       }
@@ -228,6 +263,14 @@ const handler: Handler = async (event) => {
                 .eq("user_id", order.client_id);
             }
           }
+        }
+        break;
+      }
+
+      case "payment_intent.canceled": {
+        const paymentIntent = stripeEvent.data.object as Stripe.PaymentIntent;
+        if (paymentIntent.metadata?.orderId) {
+          await cancelUnpaidOrder(paymentIntent.metadata.orderId, "cancelled");
         }
         break;
       }

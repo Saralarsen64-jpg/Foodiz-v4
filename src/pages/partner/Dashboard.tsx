@@ -102,7 +102,7 @@ export default function PartnerDashboard() {
             .select(`
               id,
               status,
-              final_client_total_cents,
+              partner_total_cents,
               created_at,
               order_items(quantity)
             `)
@@ -117,7 +117,7 @@ export default function PartnerDashboard() {
         const formattedActive = (activeOrdersData || []).map((order: any) => ({
           id: order.id,
           items: `Commande #${order.id.slice(0, 8)}`,
-          total: (order.final_client_total_cents || 0) / 100,
+          total: (order.partner_total_cents || 0) / 100,
           status: order.status,
           time: order.status === "ready" ? "Prête" : "En cours",
           client: contactByOrder.get(order.id)?.display_name || "Client",
@@ -199,7 +199,7 @@ export default function PartnerDashboard() {
     { label: "Photos produits", icon: UtensilsCrossed, path: "/partner/products", desc: "Éditer les cartes plats" },
     { label: "Foodiz+", icon: Megaphone, path: "/partner/marketing", desc: "Envoyer une campagne locale" },
     { label: "Historique commandes", icon: History, path: "/partner/orders/history", desc: "Revoir toutes les ventes" },
-    { label: "Virements", icon: Wallet, path: "/partner/payouts", desc: "Choisir quotidien ou hebdo" },
+    { label: "Virements", icon: Wallet, path: "/partner/payouts", desc: "Consulter les règlements enregistrés" },
   ];
 
   const sidebarItems = [

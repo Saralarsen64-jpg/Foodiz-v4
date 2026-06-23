@@ -20,6 +20,18 @@ export type RouteResult = {
   warning?: string;
 };
 
+export type GeocodedAddress = {
+  label: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  confidence: number | null;
+  provider: "openrouteservice";
+};
+
 export interface RoutingProvider {
   readonly name: string;
   calculateRoute(
@@ -262,6 +274,125 @@ export class OpenRouteServiceProvider extends BaseRoutingProvider {
       isFallback: false,
     });
   }
+
+  async geocodeAddress(query: string): Promise<GeocodedAddress> {
+    const normalizedQuery = query.trim();
+    if (normalizedQuery.length < 8) {
+      throw new RoutingProviderError(
+        "invalid_address",
+        "L'adresse est trop courte pour être vérifiée",
+        this.name,
+        false,
+      );
+    }
+    if (!this.apiKey) {
+      throw new RoutingProviderError(
+        "missing_api_key",
+        "OPENROUTESERVICE_API_KEY is missing on the server",
+        this.name,
+        false,
+      );
+    }
+
+    const url = new URL(`${this.baseUrl}/geocode/search`);
+    url.searchParams.set("api_key", this.apiKey);
+    url.searchParams.set("text", normalizedQuery);
+    url.searchParams.set("boundary.country", "FR");
+    url.searchParams.set("size", "5");
+
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(
+        this.fetchImplementation,
+        url.toString(),
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json, application/geo+json",
+          },
+        },
+      );
+    } catch (error) {
+      throw new RoutingProviderError(
+        "request_failed",
+        "La vérification de l'adresse est temporairement indisponible",
+        this.name,
+        true,
+        { cause: error },
+      );
+    }
+
+    if (!response.ok) {
+      throw new RoutingProviderError(
+        "upstream_error",
+        `OpenRouteService geocoding returned HTTP ${response.status}`,
+        this.name,
+        response.status === 429 || response.status >= 500,
+      );
+    }
+
+    const payload = await response.json() as any;
+    const feature = payload?.features?.find((candidate: any) => {
+      const coordinates = candidate?.geometry?.coordinates;
+      return (
+        Array.isArray(coordinates)
+        && coordinates.length >= 2
+        && Number.isFinite(Number(coordinates[0]))
+        && Number.isFinite(Number(coordinates[1]))
+        && String(candidate?.properties?.country_a || "").toUpperCase() === "FRA"
+      );
+    });
+    const properties = feature?.properties;
+    const coordinates = feature?.geometry?.coordinates;
+    if (!feature || !properties || !Array.isArray(coordinates)) {
+      throw new RoutingProviderError(
+        "address_not_found",
+        "Cette adresse française n'a pas pu être localisée précisément",
+        this.name,
+        false,
+      );
+    }
+
+    const latitude = Number(coordinates[1]);
+    const longitude = Number(coordinates[0]);
+    assertCoordinate({ latitude, longitude }, "Geocoded address");
+    const postalCode = String(properties.postalcode || "").trim();
+    const city = String(
+      properties.locality
+      || properties.localadmin
+      || properties.county
+      || properties.region
+      || "",
+    ).trim();
+    const address = String(
+      properties.street
+      || properties.name
+      || normalizedQuery,
+    ).trim();
+
+    if (!postalCode || !city) {
+      throw new RoutingProviderError(
+        "incomplete_address",
+        "L'adresse trouvée ne contient pas de code postal et de ville fiables",
+        this.name,
+        false,
+      );
+    }
+
+    return {
+      label: String(properties.label || normalizedQuery).trim(),
+      address,
+      postalCode,
+      city,
+      country: String(properties.country || "France"),
+      latitude,
+      longitude,
+      confidence: Number.isFinite(Number(properties.confidence))
+        ? Number(properties.confidence)
+        : null,
+      provider: "openrouteservice",
+    };
+  }
 }
 
 export class SelfHostedOsrmProvider extends BaseRoutingProvider {
@@ -455,4 +586,8 @@ export async function estimateDeliveryTime(
   destination: RoutingCoordinate,
 ) {
   return (await calculateRoute(origin, destination)).durationSeconds;
+}
+
+export async function geocodeAddress(address: string) {
+  return new OpenRouteServiceProvider().geocodeAddress(address);
 }

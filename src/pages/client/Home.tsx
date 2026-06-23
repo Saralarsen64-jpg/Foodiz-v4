@@ -29,14 +29,6 @@ export default function ClientHome() {
   const [loadingRestos, setLoadingRestos] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchCityName = async (lat: number, lng: number) => {
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-      const data = await response.json();
-      setCityName(data.address.city || data.address.town || data.address.village || "Ma Position");
-    } catch (error) { setCityName("Ma Position"); }
-  };
-
   useEffect(() => {
     const fetchInitialData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -50,10 +42,10 @@ export default function ClientHome() {
         if (count) setUnreadCount(count);
 
         // 3. Localisation
-        const { data: profile } = await supabase.from('profiles').select('latitude, longitude').eq('id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('latitude, longitude, city').eq('id', user.id).single();
         if (profile?.latitude && profile?.longitude) {
           setLocationEnabled(true);
-          fetchCityName(profile.latitude, profile.longitude);
+          setCityName(profile.city || "mon adresse");
           fetchRestaurants(profile.latitude, profile.longitude);
         }
       }
@@ -67,7 +59,7 @@ export default function ClientHome() {
     if (restos) {
       const filteredRestos = restos.filter((r: any) => {
         if (r.latitude && r.longitude) return getDistanceFromLatLonInKm(lat, lng, r.latitude, r.longitude) <= 10;
-        return true;
+        return false;
       });
       const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filteredRestos.map((restaurant: any) => restaurant.id));
       setRestaurants(filteredRestos.map((r: any) => {
@@ -78,16 +70,12 @@ export default function ClientHome() {
     setLoadingRestos(false);
   };
 
-  const enableLocation = async () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude; const lng = position.coords.longitude;
-      setLocationEnabled(true);
-      await fetchCityName(lat, lng);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await supabase.from('profiles').update({ latitude: lat, longitude: lng }).eq('id', user.id);
-      fetchRestaurants(lat, lng);
-    }, () => alert("Veuillez autoriser l'accès à votre position."));
+  const enableLocation = () => navigate("/client/account/addresses");
+
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const query = search.trim();
+    navigate(query ? `/client/search?q=${encodeURIComponent(query)}` : "/client/search");
   };
 
   return (
@@ -131,7 +119,7 @@ export default function ClientHome() {
         
         {/* BARRE DE RECHERCHE FLOTTANTE */}
         <div className="relative -mt-12 z-10">
-          <div className="foodiz-card p-2 flex items-center bg-foodiz-card border border-foodiz-gold/20 shadow-xl shadow-black/50 rounded-2xl">
+          <form onSubmit={submitSearch} className="foodiz-card p-2 flex items-center bg-foodiz-card border border-foodiz-gold/20 shadow-xl shadow-black/50 rounded-2xl">
             <Search className="ml-3 text-foodiz-gray" size={20} />
             <input 
               type="text" 
@@ -140,7 +128,7 @@ export default function ClientHome() {
               placeholder="Un plat, un restaurant..." 
               className="flex-1 bg-transparent text-foodiz-cream px-4 py-2 outline-none text-sm placeholder-foodiz-gray/50" 
             />
-          </div>
+          </form>
         </div>
 
         {/* CARTE POINTS FIDÉLITÉ */}

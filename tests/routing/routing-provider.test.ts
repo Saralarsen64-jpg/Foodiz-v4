@@ -89,6 +89,49 @@ test("une panne fournisseur utilise uniquement la distance à vol d'oiseau", asy
   assert.ok(Math.abs(route.distanceMeters - Math.round(expectedDistance)) <= 1);
 });
 
+test("le géocodage d'adresse française reste entièrement côté serveur", async () => {
+  let requestedUrl = "";
+  const fetchMock = (async (input: string | URL | Request) => {
+    requestedUrl = String(input);
+    return new Response(JSON.stringify({
+      features: [{
+        properties: {
+          label: "5 Avenue Anatole France, 75007 Paris, France",
+          name: "5 Avenue Anatole France",
+          postalcode: "75007",
+          locality: "Paris",
+          country: "France",
+          country_a: "FRA",
+          confidence: 0.98,
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [2.2945, 48.8584],
+        },
+      }],
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }) as typeof fetch;
+  const provider = new OpenRouteServiceProvider(
+    "ors-geocode-secret",
+    "https://api.openrouteservice.org",
+    fetchMock,
+  );
+  const result = await provider.geocodeAddress(
+    "5 Avenue Anatole France, 75007 Paris, France",
+  );
+
+  assert.match(requestedUrl, /\/geocode\/search/);
+  assert.match(requestedUrl, /boundary\.country=FR/);
+  assert.equal(result.postalCode, "75007");
+  assert.equal(result.city, "Paris");
+  assert.equal(result.latitude, 48.8584);
+  assert.equal(result.longitude, 2.2945);
+  assert.equal(result.provider, "openrouteservice");
+});
+
 test("checkout, dispatch et ETA utilisent tous le provider serveur partagé", () => {
   const checkout = readFileSync(
     new URL("../../netlify/functions/create-checkout-session.ts", import.meta.url),

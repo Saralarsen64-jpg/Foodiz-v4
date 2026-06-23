@@ -19,6 +19,7 @@ import { cn } from "../utils/cn";
 
 const ADMIN_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/admin" },
+  { label: "Utilisateurs", icon: UsersRound, path: "/admin/users" },
   { label: "Économie", icon: BarChart3, path: "/admin/economics" },
   { label: "Virements", icon: Wallet, path: "/admin/payouts" },
   { label: "Support", icon: LifeBuoy, path: "/admin/support" },

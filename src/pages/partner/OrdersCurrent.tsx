@@ -31,7 +31,7 @@ export default function PartnerOrdersCurrent() {
       if (!restaurant) return;
       restaurantId = restaurant.id;
       const [{ data }, contacts] = await Promise.all([
-        supabase.from("orders").select("id, status, final_client_total_cents, created_at, order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).eq("payment_status", "completed").in("status", ["pending", "preparing", "ready"]).order("created_at"),
+        supabase.from("orders").select("id, status, partner_total_cents, created_at, order_items(quantity, product:products(name))").eq("restaurant_id", restaurant.id).eq("payment_status", "completed").in("status", ["pending", "preparing", "ready"]).order("created_at"),
         getPartnerOrderCustomers(),
       ]);
       const contactByOrder = new Map(contacts.map((contact) => [contact.order_id, contact]));
@@ -39,7 +39,7 @@ export default function PartnerOrdersCurrent() {
         id: order.id,
         client: contactByOrder.get(order.id)?.display_name || "Client",
         items: (order.order_items || []).map((item: any) => `${item.product?.name || "Produit"} x${item.quantity}`).join(", "),
-        total: order.final_client_total_cents / 100,
+        total: order.partner_total_cents / 100,
         status: order.status,
         time: new Date(order.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
         table: "Livraison",
@@ -127,7 +127,7 @@ export default function PartnerOrdersCurrent() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-foodiz-gray mb-3">
                   <span className="flex items-center gap-1"><Clock size={12} /> {order.time}</span>
-                  <span className="text-foodiz-gold font-semibold">{order.total.toFixed(2).replace(".", ",")} €</span>
+                  <span className="text-foodiz-gold font-semibold" title="Montant partenaire">{order.total.toFixed(2).replace(".", ",")} € partenaire</span>
                 </div>
               </button>
 

@@ -23,15 +23,10 @@ export default function RestaurantsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         // 1. Récupérer la position GPS enregistrée du client
-        const { data: profile } = await supabase.from('profiles').select('latitude, longitude').eq('id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('latitude, longitude, city').eq('id', user.id).single();
         
         if (profile?.latitude && profile?.longitude) {
-          // Trouver le nom de la ville
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${profile.latitude}&lon=${profile.longitude}`);
-            const data = await res.json();
-            setCityName(data.address.city || data.address.town || "votre position");
-          } catch(e) {}
+          setCityName(profile.city || "votre adresse");
 
           // 2. Récupérer les VRAIS restaurants actifs
           const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
@@ -41,7 +36,7 @@ export default function RestaurantsPage() {
               if (r.latitude && r.longitude) {
                 return getDistanceFromLatLonInKm(profile.latitude, profile.longitude, r.latitude, r.longitude) <= 10;
               }
-              return true; // Si le resto n'a pas de GPS, on l'affiche par sécurité (à retirer en prod stricte)
+              return false;
             });
             const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant: any) => restaurant.id));
             setRestaurants(filtered.map((restaurant: any) => {

@@ -183,37 +183,3 @@ export async function createBillingPortalSession(returnUrl: string) {
     throw error;
   }
 }
-
-/**
- * Créer un payout pour les partenaires/livreurs
- */
-export async function createPayout(
-  userId: string,
-  amountCents: number,
-  currency: string = "EUR"
-) {
-  try {
-    const response = await fetch("/api/create-payout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-      },
-      body: JSON.stringify({
-        userId,
-        amountCents,
-        currency,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.payout;
-  } catch (error) {
-    console.error("Erreur création payout:", error);
-    throw error;
-  }
-}

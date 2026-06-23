@@ -33,6 +33,29 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") !== "cancelled") return;
+    const orderId = sessionStorage.getItem("foodiz_pending_checkout_order");
+    if (!orderId) return;
+    void supabase.auth.getSession().then(async ({ data: { session } }) => {
+      try {
+        await fetch("/api/cancel-mobile-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token || ""}`,
+          },
+          body: JSON.stringify({ orderId }),
+        });
+      } finally {
+        sessionStorage.removeItem("foodiz_pending_checkout_order");
+        window.history.replaceState({}, "", "/client/checkout");
+        toast("Paiement annulé. Votre panier a été conservé.");
+      }
+    });
+  }, []);
+
   // Le serveur recalcule les prix, la distance et tous les frais.
   useEffect(() => {
     const loadData = async () => {
@@ -144,7 +167,7 @@ export default function CheckoutPage() {
         throw new Error(checkout.error || "Impossible de créer le paiement");
       }
 
-      clearCart();
+      sessionStorage.setItem("foodiz_pending_checkout_order", checkout.orderId);
       window.location.assign(checkout.url);
 
     } catch (err: any) {

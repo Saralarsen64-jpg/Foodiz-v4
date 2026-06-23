@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { User, Mail, MapPin, ChevronRight, LogOut, Gift, CreditCard, Settings, Camera } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function AccountPage() {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState("");
   const [fullName, setFullName] = useState("Utilisateur");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -37,6 +39,35 @@ export default function AccountPage() {
     navigate("/auth");
   };
 
+  const uploadAvatar = async (file?: File) => {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) {
+      toast.error("Utilisez une image JPG, PNG ou WebP de 3 Mo maximum.");
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Session expirée.");
+      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/avatars/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, {
+        contentType: file.type,
+        cacheControl: "31536000",
+      });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from("profile-media").getPublicUrl(path);
+      const { error: profileError } = await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", user.id);
+      if (profileError) throw profileError;
+      setAvatarUrl(data.publicUrl);
+      toast.success("Photo de profil mise à jour.");
+    } catch (error: any) {
+      toast.error(error.message || "Upload impossible.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const menuItems = [
     { label: "Mes informations", icon: User, path: "/client/account/personal-info" },
     { label: "Mes adresses", icon: MapPin, path: "/client/account/addresses" },
@@ -55,7 +86,7 @@ export default function AccountPage() {
       
       <header className="px-6 pt-12 pb-8 bg-gradient-to-b from-foodiz-card to-foodiz-black border-b border-foodiz-gold/10">
         <div className="max-w-lg mx-auto text-center">
-          <div className="relative w-24 h-24 mx-auto mb-4 group cursor-pointer">
+          <label className="relative block w-24 h-24 mx-auto mb-4 group cursor-pointer">
             <div className="w-full h-full rounded-full bg-foodiz-gradient-gold p-1 shadow-lg shadow-foodiz-gold/20 overflow-hidden">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Profil" className="w-full h-full rounded-full object-cover" />
@@ -66,9 +97,10 @@ export default function AccountPage() {
               )}
             </div>
             <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera size={24} className="text-white" />
+              {uploadingAvatar ? <span className="text-xs text-white">Chargement…</span> : <Camera size={24} className="text-white" />}
             </div>
-          </div>
+            <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingAvatar} onChange={(event) => void uploadAvatar(event.target.files?.[0])} className="hidden" />
+          </label>
           
           <h1 className="foodiz-title text-2xl text-foodiz-cream">{fullName}</h1>
           <p className="text-foodiz-gray text-xs mt-2 flex items-center justify-center gap-1">

@@ -1,6 +1,10 @@
 import { Handler } from "@netlify/functions";
 import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
-import { calculateRoute, type RouteResult } from "./_lib/routingProvider.js";
+import {
+  calculateRoute,
+  calculateStraightLineDistanceMeters,
+  type RouteResult,
+} from "./_lib/routingProvider.js";
 
 const reply = (statusCode: number, body: unknown) => ({
   statusCode,
@@ -68,7 +72,11 @@ async function dispatchRoute(order: any): Promise<RouteResult | null> {
 
 async function eligibleCourier(userId: string) {
   const [{ data: profile }, { data: application }] = await Promise.all([
-    adminSupabase.from("profiles").select("courier_online").eq("id", userId).maybeSingle(),
+    adminSupabase
+      .from("profiles")
+      .select("courier_online,courier_latitude,courier_longitude,courier_location_accuracy_meters,courier_location_updated_at")
+      .eq("id", userId)
+      .maybeSingle(),
     adminSupabase.from("courier_applications").select("status,document_review_status,dispatch_priority_score").eq("user_id", userId).maybeSingle(),
   ]);
   if (
@@ -76,7 +84,26 @@ async function eligibleCourier(userId: string) {
     || application.document_review_status !== "approved"
     || profile?.courier_online !== true
   ) return null;
-  return { priorityScore: Number(application.dispatch_priority_score ?? 100) };
+  const latitude = Number(profile?.courier_latitude);
+  const longitude = Number(profile?.courier_longitude);
+  const locationAge = profile?.courier_location_updated_at
+    ? Date.now() - new Date(profile.courier_location_updated_at).getTime()
+    : Number.POSITIVE_INFINITY;
+  if (
+    !Number.isFinite(latitude)
+    || !Number.isFinite(longitude)
+    || Number(profile?.courier_location_accuracy_meters) > 200
+    || locationAge > 5 * 60 * 1000
+  ) {
+    return {
+      priorityScore: Number(application.dispatch_priority_score ?? 100),
+      location: null,
+    };
+  }
+  return {
+    priorityScore: Number(application.dispatch_priority_score ?? 100),
+    location: { latitude, longitude },
+  };
 }
 
 const handler: Handler = async (event) => {
@@ -85,9 +112,12 @@ const handler: Handler = async (event) => {
     if (!user) return reply(401, { error: "Unauthorized" });
     const eligibility = await eligibleCourier(user.id);
     if (!eligibility) return reply(403, { error: "COURIER_NOT_AVAILABLE" });
+    if (!eligibility.location) {
+      return reply(409, { error: "COURIER_LOCATION_REQUIRED" });
+    }
 
     if (event.httpMethod === "GET") {
-      const deliveryLimit = eligibility.priorityScore >= 90 ? 20 : eligibility.priorityScore >= 70 ? 12 : 6;
+      const deliveryLimit = eligibility.priorityScore >= 90 ? 8 : eligibility.priorityScore >= 70 ? 6 : 4;
       const { data: orders, error } = await adminSupabase
         .from("orders")
         .select("id,delivery_fee_cents,courier_earnings_cents,courier_prime_fund_cents,estimated_time_mins,client_latitude,client_longitude,delivery_route_distance_meters,delivery_route_duration_seconds,delivery_route_provider,delivery_route_is_fallback,restaurant:restaurants(name,address,postal_code,city,latitude,longitude),order_items(quantity)")
@@ -95,19 +125,49 @@ const handler: Handler = async (event) => {
         .is("courier_id", null)
         .eq("payment_status", "completed")
         .order("created_at", { ascending: true })
-        .limit(deliveryLimit);
+        .limit(30);
       if (error) throw error;
-      const deliveries = await Promise.all((orders || []).map(async (order: any) => {
+      const nearbyOrders = (orders || [])
+        .map((order: any) => {
+          const restaurant = Array.isArray(order.restaurant)
+            ? order.restaurant[0]
+            : order.restaurant;
+          const restaurantLocation = {
+            latitude: Number(restaurant?.latitude),
+            longitude: Number(restaurant?.longitude),
+          };
+          if (
+            !Number.isFinite(restaurantLocation.latitude)
+            || !Number.isFinite(restaurantLocation.longitude)
+          ) return null;
+          const pickupAirDistanceMeters = calculateStraightLineDistanceMeters(
+            eligibility.location!,
+            restaurantLocation,
+          );
+          return { order, restaurant, restaurantLocation, pickupAirDistanceMeters };
+        })
+        .filter(Boolean)
+        .filter((candidate: any) => candidate.pickupAirDistanceMeters <= 25_000)
+        .sort((a: any, b: any) => a.pickupAirDistanceMeters - b.pickupAirDistanceMeters)
+        .slice(0, deliveryLimit);
+
+      const deliveries = await Promise.all(nearbyOrders.map(async (candidate: any) => {
+        const { order, restaurant, restaurantLocation } = candidate;
+        const pickupRoute = await calculateRoute(
+          eligibility.location!,
+          restaurantLocation,
+        );
         const route = await dispatchRoute(order);
-        const restaurant = Array.isArray(order.restaurant)
-          ? order.restaurant[0]
-          : order.restaurant;
         return {
           id: order.id,
           delivery_fee_cents: order.delivery_fee_cents,
           courier_earnings_cents: order.courier_earnings_cents,
           courier_prime_fund_cents: order.courier_prime_fund_cents,
           estimated_time_mins: route?.durationMinutes ?? order.estimated_time_mins ?? null,
+          pickup_distance_km: pickupRoute.distanceKm,
+          pickup_time_mins: pickupRoute.durationMinutes,
+          pickup_routing_provider: pickupRoute.provider,
+          pickup_routing_fallback: pickupRoute.isFallback,
           item_count: (order.order_items || []).reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0),
           distance_km: route?.distanceKm ?? null,
           routing_provider: route?.provider ?? null,
@@ -138,6 +198,31 @@ const handler: Handler = async (event) => {
       .limit(1)
       .maybeSingle();
     if (active) return reply(409, { error: "ACTIVE_DELIVERY_EXISTS", orderId: active.id });
+
+    const { data: candidateOrder } = await adminSupabase
+      .from("orders")
+      .select("id,restaurant:restaurants(latitude,longitude)")
+      .eq("id", orderId)
+      .eq("status", "ready")
+      .is("courier_id", null)
+      .eq("payment_status", "completed")
+      .maybeSingle();
+    const candidateRestaurant = Array.isArray(candidateOrder?.restaurant)
+      ? candidateOrder?.restaurant[0]
+      : candidateOrder?.restaurant;
+    const candidateLatitude = Number(candidateRestaurant?.latitude);
+    const candidateLongitude = Number(candidateRestaurant?.longitude);
+    if (
+      !candidateOrder
+      || !Number.isFinite(candidateLatitude)
+      || !Number.isFinite(candidateLongitude)
+      || calculateStraightLineDistanceMeters(eligibility.location, {
+        latitude: candidateLatitude,
+        longitude: candidateLongitude,
+      }) > 25_000
+    ) {
+      return reply(409, { error: "DELIVERY_OUT_OF_RANGE" });
+    }
 
     const { data: claimedId, error: claimError } = await adminSupabase.rpc("claim_courier_delivery", { target_order_id: orderId, target_courier_id: user.id });
     if (claimError) throw claimError;

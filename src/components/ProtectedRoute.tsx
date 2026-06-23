@@ -34,7 +34,7 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role,status")
         .eq("id", currentSession.user.id)
         .single();
       if (profileError || !profile) {
@@ -46,6 +46,14 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
       }
       const currentRole = profile.role as AppRole;
       setRole(currentRole);
+      if (currentRole !== "admin" && ["suspended", "rejected"].includes(profile.status || "")) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setRole(null);
+        setValidationRedirect(null);
+        setPrelaunchBlocked(false);
+        return;
+      }
 
       if (currentRole !== "admin") {
         const { data: prelaunchProfile } = await supabase
@@ -79,10 +87,16 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
       if (currentRole === "courier") {
         const { data: application } = await supabase
           .from("courier_applications")
-          .select("status")
+          .select("status,document_review_status")
           .eq("user_id", currentSession.user.id)
           .maybeSingle();
-        setValidationRedirect(!application ? "/courier/onboarding" : application.status === "validated" ? null : "/courier/validation-status");
+        setValidationRedirect(
+          !application
+            ? "/courier/onboarding"
+            : application.status === "validated" && application.document_review_status === "approved"
+              ? null
+              : "/courier/validation-status",
+        );
         return;
       }
 

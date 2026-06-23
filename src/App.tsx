@@ -88,6 +88,7 @@ import AdminReferralsPage from "./pages/admin/Referrals";
 import AdminSettlementDetail from "./pages/admin/SettlementDetail";
 import AdminPartnerDetail from "./pages/admin/PartnerDetail";
 import AdminPrelaunch from "./pages/admin/Prelaunch";
+import AdminUsers from "./pages/admin/Users";
 
 export default function App() {
   return (
@@ -193,6 +194,7 @@ export default function App() {
         <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
         <Route path="/admin/referrals" element={<AdminReferralsPage />} />
         <Route path="/admin/prelaunch" element={<AdminPrelaunch />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
       </Route>
 
       {/* ─── Catch all ───────────────────────────────────────────── */}

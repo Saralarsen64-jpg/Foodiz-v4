@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, Save, User, Mail, Phone, MapPin, Hash, CheckCircle, AlertCircle } from "lucide-react";
+import { ChevronLeft, Save, User, Mail, Phone, MapPin, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function PersonalInfoPage() {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ export default function PersonalInfoPage() {
   
   const [formData, setFormData] = useState({ 
     fullName: "", email: "", phone: "", 
-    address: "", postalCode: "", city: "" 
+    address: "", postalCode: "", city: ""
   });
 
   useEffect(() => {
@@ -47,9 +47,6 @@ export default function PersonalInfoPage() {
       .update({ 
         full_name: formData.fullName, 
         phone: formData.phone, 
-        address: formData.address,
-        postal_code: formData.postalCode,
-        city: formData.city
       })
       .eq('id', userId);
 
@@ -94,17 +91,11 @@ export default function PersonalInfoPage() {
           </div>
           <div className="foodiz-card p-4 flex items-center gap-3">
             <MapPin size={16} className="text-foodiz-gold" />
-            <input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Adresse postale" required />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="foodiz-card p-4 flex items-center gap-3">
-              <Hash size={16} className="text-foodiz-gold" />
-              <input value={formData.postalCode} onChange={e => setFormData({...formData, postalCode: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Code Postal" required />
+            <div className="flex-1">
+              <p className="text-sm text-foodiz-cream">{[formData.address, formData.postalCode, formData.city].filter(Boolean).join(", ") || "Aucune adresse vérifiée"}</p>
+              <p className="mt-1 text-[10px] text-foodiz-gray">L'adresse de livraison se modifie depuis l'espace sécurisé afin de recalculer ses coordonnées.</p>
             </div>
-            <div className="foodiz-card p-4 flex items-center gap-3">
-              <MapPin size={16} className="text-foodiz-gold" />
-              <input value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Ville" required />
-            </div>
+            <button type="button" onClick={() => navigate("/client/account/addresses")} className="text-xs text-foodiz-gold">Modifier</button>
           </div>
           <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4 flex items-center justify-center gap-2 disabled:opacity-50 mt-6">
             <Save size={18} /> {loading ? "Enregistrement..." : "Enregistrer"}

@@ -12,6 +12,8 @@ import {
   Save,
   ShieldAlert,
   UserCheck,
+  ImagePlus,
+  Loader,
 } from "lucide-react";
 import Logo from "../../components/Logo";
 import { supabase } from "../../lib/supabase";
@@ -42,6 +44,8 @@ export default function PartnerSettings() {
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [legacyBankAccount, setLegacyBankAccount] = useState<{ iban: string; holder_name: string } | null>(null);
   const [form, setForm] = useState<EstablishmentForm>(EMPTY_FORM);
+  const [coverImage, setCoverImage] = useState("");
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -55,7 +59,7 @@ export default function PartnerSettings() {
       const [{ data: restaurant }, { data: bankAccount }] = await Promise.all([
         supabase
           .from("restaurants")
-          .select("id,name,phone,address,postal_code,city,description")
+          .select("id,name,phone,address,postal_code,city,description,cover_image")
           .eq("owner_id", user.id)
           .maybeSingle(),
         supabase
@@ -75,6 +79,7 @@ export default function PartnerSettings() {
           city: restaurant.city || "",
           description: restaurant.description || "",
         });
+        setCoverImage(restaurant.cover_image || "");
       }
       if (bankAccount?.iban) setLegacyBankAccount(bankAccount);
       setLoading(false);
@@ -96,23 +101,54 @@ export default function PartnerSettings() {
     }
 
     setSaving(true);
-    const { error } = await supabase
-      .from("restaurants")
-      .update({
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        address: form.address.trim(),
-        postal_code: form.postalCode.trim(),
-        city: form.city.trim(),
-        description: form.description.trim(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", restaurantId);
-
-    setMessage(error
-      ? { type: "error", text: "Impossible d'enregistrer les modifications." }
-      : { type: "success", text: "Informations de l'établissement mises à jour." });
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data: restaurant } = await supabase.from("restaurants").select("siret").eq("id", restaurantId).single();
+    const response = await fetch("/api/address-management", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token || ""}`,
+      },
+      body: JSON.stringify({
+        action: "save",
+        ...form,
+        siret: restaurant?.siret || "",
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setMessage(response.ok
+      ? { type: "success", text: "Informations et coordonnées de l'établissement mises à jour." }
+      : { type: "error", text: payload.error || "Impossible d'enregistrer les modifications." });
     setSaving(false);
+  };
+
+  const uploadCover = async (file?: File) => {
+    if (!file || !restaurantId) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setMessage({ type: "error", text: "Utilisez une image JPG, PNG ou WebP de 5 Mo maximum." });
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Session expirée.");
+      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/${restaurantId}/cover/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("restaurant-media").upload(path, file, {
+        cacheControl: "31536000",
+        contentType: file.type,
+      });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from("restaurant-media").getPublicUrl(path);
+      const { error: updateError } = await supabase.from("restaurants").update({ cover_image: data.publicUrl }).eq("id", restaurantId);
+      if (updateError) throw updateError;
+      setCoverImage(data.publicUrl);
+      setMessage({ type: "success", text: "Photo de couverture mise à jour." });
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message || "Upload impossible." });
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   const maskedIban = legacyBankAccount?.iban
@@ -180,6 +216,15 @@ export default function PartnerSettings() {
 
           {loading ? <p className="text-sm text-foodiz-gray">Chargement...</p> : (
             <div className="space-y-5">
+              <div className="space-y-3">
+                <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Photo de couverture</label>
+                {coverImage && <img src={coverImage} alt="Couverture de l'établissement" className="h-52 w-full rounded-2xl border border-foodiz-gold/15 object-cover" />}
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-foodiz-gold/30 bg-foodiz-gold/5 px-4 py-3 text-sm text-foodiz-gold hover:bg-foodiz-gold/10">
+                  {uploadingCover ? <Loader size={17} className="animate-spin"/> : <ImagePlus size={17}/>}
+                  {uploadingCover ? "Chargement..." : "Choisir une photo"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingCover} onChange={(event) => void uploadCover(event.target.files?.[0])} className="hidden" />
+                </label>
+              </div>
               <div className="grid md:grid-cols-2 gap-5">
                 <Field label="Nom de l'établissement" value={form.name} onChange={(value) => updateField("name", value)} required />
                 <Field label="Téléphone" value={form.phone} onChange={(value) => updateField("phone", value)} type="tel" />

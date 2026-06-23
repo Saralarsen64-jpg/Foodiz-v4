@@ -11,6 +11,7 @@ import {
   foodizText,
 } from '@/components/foodiz-ui';
 import { supabase } from '@/lib/supabase';
+import { foodizApi } from '@/lib/api';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
@@ -77,33 +78,33 @@ export default function AddressScreen() {
       Alert.alert('Adresse incomplète', 'Renseignez l’adresse, le code postal et la ville.');
       return;
     }
-    if (latitude === null || longitude === null) {
-      Alert.alert(
-        'Coordonnées nécessaires',
-        'Utilisez votre position actuelle afin de calculer correctement la livraison.',
-      );
-      return;
-    }
-
     setLoading(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        address: address.trim(),
-        postal_code: postalCode.trim(),
-        city: city.trim(),
-        latitude,
-        longitude,
-      })
-      .eq('id', session.user.id);
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Enregistrement impossible', error.message);
-      return;
+    try {
+      const result = await foodizApi<{
+        coordinates: { latitude: number; longitude: number };
+      }>('address-management', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'save',
+          label: 'Maison',
+          address: address.trim(),
+          postalCode: postalCode.trim(),
+          city: city.trim(),
+          makeDefault: true,
+        }),
+      });
+      setLatitude(result.coordinates.latitude);
+      setLongitude(result.coordinates.longitude);
+      Alert.alert('Adresse vérifiée', 'Les frais de livraison pourront être calculés.');
+      router.back();
+    } catch (error) {
+      Alert.alert(
+        'Enregistrement impossible',
+        error instanceof Error ? error.message : "L'adresse n'a pas pu être vérifiée.",
+      );
+    } finally {
+      setLoading(false);
     }
-    Alert.alert('Adresse enregistrée', 'Les frais de livraison pourront être calculés.');
-    router.back();
   }
 
   return (

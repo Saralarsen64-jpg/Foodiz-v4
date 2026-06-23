@@ -10,6 +10,7 @@ import {
 } from '@/components/foodiz-ui';
 import { foodizApi } from '@/lib/api';
 import { colors } from '@/theme/colors';
+import { updateCourierPresence } from '@/lib/courier-presence';
 
 type Delivery = {
   id: string;
@@ -19,6 +20,8 @@ type Delivery = {
   estimated_time_mins: number | null;
   item_count: number;
   distance_km: number | null;
+  pickup_distance_km: number | null;
+  pickup_time_mins: number | null;
   restaurant: {
     name: string | null;
     address: string | null;
@@ -34,6 +37,7 @@ export default function CourierDeliveriesScreen() {
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
+      await updateCourierPresence(true);
       const data = await foodizApi<{ deliveries: Delivery[] }>('courier-deliveries');
       setDeliveries(data.deliveries);
     } catch (error) {
@@ -49,7 +53,8 @@ export default function CourierDeliveriesScreen() {
 
   useEffect(() => {
     let active = true;
-    void foodizApi<{ deliveries: Delivery[] }>('courier-deliveries')
+    void updateCourierPresence(true)
+      .then(() => foodizApi<{ deliveries: Delivery[] }>('courier-deliveries'))
       .then((data) => {
         if (active) setDeliveries(data.deliveries);
       })
@@ -105,9 +110,18 @@ export default function CourierDeliveriesScreen() {
               </Text>
               <Text style={foodizText.body}>
                 {delivery.item_count} article(s) ·{' '}
-                {delivery.distance_km === null
-                  ? 'distance à confirmer'
-                  : `${delivery.distance_km.toFixed(1)} km`}
+                {delivery.pickup_distance_km === null
+                  ? 'distance de retrait à confirmer'
+                  : `${delivery.pickup_distance_km.toFixed(1)} km jusqu’au restaurant`}
+              </Text>
+              <Text style={foodizText.body}>
+                {delivery.pickup_time_mins === null
+                  ? 'Temps de retrait à confirmer'
+                  : `${delivery.pickup_time_mins} min jusqu’au retrait`}
+                {' · '}
+                {delivery.estimated_time_mins === null
+                  ? 'livraison à confirmer'
+                  : `${delivery.estimated_time_mins} min de livraison`}
               </Text>
               <Text style={[foodizText.heading, foodizText.gold]}>
                 {(

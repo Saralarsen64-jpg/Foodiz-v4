@@ -1,17 +1,28 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Download, MapPin, Navigation, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import { getOrder } from "../../lib/orders";
 import { supabase } from "../../lib/supabase";
 import { downloadFinancialDocument } from "../../lib/financialDocuments";
+import { useCart } from "../../context/CartContext";
 
 export default function OrderDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [params] = useSearchParams();
+  const { clearCart } = useCart();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [receipt, setReceipt] = useState<any>(null);
+  const paymentSucceeded = params.get("payment") === "success";
+
+  useEffect(() => {
+    if (paymentSucceeded) {
+      clearCart();
+      sessionStorage.removeItem("foodiz_pending_checkout_order");
+    }
+  }, [paymentSucceeded]);
 
   useEffect(() => {
     if (!id) return;

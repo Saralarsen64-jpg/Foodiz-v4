@@ -22,9 +22,11 @@ const handler: Handler = async (event) => {
         await Promise.all([
           adminSupabase
             .from("restaurants")
-            .select("id,name,cuisine_type,city,address,postal_code,cover_image")
+            .select("id,name,cuisine_type,city,address,postal_code,cover_image,latitude,longitude")
             .eq("id", restaurantId)
             .eq("is_active", true)
+            .not("latitude", "is", null)
+            .not("longitude", "is", null)
             .single(),
           adminSupabase
             .from("products")
@@ -55,6 +57,8 @@ const handler: Handler = async (event) => {
       .from("restaurants")
       .select("id,name,cuisine_type,city,address,postal_code,cover_image")
       .eq("is_active", true)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
       .order("name");
     if (error) throw error;
 

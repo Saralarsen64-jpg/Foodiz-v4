@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   }, [ledger]);
 
   const cards = [
-    ["Utilisateurs", stats.users, Users, "text-blue-400", "/admin"],
+    ["Utilisateurs", stats.users, Users, "text-blue-400", "/admin/users"],
     ["Commandes", stats.orders, ShoppingBag, "text-foodiz-gold", "/admin/orders"],
     ["Encaissé clients", euros(stats.collected), Euro, "text-foodiz-green", "/admin/economics"],
     ["À reverser", euros(stats.payable), FileText, "text-amber-300", "/admin/payouts"],

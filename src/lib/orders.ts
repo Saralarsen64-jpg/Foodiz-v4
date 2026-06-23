@@ -43,22 +43,6 @@ export async function getClientOrders(clientId: string) {
 }
 
 /**
- * Met à jour le statut d'une commande
- */
-export async function updateOrderStatus(orderId: string, status: string) {
-  const { error } = await supabase
-    .from('orders')
-    .update({ 
-      status,
-      updated_at: new Date().toISOString(),
-      ...(status === 'delivered' && { delivered_at: new Date().toISOString() })
-    })
-    .eq('id', orderId);
-
-  if (error) throw error;
-}
-
-/**
  * Récupère les commandes actives d'un restaurant (partenaire)
  */
 export async function getRestaurantActiveOrders(restaurantId: string) {

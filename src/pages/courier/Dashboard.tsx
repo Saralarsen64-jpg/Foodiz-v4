@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowUpRight, Bike, CheckCircle2, Clock3, MapPinned, Navigation, Power, Sparkles, WalletCards } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import CourierShell from "../../components/CourierShell";
+import { updateCourierPresence } from "../../lib/courierPresence";
+import toast from "react-hot-toast";
 
 export default function CourierDashboard() {
   const navigate = useNavigate();
@@ -26,10 +28,15 @@ export default function CourierDashboard() {
     setTodayDeliveries(delivered?.length || 0); setTodayEarnings((delivered || []).reduce((sum, order) => sum + (order.delivery_fee_cents || 0) + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0) - (order.courier_delay_penalty_cents || 0), 0) / 100);
     setActiveOrder(active);
     if (profile?.courier_online) {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch("/api/courier-deliveries", { headers: { Authorization: `Bearer ${session?.access_token || ""}` } });
-      const payload = await response.json().catch(() => ({}));
-      setAvailable(response.ok ? payload.deliveries?.length || 0 : 0);
+      try {
+        await updateCourierPresence(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        const response = await fetch("/api/courier-deliveries", { headers: { Authorization: `Bearer ${session?.access_token || ""}` } });
+        const payload = await response.json().catch(() => ({}));
+        setAvailable(response.ok ? payload.deliveries?.length || 0 : 0);
+      } catch {
+        setAvailable(0);
+      }
     } else {
       setAvailable(0);
     }
@@ -37,7 +44,16 @@ export default function CourierDashboard() {
 
   useEffect(() => { void load(); const interval = window.setInterval(() => void load(), 20000); return () => window.clearInterval(interval); }, []);
 
-  const toggleOnline = async () => { const next = !online; const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { error } = await supabase.from("profiles").update({ courier_online: next }).eq("id", user.id); if (!error) { setOnline(next); if (!next) setAvailable(0); else void load(); } };
+  const toggleOnline = async () => {
+    const next = !online;
+    try {
+      await updateCourierPresence(next);
+      setOnline(next);
+      if (!next) setAvailable(0); else void load();
+    } catch (error: any) {
+      toast.error(error.message || "Impossible de modifier votre disponibilité.");
+    }
+  };
 
   return <CourierShell>
     <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.18),rgba(17,17,17,0.97)_38%,rgba(5,5,5,1))] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.55)]">

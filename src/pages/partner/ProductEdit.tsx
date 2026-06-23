@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, Save, AlertCircle, CheckCircle } from "lucide-react";
+import { ChevronLeft, Save, AlertCircle, CheckCircle, ImagePlus, Loader } from "lucide-react";
 import Logo from "../../components/Logo";
 
 export default function ProductEditPage() {
@@ -13,6 +13,7 @@ export default function ProductEditPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -92,6 +93,35 @@ export default function ProductEditPage() {
     setSaving(false);
   };
 
+  const uploadImage = async (file?: File) => {
+    if (!file || !restaurantId) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setMessage({ type: "error", text: "Utilisez une image JPG, PNG ou WebP de 5 Mo maximum." });
+      return;
+    }
+    setUploadingImage(true);
+    setMessage(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Session expirée.");
+      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/${restaurantId}/products/${crypto.randomUUID()}.${extension}`;
+      const { error } = await supabase.storage.from("restaurant-media").upload(path, file, {
+        cacheControl: "31536000",
+        contentType: file.type,
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("restaurant-media").getPublicUrl(path);
+      setFormData((current) => ({ ...current, image_url: data.publicUrl }));
+      setMessage({ type: "success", text: "Photo chargée. Enregistrez le produit pour la publier." });
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message || "Upload impossible." });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gray">Chargement...</div>;
 
   return (
@@ -155,12 +185,13 @@ export default function ProductEditPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">URL de l'image</label>
-              <input 
-                type="text" value={formData.image_url} onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors"
-                placeholder="https://..."
-              />
+              <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Photo du produit</label>
+              {formData.image_url && <img src={formData.image_url} alt="Aperçu du produit" className="h-44 w-full rounded-2xl border border-foodiz-gold/15 object-cover" />}
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-foodiz-gold/30 bg-foodiz-gold/5 px-4 py-3 text-sm text-foodiz-gold hover:bg-foodiz-gold/10">
+                {uploadingImage ? <Loader size={17} className="animate-spin"/> : <ImagePlus size={17}/>}
+                {uploadingImage ? "Chargement..." : "Choisir une photo"}
+                <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingImage} onChange={(event) => void uploadImage(event.target.files?.[0])} className="hidden" />
+              </label>
             </div>
 
             <div className="space-y-2">

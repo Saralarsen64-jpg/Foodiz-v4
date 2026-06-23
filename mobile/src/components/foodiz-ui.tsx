@@ -2,6 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -42,8 +43,11 @@ export function FoodizScreen({
 export function FoodizBrand({ subtitle }: { subtitle?: string }) {
   return (
     <View style={styles.brandBlock}>
-      <Text style={styles.brand}>Foodiz</Text>
-      <View style={styles.brandLine} />
+      <Image
+        source={require('../../assets/images/foodiz-app-icon.png')}
+        style={styles.brandImage}
+        resizeMode="contain"
+      />
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
@@ -164,17 +168,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginVertical: 24,
   },
-  brand: {
-    color: colors.gold,
-    fontSize: 40,
-    fontFamily: 'PlayfairDisplay_600SemiBold_Italic',
-    letterSpacing: 1,
-  },
-  brandLine: {
-    width: 92,
-    height: 1,
-    backgroundColor: colors.gold,
-    opacity: 0.65,
+  brandImage: {
+    width: 132,
+    height: 132,
+    borderRadius: 30,
   },
   subtitle: {
     color: colors.cream,
