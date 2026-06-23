@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 export default function PrelaunchConfirmed() {
   const [params] = useSearchParams();
   const courier = params.get("role") === "livreur";
+  const partner = params.get("role") === "partenaire";
   return (
     <main className="min-h-screen kraft-paper-bg px-5 py-10 flex items-center justify-center text-foodiz-black">
       <section className="w-full max-w-xl rounded-[2rem] border border-black/15 bg-[#f8ead2]/90 shadow-[0_30px_100px_rgba(0,0,0,.28)] backdrop-blur p-7 sm:p-10 text-center">
@@ -14,15 +15,17 @@ export default function PrelaunchConfirmed() {
           <MailCheck size={36} />
         </div>
         <p className="mt-7 text-[11px] uppercase tracking-[.28em] font-bold text-black/55">Pré-inscription confirmée</p>
-        <h1 className="font-serif text-4xl sm:text-5xl leading-tight mt-3">{courier ? "Votre dossier est transmis." : "Votre compte Foodiz est prêt."}</h1>
+        <h1 className="font-serif text-4xl sm:text-5xl leading-tight mt-3">{courier || partner ? "Votre dossier est transmis." : "Votre pré-inscription est enregistrée."}</h1>
         <p className="mt-5 text-black/65 leading-relaxed">
           {courier
             ? "Foodiz va vérifier votre identité, votre SIRET et votre justificatif d’activité. Aucune course ni aucun revenu ne seront accessibles avant validation."
-            : "L’accès sera ouvert dès le lancement officiel. Vous recevrez votre lien personnel d’activation par email."}
+            : partner
+              ? "Foodiz va vérifier l’activité, l’assurance et les justificatifs réglementaires applicables. Votre établissement ne pourra pas vendre avant validation par l’équipe Foodiz et l’ouverture de sa ville."
+              : "Foodiz mijote son arrivée dans votre ville. Vous serez informé par e-mail lors du lancement, et vous pouvez suivre les nouvelles sur Instagram @foodiz_off."}
         </p>
         <div className="mt-8 rounded-2xl bg-black/[.06] border border-black/10 p-4 flex items-center gap-3 text-left">
           <Clock3 size={20} className="shrink-0" />
-          <p className="text-sm text-black/65">{courier ? "En cas de document illisible ou non conforme, l’administrateur pourra demander son remplacement et conservera un commentaire de contrôle." : "Aucune action supplémentaire n’est nécessaire pour le moment."}</p>
+          <p className="text-sm text-black/65">{courier || partner ? "En cas de document illisible ou non conforme, l’administrateur pourra demander son remplacement et conservera un commentaire de contrôle." : "Aucune action supplémentaire n’est nécessaire pour le moment."}</p>
         </div>
         <Link to="/waitlist" className="inline-block mt-8 text-sm font-bold underline underline-offset-4">
           Retour à la page d’attente

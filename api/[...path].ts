@@ -8,6 +8,8 @@ import {
 } from "../netlify/functions/_lib/auth.js";
 import { handler as adminPrelaunch } from "../netlify/functions/admin-prelaunch.js";
 import { handler as adminCourierApplications } from "../netlify/functions/admin-courier-applications.js";
+import { handler as adminPartnerApplications } from "../netlify/functions/admin-partner-applications.js";
+import { handler as adminServiceAreas } from "../netlify/functions/admin-service-areas.js";
 import { handler as adminOrderAction } from "../netlify/functions/admin-order-action.js";
 import { handler as addressManagement } from "../netlify/functions/address-management.js";
 import { handler as cancelSubscription } from "../netlify/functions/cancel-subscription.js";
@@ -27,9 +29,11 @@ import { handler as foodizPlus } from "../netlify/functions/foodiz-plus.js";
 import { handler as getSubscription } from "../netlify/functions/get-subscription.js";
 import { handler as launchStatus } from "../netlify/functions/launch-status.js";
 import { handler as partnerOrderAction } from "../netlify/functions/partner-order-action.js";
+import { handler as partnerDocuments } from "../netlify/functions/partner-documents.js";
 import { handler as prelaunchActivate } from "../netlify/functions/prelaunch-activate.js";
 import { handler as prelaunchRegister } from "../netlify/functions/prelaunch-register.js";
 import { handler as prelaunchCourierDocuments } from "../netlify/functions/prelaunch-courier-documents.js";
+import { handler as prelaunchPartnerDocuments } from "../netlify/functions/prelaunch-partner-documents.js";
 import { handler as rotateAdvantages } from "../netlify/functions/rotate-advantages.js";
 import { handler as sendLaunchAccess } from "../netlify/functions/send-launch-access.js";
 import { handler as stripeWebhook } from "../netlify/functions/stripe-webhook.js";
@@ -40,6 +44,8 @@ import { handler as verifyDeliveryCode } from "../netlify/functions/verify-deliv
 const handlers: Record<string, Handler> = {
   "address-management": addressManagement,
   "admin/courier-applications": adminCourierApplications,
+  "admin/partner-applications": adminPartnerApplications,
+  "admin/service-areas": adminServiceAreas,
   "admin/order-action": adminOrderAction,
   "admin/prelaunch": adminPrelaunch,
   "admin/prelaunch/send-launch-access": sendLaunchAccess,
@@ -60,8 +66,10 @@ const handlers: Record<string, Handler> = {
   "get-subscription": getSubscription,
   "launch-status": launchStatus,
   "partner-order-action": partnerOrderAction,
+  "partner-documents": partnerDocuments,
   "prelaunch/activate": prelaunchActivate,
   "prelaunch/courier-documents": prelaunchCourierDocuments,
+  "prelaunch/partner-documents": prelaunchPartnerDocuments,
   "prelaunch/register": prelaunchRegister,
   "rotate-advantages": rotateAdvantages,
   "stripe-webhook": stripeWebhook,
@@ -78,6 +86,7 @@ const publicPrelaunchRoutes = new Set([
   "launch-status",
   "prelaunch/register",
   "prelaunch/courier-documents",
+  "prelaunch/partner-documents",
   "prelaunch/activate",
   "stripe-webhook",
   "rotate-advantages",

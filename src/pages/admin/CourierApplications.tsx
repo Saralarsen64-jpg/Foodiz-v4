@@ -6,7 +6,9 @@ import {
   ExternalLink,
   FileCheck2,
   FileText,
+  MapPin,
   RefreshCw,
+  Search,
   ShieldCheck,
   XCircle,
 } from "lucide-react";
@@ -43,6 +45,9 @@ type CourierApplicationRow = {
   business_identity_confirmed?: boolean;
   dispatch_priority_score?: number;
   created_at: string | null;
+  service_area_id?: string | null;
+  service_area?: { id: string; city: string; department_code?: string | null; status: string } | null;
+  prelaunch?: { access_enabled: boolean } | null;
   profiles?: { first_name?: string | null; last_name?: string | null; email?: string | null; phone?: string | null } | null;
   documents: CourierDocument[];
 };
@@ -77,6 +82,8 @@ export default function AdminCourierApplicationsPage() {
   const [businessChecks, setBusinessChecks] = useState<Record<string, boolean>>({});
   const [replacementDocuments, setReplacementDocuments] = useState<Record<string, DocumentType[]>>({});
   const [replacementLinks, setReplacementLinks] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+  const [city, setCity] = useState("all");
 
   const loadItems = async () => {
     setLoading(true);
@@ -137,6 +144,39 @@ export default function AdminCourierApplicationsPage() {
     });
   };
 
+  const setAccess = async (item: CourierApplicationRow, enabled: boolean) => {
+    setBusy(item.id);
+    try {
+      await adminCourierRequest("POST", {
+        action: "set_access",
+        userId: item.user_id,
+        enabled,
+      });
+      toast.success(enabled ? "Accès pilote livreur autorisé." : "Accès pilote retiré.");
+      await loadItems();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const cities = useMemo(
+    () => Array.from(new Set(items.map((item) => item.service_area?.city || item.city).filter(Boolean) as string[])).sort(),
+    [items],
+  );
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return items.filter((item) => {
+      const itemCity = item.service_area?.city || item.city || "";
+      return (city === "all" || itemCity === city) && (
+        !query
+        || [item.legal_name, item.siret, itemCity, item.profiles?.email]
+          .some((value) => value?.toLowerCase().includes(query))
+      );
+    });
+  }, [city, items, search]);
+
   const stats = useMemo(() => ({
     pending: items.filter((item) => ["pending", "missing_documents"].includes(item.status || "pending")).length,
     validated: items.filter((item) => item.status === "validated").length,
@@ -159,7 +199,15 @@ export default function AdminCourierApplicationsPage() {
         ))}
       </section>
 
-      <div className="flex justify-end">
+      <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
+        <label className="foodiz-card flex items-center gap-3 px-4 py-3">
+          <Search size={17} className="text-foodiz-gold" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom, ville, email ou SIRET" className="w-full bg-transparent text-sm outline-none placeholder:text-foodiz-gray" />
+        </label>
+        <select value={city} onChange={(event) => setCity(event.target.value)} className="foodiz-card bg-foodiz-card px-4 py-3 text-sm text-foodiz-cream outline-none">
+          <option value="all">Toutes les villes</option>
+          {cities.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
         <button onClick={() => void loadItems()} className="flex items-center gap-2 text-xs text-foodiz-gold">
           <RefreshCw size={15} />Actualiser
         </button>
@@ -167,11 +215,11 @@ export default function AdminCourierApplicationsPage() {
 
       {loading ? (
         <div className="foodiz-card animate-pulse p-8 text-center text-foodiz-gray">Chargement des dossiers privés…</div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="foodiz-card p-5 text-sm text-foodiz-gray">Aucune demande livreur.</div>
       ) : (
         <section className="grid gap-5 xl:grid-cols-2">
-          {items.map((item) => {
+          {filtered.map((item) => {
             const fullName = [item.profiles?.first_name, item.profiles?.last_name].filter(Boolean).join(" ");
             const documentsComplete = item.documents.length === 3;
             const legalComplete = Boolean(item.legal_name && item.siret && item.address && item.postal_code);
@@ -184,7 +232,7 @@ export default function AdminCourierApplicationsPage() {
                       <Bike size={18} className="text-foodiz-gold" />
                       <h2 className="font-semibold text-foodiz-cream">{fullName || item.profiles?.email || "Livreur"}</h2>
                     </div>
-                    <p className="mt-1 text-xs text-foodiz-gray">{item.city || "Ville non précisée"} · {item.vehicle_type || "Véhicule non précisé"}</p>
+                    <p className="mt-1 text-xs text-foodiz-gray">{item.service_area?.city || item.city || "Ville non précisée"} · {item.vehicle_type || "Véhicule non précisé"}</p>
                     <p className="mt-1 text-[10px] text-foodiz-gray">{item.profiles?.email} · {item.profiles?.phone}</p>
                   </div>
                   <span className={`rounded-full border px-3 py-1 text-[10px] uppercase ${
@@ -196,6 +244,17 @@ export default function AdminCourierApplicationsPage() {
                   }`}>
                     {item.document_review_status || item.status || "pending"}
                   </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs">
+                  <div>
+                    <p className="flex items-center gap-2 text-foodiz-gray"><MapPin size={13} />Ville opérationnelle</p>
+                    <p className="mt-1 text-foodiz-cream">{item.service_area?.status || "non classée"}</p>
+                  </div>
+                  <div>
+                    <p className="text-foodiz-gray">Accès pilote</p>
+                    <p className={item.prelaunch?.access_enabled ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.prelaunch?.access_enabled ? "Autorisé" : "Bloqué"}</p>
+                  </div>
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs text-foodiz-gray">
@@ -276,6 +335,11 @@ export default function AdminCourierApplicationsPage() {
                     Refuser
                   </button>
                 </div>
+                {item.status === "validated" && item.document_review_status === "approved" && (
+                  <button disabled={busy === item.id} onClick={() => void setAccess(item, !item.prelaunch?.access_enabled)} className="mt-3 w-full rounded-xl border border-foodiz-gold/20 px-3 py-3 text-xs text-foodiz-gold disabled:opacity-40">
+                    {item.prelaunch?.access_enabled ? "Retirer l’accès pilote" : "Autoriser l’accès pilote aux courses"}
+                  </button>
+                )}
               </article>
             );
           })}

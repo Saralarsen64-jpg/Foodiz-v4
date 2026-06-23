@@ -72,6 +72,7 @@ import WaitlistPage from "./pages/prelaunch/Waitlist";
 import PrelaunchConfirmed from "./pages/prelaunch/Confirmed";
 import ActivatePrelaunch from "./pages/prelaunch/Activate";
 import PrelaunchCourierDocuments from "./pages/prelaunch/CourierDocuments";
+import PrelaunchPartnerDocuments from "./pages/prelaunch/PartnerDocuments";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/Dashboard";
@@ -89,6 +90,7 @@ import AdminSettlementDetail from "./pages/admin/SettlementDetail";
 import AdminPartnerDetail from "./pages/admin/PartnerDetail";
 import AdminPrelaunch from "./pages/admin/Prelaunch";
 import AdminUsers from "./pages/admin/Users";
+import AdminServiceAreas from "./pages/admin/ServiceAreas";
 
 export default function App() {
   return (
@@ -101,6 +103,7 @@ export default function App() {
       <Route path="/waitlist" element={<WaitlistPage />} />
       <Route path="/prelaunch-confirmed" element={<PrelaunchConfirmed />} />
       <Route path="/courier-documents" element={<PrelaunchCourierDocuments />} />
+      <Route path="/partner-documents" element={<PrelaunchPartnerDocuments />} />
       <Route path="/activate" element={<ActivatePrelaunch />} />
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
@@ -195,6 +198,7 @@ export default function App() {
         <Route path="/admin/referrals" element={<AdminReferralsPage />} />
         <Route path="/admin/prelaunch" element={<AdminPrelaunch />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/service-areas" element={<AdminServiceAreas />} />
       </Route>
 
       {/* ─── Catch all ───────────────────────────────────────────── */}

@@ -134,10 +134,14 @@ export async function resolveRedirectPath() {
 
   const { data: prelaunchProfile } = await supabase
     .from("prelaunch_profiles")
-    .select("status")
+    .select("status,access_enabled")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (prelaunchProfile && prelaunchProfile.status !== "activated") {
+  if (
+    prelaunchProfile
+    && prelaunchProfile.status !== "activated"
+    && prelaunchProfile.access_enabled !== true
+  ) {
     return "/prelaunch-confirmed";
   }
 

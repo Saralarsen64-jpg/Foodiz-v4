@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { Link, Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
 
@@ -10,9 +10,11 @@ import {
   foodizText,
 } from '@/components/foodiz-ui';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
 export default function SignupScreen() {
+  const { loading: authLoading, launched } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [city, setCity] = useState('');
@@ -20,6 +22,8 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  if (!authLoading && !launched) return <Redirect href="/prelaunch" />;
 
   async function signup() {
     if (!firstName.trim() || !lastName.trim() || !phone.trim() || !email.trim() || password.length < 8) {

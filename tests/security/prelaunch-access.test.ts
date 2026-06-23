@@ -42,6 +42,14 @@ const prelaunchHelpers = readFileSync(
   new URL("../../netlify/functions/_lib/prelaunch.ts", import.meta.url),
   "utf8",
 );
+const nationalRolloutMigration = readFileSync(
+  new URL("../../supabase/migrations/41_national_service_areas_and_partner_compliance.sql", import.meta.url),
+  "utf8",
+);
+const adminPartnerApi = readFileSync(
+  new URL("../../netlify/functions/admin-partner-applications.ts", import.meta.url),
+  "utf8",
+);
 
 test("le statut de lancement démarre fermé", () => {
   assert.match(migration, /'launch_status', '\{"launched": false\}'::jsonb/);
@@ -137,4 +145,26 @@ test("un téléphone ne peut appartenir qu’à un client ou livreur Foodiz", ()
 test("la migration refuse les doublons historiques au lieu de les modifier", () => {
   assert.match(uniquePhoneMigration, /HAVING count\(\*\) > 1/);
   assert.match(uniquePhoneMigration, /Cannot enable unique phone identity/);
+});
+
+test("aucun email de pré-inscription n’est envoyé automatiquement", () => {
+  assert.doesNotMatch(registerApi, /sendPrelaunchEmail/);
+  assert.match(registerApi, /emailSent: false/);
+});
+
+test("les partenaires ont un bucket privé et une validation documentaire serveur", () => {
+  assert.match(nationalRolloutMigration, /'partner-documents'/);
+  assert.match(nationalRolloutMigration, /public = false/);
+  assert.match(nationalRolloutMigration, /CREATE TABLE IF NOT EXISTS public\.partner_documents/);
+  assert.match(nationalRolloutMigration, /review_partner_application_server/);
+  assert.match(adminPartnerApi, /createSignedUrl/);
+  assert.match(adminPartnerApi, /replacementUploadUrl/);
+});
+
+test("l’accès pilote professionnel exige validation admin et statut de ville", () => {
+  assert.match(nationalRolloutMigration, /set_prelaunch_professional_access/);
+  assert.match(nationalRolloutMigration, /access_enabled = true/);
+  assert.match(nationalRolloutMigration, /area\.status IN \('pilot', 'open'\)/);
+  assert.match(nationalRolloutMigration, /area\.status IN \('preparing', 'pilot', 'open'\)/);
+  assert.match(nationalRolloutMigration, /partner compliance dossier must be approved/i);
 });

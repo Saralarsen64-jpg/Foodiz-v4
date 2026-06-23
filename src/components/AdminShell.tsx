@@ -13,6 +13,7 @@ import {
   Radio,
   UsersRound,
   Hourglass,
+  MapPinned,
   LogOut,
 } from "lucide-react";
 import AdminBrandMark from "./AdminBrandMark";
@@ -31,6 +32,7 @@ const ADMIN_ITEMS = [
   { label: "Diffusion", icon: Radio, path: "/admin/broadcast" },
   { label: "Partenaires", icon: Store, path: "/admin/partner-applications" },
   { label: "Livreurs", icon: Bike, path: "/admin/courier-applications" },
+  { label: "Villes", icon: MapPinned, path: "/admin/service-areas" },
   { label: "Parrainage", icon: UsersRound, path: "/admin/referrals" },
   { label: "Pré-lancement", icon: Hourglass, path: "/admin/prelaunch" },
 ];

@@ -76,10 +76,14 @@ export default function ProtectedRoute({
       if (currentRole !== "admin") {
         const { data: prelaunchProfile } = await supabase
           .from("prelaunch_profiles")
-          .select("status")
+          .select("status,access_enabled")
           .eq("user_id", currentSession.user.id)
           .maybeSingle();
-        if (prelaunchProfile && prelaunchProfile.status !== "activated") {
+        if (
+          prelaunchProfile
+          && prelaunchProfile.status !== "activated"
+          && prelaunchProfile.access_enabled !== true
+        ) {
           setPrelaunchBlocked(true);
           setValidationRedirect(null);
           return;

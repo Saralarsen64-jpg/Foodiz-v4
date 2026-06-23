@@ -125,6 +125,18 @@ const handler: Handler = async (event) => {
       const geocoded = await geocodeAddress(
         `${address}, ${postalCode} ${city}, France`,
       );
+      const { data: serviceAreaId, error: serviceAreaError } = await adminSupabase.rpc(
+        "ensure_service_area_server",
+        {
+          target_city: city,
+          target_postal_code: postalCode,
+          target_latitude: geocoded.latitude,
+          target_longitude: geocoded.longitude,
+        },
+      );
+      if (serviceAreaError || !serviceAreaId) {
+        throw serviceAreaError || new Error("Service area creation failed");
+      }
       const { data: restaurantId, error } = await adminSupabase.rpc(
         "save_partner_establishment_server",
         {
@@ -141,9 +153,23 @@ const handler: Handler = async (event) => {
         },
       );
       if (error) throw error;
+      const [{ error: restaurantAreaError }, { error: applicationAreaError }] = await Promise.all([
+        adminSupabase
+          .from("restaurants")
+          .update({ service_area_id: serviceAreaId })
+          .eq("id", restaurantId),
+        adminSupabase
+          .from("partner_applications")
+          .update({ service_area_id: serviceAreaId })
+          .eq("user_id", user.id),
+      ]);
+      if (restaurantAreaError || applicationAreaError) {
+        throw restaurantAreaError || applicationAreaError;
+      }
       return reply(200, {
         saved: true,
         restaurantId,
+        serviceAreaId,
         coordinates: {
           latitude: geocoded.latitude,
           longitude: geocoded.longitude,

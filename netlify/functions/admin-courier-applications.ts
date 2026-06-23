@@ -14,13 +14,18 @@ const handler: Handler = async (event) => {
   if (await userRole(user.id) !== "admin") return reply(403, { error: "Admin required" });
 
   if (event.httpMethod === "GET") {
-    const [{ data: applications, error: applicationsError }, { data: documents, error: documentsError }] = await Promise.all([
+    const [
+      { data: applications, error: applicationsError },
+      { data: documents, error: documentsError },
+      { data: prelaunchProfiles, error: prelaunchError },
+      { data: serviceAreas, error: areasError },
+    ] = await Promise.all([
       adminSupabase
         .from("courier_applications")
         .select(`
           id,user_id,city,vehicle_type,legal_name,siret,address,postal_code,status,
           document_review_status,document_review_comment,identity_name_confirmed,
-          business_identity_confirmed,dispatch_priority_score,reviewed_at,created_at,
+          business_identity_confirmed,dispatch_priority_score,reviewed_at,created_at,service_area_id,
           profiles:profiles!courier_applications_user_id_fkey(first_name,last_name,email,phone)
         `)
         .order("created_at", { ascending: false }),
@@ -28,9 +33,16 @@ const handler: Handler = async (event) => {
         .from("courier_documents")
         .select("id,user_id,document_type,storage_path,original_name,mime_type,size_bytes,status,review_comment,reviewed_at,created_at")
         .order("created_at", { ascending: true }),
+      adminSupabase
+        .from("prelaunch_profiles")
+        .select("user_id,access_enabled,access_enabled_at,status")
+        .eq("role", "livreur"),
+      adminSupabase
+        .from("service_areas")
+        .select("id,city,department_code,status,delivery_radius_km"),
     ]);
-    if (applicationsError || documentsError) {
-      console.error("Admin courier applications load failed", applicationsError || documentsError);
+    if (applicationsError || documentsError || prelaunchError || areasError) {
+      console.error("Admin courier applications load failed", applicationsError || documentsError || prelaunchError || areasError);
       return reply(500, { error: "Impossible de charger les dossiers livreurs." });
     }
 
@@ -44,10 +56,14 @@ const handler: Handler = async (event) => {
       (result[document.user_id] ||= []).push(document);
       return result;
     }, {});
+    const prelaunchByUser = new Map((prelaunchProfiles || []).map((profile) => [profile.user_id, profile]));
+    const areaById = new Map((serviceAreas || []).map((area) => [area.id, area]));
 
     return reply(200, {
       applications: (applications || []).map((application) => ({
         ...application,
+        prelaunch: prelaunchByUser.get(application.user_id) || null,
+        service_area: application.service_area_id ? areaById.get(application.service_area_id) || null : null,
         documents: byUser[application.user_id] || [],
       })),
     });
@@ -60,6 +76,18 @@ const handler: Handler = async (event) => {
     body = JSON.parse(event.body || "{}");
   } catch {
     return reply(400, { error: "Requête invalide." });
+  }
+
+  if (body.action === "set_access") {
+    const targetUserId = String(body.userId || "");
+    if (!targetUserId) return reply(400, { error: "Utilisateur manquant." });
+    const { error } = await adminSupabase.rpc("set_prelaunch_professional_access", {
+      target_user_id: targetUserId,
+      target_reviewer_id: user.id,
+      target_enabled: body.enabled === true,
+    });
+    if (error) return reply(409, { error: error.message || "Impossible de modifier l’accès pilote." });
+    return reply(200, { accessUpdated: true, enabled: body.enabled === true });
   }
 
   const applicationId = String(body.applicationId || "");

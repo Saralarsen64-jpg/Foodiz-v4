@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
@@ -12,12 +13,17 @@ export default function MobilePrelaunchScreen() {
         <Text style={styles.title}>Foodiz arrive bientôt</Text>
         <Text style={styles.subtitle}>L’app qui régale clients, livreurs et partenaires.</Text>
         <Text style={styles.body}>
-          Rejoignez la liste d’attente et recevez votre accès personnel dès le lancement officiel.
+          L’application mobile n’accepte pas de pré-inscription. Les clients seront informés du lancement dans leur ville. Les partenaires et livreurs déjà validés peuvent utiliser leur accès pilote.
         </Text>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => void Linking.openURL('https://www.foodiz.co/waitlist')}>
-          <Text style={styles.buttonText}>Rejoindre la liste d’attente</Text>
+          onPress={() => router.push('/login')}>
+          <Text style={styles.buttonText}>J’ai un accès Foodiz</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.instagramButton}
+          onPress={() => void Linking.openURL('https://www.instagram.com/foodiz_off/')}>
+          <Text style={styles.instagramText}>Suivre @foodiz_off</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>
@@ -78,5 +84,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
+  },
+  instagramButton: {
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.18)',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  instagramText: {
+    color: colors.black,
+    textAlign: 'center',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 13,
   },
 });

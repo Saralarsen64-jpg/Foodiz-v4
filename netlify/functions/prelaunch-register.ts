@@ -1,12 +1,12 @@
 import type { Handler } from "@netlify/functions";
 import { adminSupabase, appIsLaunched } from "./_lib/auth.js";
+import { geocodeAddress, RoutingProviderError } from "./_lib/routingProvider.js";
 import {
   cleanText,
   createLaunchToken,
   normalizeEmail,
   normalizeFoodizPhone,
   requestFingerprint,
-  sendPrelaunchEmail,
   sha256,
 } from "./_lib/prelaunch.js";
 
@@ -79,12 +79,22 @@ const handler: Handler = async (event) => {
   const availability = cleanText(input.availability, 30);
   const address = cleanText(input.address, 180);
   const postalCode = cleanText(input.postalCode, 10);
+  const handlesAnimalProducts = input.handlesAnimalProducts === true;
+  const sellsAlcohol = input.sellsAlcohol === true;
+  const requiresHygieneProof = input.requiresHygieneProof === true;
 
   if (role === "partenaire" && (
     !establishmentName
-    || !["restaurant", "market", "epicerie", "autre"].includes(establishmentType)
+    || ![
+      "restaurant", "fast_food", "bakery", "pastry", "butcher", "caterer",
+      "grocery", "greengrocer", "supermarket", "local_shop", "franchise",
+      "national_brand", "other",
+    ].includes(establishmentType)
+    || !/^[0-9]{14}$/.test(siret)
+    || !address
+    || !/^[0-9]{5}$/.test(postalCode)
   )) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Complétez les informations de votre établissement." }) };
+    return { statusCode: 400, body: JSON.stringify({ error: "Complétez l’établissement, le SIRET et son adresse professionnelle." }) };
   }
   if (role === "livreur" && (
     !/^[0-9]{14}$/.test(siret)
@@ -149,6 +159,23 @@ const handler: Handler = async (event) => {
     }
   }
 
+  let professionalCoordinates: { latitude: number; longitude: number } | null = null;
+  if (role === "partenaire" || role === "livreur") {
+    try {
+      const geocoded = await geocodeAddress(`${address}, ${postalCode} ${city}, France`);
+      professionalCoordinates = {
+        latitude: geocoded.latitude,
+        longitude: geocoded.longitude,
+      };
+    } catch (error) {
+      console.error("Prelaunch professional geocoding failed", error);
+      const message = error instanceof RoutingProviderError && error.retryable
+        ? "La vérification d’adresse est momentanément indisponible. Réessayez dans quelques minutes."
+        : "L’adresse professionnelle n’a pas pu être vérifiée. Corrigez-la avant de continuer.";
+      return { statusCode: error instanceof RoutingProviderError && error.retryable ? 503 : 422, body: JSON.stringify({ error: message }) };
+    }
+  }
+
   const authRole = roleToAuthRole[role];
   const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
     email,
@@ -186,7 +213,11 @@ const handler: Handler = async (event) => {
 
   const userId = authData.user.id;
   const courierUploadToken = role === "livreur" ? createLaunchToken() : null;
+  const partnerUploadToken = role === "partenaire" ? createLaunchToken() : null;
   const courierUploadTokenExpiresAt = role === "livreur"
+    ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    : null;
+  const partnerUploadTokenExpiresAt = role === "partenaire"
     ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     : null;
   try {
@@ -208,16 +239,88 @@ const handler: Handler = async (event) => {
     if (profileError || !profile) throw profileError || new Error("Prelaunch profile creation failed");
 
     if (role === "partenaire") {
+      if (!professionalCoordinates) throw new Error("Verified partner coordinates missing");
+      const { data: serviceAreaId, error: serviceAreaError } = await adminSupabase.rpc(
+        "ensure_service_area_server",
+        {
+          target_city: city,
+          target_postal_code: postalCode,
+          target_latitude: professionalCoordinates.latitude,
+          target_longitude: professionalCoordinates.longitude,
+        },
+      );
+      if (serviceAreaError || !serviceAreaId) throw serviceAreaError || new Error("Service area creation failed");
+
       const { error } = await adminSupabase.from("prelaunch_partner_details").insert({
         prelaunch_profile_id: profile.id,
         establishment_name: establishmentName,
         establishment_type: establishmentType,
-        siret: siret || null,
+        siret,
+        address,
+        postal_code: postalCode,
+        handles_animal_products: handlesAnimalProducts,
+        sells_alcohol: sellsAlcohol,
+        requires_hygiene_proof: requiresHygieneProof,
+        document_review_status: "documents_required",
+        document_upload_token_hash: partnerUploadToken?.hash,
+        document_upload_token_expires_at: partnerUploadTokenExpiresAt,
       });
       if (error) throw error;
+
+      const [{ error: applicationError }, { error: restaurantError }] = await Promise.all([
+        adminSupabase
+          .from("partner_applications")
+          .update({
+            business_name: establishmentName,
+            siret,
+            address,
+            postal_code: postalCode,
+            city,
+            latitude: professionalCoordinates.latitude,
+            longitude: professionalCoordinates.longitude,
+            service_area_id: serviceAreaId,
+            establishment_type: establishmentType,
+            handles_animal_products: handlesAnimalProducts,
+            sells_alcohol: sellsAlcohol,
+            requires_hygiene_proof: requiresHygieneProof,
+            compliance_status: "documents_required",
+            status: "pending",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId),
+        adminSupabase
+          .from("restaurants")
+          .update({
+            name: establishmentName,
+            siret,
+            address,
+            postal_code: postalCode,
+            city,
+            latitude: professionalCoordinates.latitude,
+            longitude: professionalCoordinates.longitude,
+            service_area_id: serviceAreaId,
+            status: "pending",
+            is_active: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("owner_id", userId),
+      ]);
+      if (applicationError || restaurantError) throw applicationError || restaurantError;
     }
 
     if (role === "livreur") {
+      if (!professionalCoordinates) throw new Error("Verified courier coordinates missing");
+      const { data: serviceAreaId, error: serviceAreaError } = await adminSupabase.rpc(
+        "ensure_service_area_server",
+        {
+          target_city: city,
+          target_postal_code: postalCode,
+          target_latitude: professionalCoordinates.latitude,
+          target_longitude: professionalCoordinates.longitude,
+        },
+      );
+      if (serviceAreaError || !serviceAreaId) throw serviceAreaError || new Error("Service area creation failed");
+
       const { error } = await adminSupabase.from("prelaunch_driver_details").insert({
         prelaunch_profile_id: profile.id,
         siret,
@@ -241,6 +344,7 @@ const handler: Handler = async (event) => {
           postal_code: postalCode,
           city,
           vehicle_type: vehicleType,
+          service_area_id: serviceAreaId,
           status: "pending",
           document_review_status: "documents_required",
           updated_at: new Date().toISOString(),
@@ -254,19 +358,6 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Votre pré-inscription n’a pas pu être enregistrée." }) };
   }
 
-  try {
-    await sendPrelaunchEmail({
-      to: email,
-      subject: "Votre pré-inscription Foodiz est confirmée",
-      headline: `Bienvenue ${firstName}`,
-      body: role === "livreur"
-        ? "Votre compte livreur est créé. Votre accès aux courses restera bloqué jusqu’à la validation de vos justificatifs par Foodiz."
-        : "Votre pré-inscription est bien enregistrée. Vous recevrez votre accès dès le lancement officiel de Foodiz.",
-    });
-  } catch (error) {
-    console.error("Prelaunch confirmation email failed:", error);
-  }
-
   return {
     statusCode: 201,
     headers: { "Content-Type": "application/json" },
@@ -274,9 +365,14 @@ const handler: Handler = async (event) => {
       registered: true,
       courierDocumentUploadToken: courierUploadToken?.raw,
       courierDocumentUploadExpiresAt: courierUploadTokenExpiresAt,
+      partnerDocumentUploadToken: partnerUploadToken?.raw,
+      partnerDocumentUploadExpiresAt: partnerUploadTokenExpiresAt,
+      emailSent: false,
       message: role === "livreur"
         ? "Votre compte est créé. Transmettez maintenant vos trois justificatifs obligatoires."
-        : "Votre pré-inscription est bien enregistrée. Vous recevrez votre accès dès le lancement officiel de Foodiz.",
+        : role === "partenaire"
+          ? "Votre établissement est pré-inscrit. Transmettez maintenant les justificatifs obligatoires."
+          : "Votre pré-inscription est bien enregistrée. Foodiz vous informera lors du lancement dans votre ville.",
     }),
   };
 };

@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Bike,
@@ -44,17 +44,35 @@ const initialForm = {
   availability: "journee",
   address: "",
   postalCode: "",
+  handlesAnimalProducts: false,
+  sellsAlcohol: false,
+  requiresHygieneProof: false,
   marketingConsent: false,
   companyWebsite: "",
 };
 
 type CourierDocumentType = "identity_front" | "identity_back" | "activity_proof";
 type CourierFiles = Record<CourierDocumentType, File | null>;
+type PartnerDocumentType =
+  | "registration_proof"
+  | "liability_insurance"
+  | "hygiene_training"
+  | "sanitary_declaration"
+  | "alcohol_license";
+type PartnerFiles = Record<PartnerDocumentType, File | null>;
 
 const emptyCourierFiles: CourierFiles = {
   identity_front: null,
   identity_back: null,
   activity_proof: null,
+};
+
+const emptyPartnerFiles: PartnerFiles = {
+  registration_proof: null,
+  liability_insurance: null,
+  hygiene_training: null,
+  sanitary_declaration: null,
+  alcohol_license: null,
 };
 
 async function validateCourierFile(file: File, allowPdf: boolean) {
@@ -206,16 +224,41 @@ function DocumentField({
 
 export default function WaitlistPage() {
   const navigate = useNavigate();
-  const [role, setRole] = useState<Role>(() => window.sessionStorage.getItem("foodiz-courier-upload-token") ? "livreur" : "client");
+  const [resumePartnerUpload] = useState(
+    () => Boolean(window.sessionStorage.getItem("foodiz-partner-upload-token")),
+  );
+  const [role, setRole] = useState<Role>(() => {
+    if (window.sessionStorage.getItem("foodiz-courier-upload-token")) return "livreur";
+    if (window.sessionStorage.getItem("foodiz-partner-upload-token")) return "partenaire";
+    return "client";
+  });
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [courierFiles, setCourierFiles] = useState<CourierFiles>(emptyCourierFiles);
+  const [partnerFiles, setPartnerFiles] = useState<PartnerFiles>(emptyPartnerFiles);
   const [pendingCourierUploadToken, setPendingCourierUploadToken] = useState(
     () => window.sessionStorage.getItem("foodiz-courier-upload-token") || "",
   );
+  const [pendingPartnerUploadToken, setPendingPartnerUploadToken] = useState(
+    () => window.sessionStorage.getItem("foodiz-partner-upload-token") || "",
+  );
   const [submissionStep, setSubmissionStep] = useState("");
+
+  useEffect(() => {
+    if (resumePartnerUpload) {
+      navigate("/partner-documents", { replace: true });
+    }
+  }, [navigate, resumePartnerUpload]);
+
+  const requiredPartnerDocumentTypes = useMemo<PartnerDocumentType[]>(() => {
+    const types: PartnerDocumentType[] = ["registration_proof", "liability_insurance"];
+    if (form.requiresHygieneProof) types.push("hygiene_training");
+    if (form.handlesAnimalProducts) types.push("sanitary_declaration");
+    if (form.sellsAlcohol) types.push("alcohol_license");
+    return types;
+  }, [form.handlesAnimalProducts, form.requiresHygieneProof, form.sellsAlcohol]);
 
   const buttonLabel = useMemo(() => {
     if (role === "livreur") return "Pré-inscrire mon profil livreur";
@@ -232,6 +275,16 @@ export default function WaitlistPage() {
     try {
       await validateCourierFile(file, documentType === "activity_proof");
       setCourierFiles((current) => ({ ...current, [documentType]: file }));
+      setError("");
+    } catch (fileError: any) {
+      setError(fileError.message || "Document invalide.");
+    }
+  };
+
+  const selectPartnerFile = async (documentType: PartnerDocumentType, file: File) => {
+    try {
+      await validateCourierFile(file, true);
+      setPartnerFiles((current) => ({ ...current, [documentType]: file }));
       setError("");
     } catch (fileError: any) {
       setError(fileError.message || "Document invalide.");
@@ -296,12 +349,76 @@ export default function WaitlistPage() {
     if (!completeResponse.ok) throw new Error(completed.error || "Le dossier n’a pas pu être finalisé.");
   };
 
+  const uploadPartnerDocuments = async (uploadToken: string) => {
+    const entries = requiredPartnerDocumentTypes.map(
+      (documentType) => [documentType, partnerFiles[documentType]] as const,
+    );
+    if (entries.some(([, file]) => !file)) {
+      throw new Error("Ajoutez tous les justificatifs obligatoires de votre établissement.");
+    }
+
+    const uploaded: Array<{
+      documentType: PartnerDocumentType;
+      storagePath: string;
+      originalName: string;
+      mimeType: string;
+      sizeBytes: number;
+    }> = [];
+
+    for (const [documentType, file] of entries) {
+      if (!file) continue;
+      setSubmissionStep(`Transfert sécurisé : ${uploaded.length + 1}/${entries.length}`);
+      const prepareResponse = await fetch("/api/prelaunch/partner-documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "prepare",
+          uploadToken,
+          documentType,
+          fileName: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+        }),
+      });
+      const prepared = await prepareResponse.json();
+      if (!prepareResponse.ok) throw new Error(prepared.error || "Le dépôt sécurisé a échoué.");
+
+      const { error: uploadError } = await supabase.storage
+        .from("partner-documents")
+        .uploadToSignedUrl(prepared.path, prepared.token, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+      uploaded.push({
+        documentType,
+        storagePath: prepared.path,
+        originalName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+      });
+    }
+
+    setSubmissionStep("Enregistrement du dossier…");
+    const completeResponse = await fetch("/api/prelaunch/partner-documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete", uploadToken, documents: uploaded }),
+    });
+    const completed = await completeResponse.json();
+    if (!completeResponse.ok) throw new Error(completed.error || "Le dossier n’a pas pu être finalisé.");
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     setError("");
     try {
-      let uploadToken = role === "livreur" ? pendingCourierUploadToken : "";
+      let uploadToken = role === "livreur"
+        ? pendingCourierUploadToken
+        : role === "partenaire"
+          ? pendingPartnerUploadToken
+          : "";
       if (!uploadToken) {
         setSubmissionStep("Création du compte sécurisé…");
         const response = await fetch("/api/prelaunch/register", {
@@ -317,6 +434,12 @@ export default function WaitlistPage() {
           setPendingCourierUploadToken(uploadToken);
           window.sessionStorage.setItem("foodiz-courier-upload-token", uploadToken);
         }
+        if (role === "partenaire") {
+          uploadToken = String(payload.partnerDocumentUploadToken || "");
+          if (!uploadToken) throw new Error("Le dépôt des justificatifs n’a pas pu être préparé.");
+          setPendingPartnerUploadToken(uploadToken);
+          window.sessionStorage.setItem("foodiz-partner-upload-token", uploadToken);
+        }
       }
 
       if (role === "livreur") {
@@ -324,7 +447,12 @@ export default function WaitlistPage() {
         window.sessionStorage.removeItem("foodiz-courier-upload-token");
         setPendingCourierUploadToken("");
       }
-      navigate(`/prelaunch-confirmed${role === "livreur" ? "?role=livreur" : ""}`, { replace: true });
+      if (role === "partenaire") {
+        await uploadPartnerDocuments(uploadToken);
+        window.sessionStorage.removeItem("foodiz-partner-upload-token");
+        setPendingPartnerUploadToken("");
+      }
+      navigate(`/prelaunch-confirmed${role !== "client" ? `?role=${role}` : ""}`, { replace: true });
     } catch (submitError: any) {
       setError(submitError.message || "Votre pré-inscription a échoué.");
     } finally {
@@ -432,13 +560,88 @@ export default function WaitlistPage() {
                     onChange={update}
                     options={[
                       { value: "restaurant", label: "Restaurant" },
-                      { value: "market", label: "Market" },
-                      { value: "epicerie", label: "Épicerie" },
-                      { value: "autre", label: "Autre" },
+                      { value: "fast_food", label: "Restauration rapide" },
+                      { value: "bakery", label: "Boulangerie" },
+                      { value: "pastry", label: "Pâtisserie" },
+                      { value: "butcher", label: "Boucherie" },
+                      { value: "caterer", label: "Traiteur" },
+                      { value: "grocery", label: "Épicerie" },
+                      { value: "greengrocer", label: "Primeur" },
+                      { value: "supermarket", label: "Supermarché" },
+                      { value: "local_shop", label: "Commerce local" },
+                      { value: "franchise", label: "Franchise" },
+                      { value: "national_brand", label: "Grande enseigne" },
+                      { value: "other", label: "Autre" },
                     ]}
                   />
-                  <Field icon={<Building2 size={17} />} name="siret" value={form.siret} onChange={update} placeholder="SIRET (facultatif)" required={false} />
+                  <Field icon={<Building2 size={17} />} name="siret" value={form.siret} onChange={update} placeholder="SIRET — 14 chiffres" />
                 </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Field icon={<MapPin size={17} />} name="address" value={form.address} onChange={update} placeholder="Adresse de l’établissement" autoComplete="street-address" />
+                  <Field icon={<MapPin size={17} />} name="postalCode" value={form.postalCode} onChange={update} placeholder="Code postal" autoComplete="postal-code" />
+                </div>
+                <div className="space-y-2 rounded-2xl border border-white/5 bg-black/25 p-4 text-xs text-foodiz-gray">
+                  <p className="font-semibold text-foodiz-cream">Activités réglementées de l’établissement</p>
+                  <label className="flex items-start gap-2">
+                    <input type="checkbox" checked={form.requiresHygieneProof} onChange={(event) => update("requiresHygieneProof", event.target.checked)} className="mt-0.5 accent-[#D8A84F]" />
+                    Activité de restauration nécessitant un justificatif de formation à l’hygiène alimentaire.
+                  </label>
+                  <label className="flex items-start gap-2">
+                    <input type="checkbox" checked={form.handlesAnimalProducts} onChange={(event) => update("handlesAnimalProducts", event.target.checked)} className="mt-0.5 accent-[#D8A84F]" />
+                    Manipulation ou vente de denrées d’origine animale nécessitant une déclaration sanitaire.
+                  </label>
+                  <label className="flex items-start gap-2">
+                    <input type="checkbox" checked={form.sellsAlcohol} onChange={(event) => update("sellsAlcohol", event.target.checked)} className="mt-0.5 accent-[#D8A84F]" />
+                    Vente de boissons alcoolisées.
+                  </label>
+                </div>
+                <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/[.04] p-4">
+                  <p className="text-xs font-semibold text-foodiz-cream">Justificatifs professionnels</p>
+                  <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">
+                    Les pièces sont stockées dans un espace privé. Elles seront examinées par Foodiz avant toute activation commerciale.
+                  </p>
+                </div>
+                <DocumentField
+                  label="Justificatif d’immatriculation"
+                  description="Avis SIRENE/RNE, extrait K/Kbis ou document équivalent"
+                  file={partnerFiles.registration_proof}
+                  allowPdf
+                  onFile={(file) => selectPartnerFile("registration_proof", file)}
+                />
+                <DocumentField
+                  label="Assurance responsabilité civile professionnelle"
+                  description="Attestation en cours de validité"
+                  file={partnerFiles.liability_insurance}
+                  allowPdf
+                  onFile={(file) => selectPartnerFile("liability_insurance", file)}
+                />
+                {form.requiresHygieneProof && (
+                  <DocumentField
+                    label="Justificatif de formation hygiène alimentaire"
+                    description="Attestation adaptée à l’activité de restauration"
+                    file={partnerFiles.hygiene_training}
+                    allowPdf
+                    onFile={(file) => selectPartnerFile("hygiene_training", file)}
+                  />
+                )}
+                {form.handlesAnimalProducts && (
+                  <DocumentField
+                    label="Déclaration sanitaire"
+                    description="Déclaration ou justificatif DDPP applicable à l’activité"
+                    file={partnerFiles.sanitary_declaration}
+                    allowPdf
+                    onFile={(file) => selectPartnerFile("sanitary_declaration", file)}
+                  />
+                )}
+                {form.sellsAlcohol && (
+                  <DocumentField
+                    label="Licence de vente d’alcool"
+                    description="Licence correspondant à l’activité déclarée"
+                    file={partnerFiles.alcohol_license}
+                    allowPdf
+                    onFile={(file) => selectPartnerFile("alcohol_license", file)}
+                  />
+                )}
               </div>
             )}
 
@@ -592,7 +795,11 @@ export default function WaitlistPage() {
               }}
             >
               {submitting ? <LoaderCircle size={19} className="animate-spin" /> : <ArrowRight size={19} />}
-              {submitting ? submissionStep || "Pré-inscription en cours…" : pendingCourierUploadToken && role === "livreur" ? "Reprendre l’envoi des justificatifs" : buttonLabel}
+              {submitting
+                ? submissionStep || "Pré-inscription en cours…"
+                : (pendingCourierUploadToken && role === "livreur") || (pendingPartnerUploadToken && role === "partenaire")
+                  ? "Reprendre l’envoi des justificatifs"
+                  : buttonLabel}
             </button>
           </form>
 
