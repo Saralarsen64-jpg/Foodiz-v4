@@ -8,9 +8,9 @@ const icon = (value: string, color: ColorValue) => (
   <Text style={{ color, fontSize: 18 }}>{value}</Text>
 );
 
-export default function ClientLayout() {
+export default function PartnerLayout() {
   return (
-    <RoleGuard role="client">
+    <RoleGuard role="partner" requireValidated>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -38,10 +38,10 @@ export default function ClientLayout() {
           }}
         />
         <Tabs.Screen
-          name="benefits"
+          name="products"
           options={{
-            title: 'Avantages',
-            tabBarIcon: ({ color }) => icon('✦', color),
+            title: 'Carte',
+            tabBarIcon: ({ color }) => icon('◫', color),
           }}
         />
         <Tabs.Screen
@@ -51,11 +51,7 @@ export default function ClientLayout() {
             tabBarIcon: ({ color }) => icon('●', color),
           }}
         />
-        <Tabs.Screen name="restaurant/[id]" options={{ href: null }} />
-        <Tabs.Screen name="cart" options={{ href: null }} />
-        <Tabs.Screen name="checkout" options={{ href: null }} />
-        <Tabs.Screen name="address" options={{ href: null }} />
-        <Tabs.Screen name="order/[id]" options={{ href: null }} />
+        <Tabs.Screen name="product" options={{ href: null }} />
       </Tabs>
     </RoleGuard>
   );

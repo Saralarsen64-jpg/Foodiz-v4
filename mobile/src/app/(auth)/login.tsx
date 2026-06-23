@@ -43,7 +43,7 @@ export default function LoginScreen() {
       <FoodizBrand subtitle="L’application locale qui vous régale" />
       <Text style={foodizText.title}>Connexion</Text>
       <Text style={foodizText.body}>
-        Accédez à votre espace client ou livreur Foodiz.
+        Accédez à votre espace client, partenaire ou livreur Foodiz.
       </Text>
       <FoodizField
         value={email}

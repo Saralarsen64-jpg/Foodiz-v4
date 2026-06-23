@@ -130,7 +130,7 @@ export async function resolveRedirectPath() {
   const profile = await ensureProfileFromAuthUser(user as AuthUser);
   if (!profile) return "/auth/login";
 
-  if (profile.role === "admin") return "/admin";
+  if (profile.role === "admin") return "/admin/auth";
 
   const { data: prelaunchProfile } = await supabase
     .from("prelaunch_profiles")

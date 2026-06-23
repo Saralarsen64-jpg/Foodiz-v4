@@ -13,9 +13,12 @@ import {
   Radio,
   UsersRound,
   Hourglass,
+  LogOut,
 } from "lucide-react";
 import AdminBrandMark from "./AdminBrandMark";
 import { cn } from "../utils/cn";
+import { supabase } from "../lib/supabase";
+import { clearAdminAccess } from "../utils/adminAccess";
 
 const ADMIN_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/admin" },
@@ -43,6 +46,12 @@ export default function AdminShell({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const signOut = async () => {
+    clearAdminAccess();
+    await supabase.auth.signOut();
+    navigate("/admin/auth", { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-foodiz-black text-foodiz-cream">
@@ -87,6 +96,14 @@ export default function AdminShell({
           <div className="mt-auto foodiz-card p-4 bg-white/[0.02] border-foodiz-gold/10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold font-bold mb-2">Admin Foodiz</p>
             <p className="text-sm text-foodiz-cream">Direction & exploitation</p>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-foodiz-red/20 px-3 py-2 text-xs text-foodiz-red transition-colors hover:bg-foodiz-red/5"
+            >
+              <LogOut size={15} />
+              Déconnexion sécurisée
+            </button>
           </div>
         </aside>
 
@@ -103,7 +120,17 @@ export default function AdminShell({
                 </div>
               </div>
               <div className="lg:hidden">
-                <AdminBrandMark size="sm" />
+                <div className="flex items-center gap-3">
+                  <AdminBrandMark size="sm" />
+                  <button
+                    type="button"
+                    aria-label="Déconnexion administrateur"
+                    onClick={() => void signOut()}
+                    className="text-foodiz-red"
+                  >
+                    <LogOut size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </header>

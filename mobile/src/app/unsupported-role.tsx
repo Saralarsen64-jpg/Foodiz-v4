@@ -17,8 +17,9 @@ export default function UnsupportedRoleScreen() {
       <FoodizCard>
         <Text style={foodizText.heading}>Interface web requise</Text>
         <Text style={foodizText.body}>
-          Le rôle « {profile?.role || 'inconnu'} » utilise actuellement le portail web
-          Foodiz. L’application mobile est réservée aux clients et aux livreurs.
+          {profile?.role === 'admin'
+            ? 'L’administration Foodiz reste volontairement disponible uniquement sur le portail web sécurisé.'
+            : `Le compte « ${profile?.role || 'inconnu'} » ne peut pas accéder à cet espace mobile.`}
         </Text>
       </FoodizCard>
       <FoodizButton label="Se déconnecter" onPress={() => void signOut()} secondary />

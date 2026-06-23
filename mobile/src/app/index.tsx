@@ -11,6 +11,7 @@ export default function IndexScreen() {
   if (!session || !profile) return <Redirect href="/login" />;
   if (profile.role === 'client') return <Redirect href="/client" />;
   if (profile.role === 'courier') return <Redirect href="/courier" />;
+  if (profile.role === 'partner') return <Redirect href="/partner" />;
 
   return <Redirect href="/unsupported-role" />;
 }

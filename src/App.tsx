@@ -108,7 +108,7 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallback />} /> {/* NOUVELLE ROUTE */}
       <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route path="/admin/auth" element={<AdminAuth />} />
-      <Route path="/admin-auth" element={<AdminAuth />} />
+      <Route path="/admin-auth" element={<Navigate to="/admin/auth" replace />} />
 
       {/* ─── ROUTES PROTÉGÉES PAR RÔLE ───────────────────────────────────── */}
       <Route element={<ProtectedRoute allowedRoles={["client"]} />}>
@@ -179,7 +179,7 @@ export default function App() {
         <Route path="/courier/help-center" element={<CourierHelpCenterPage />} />
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+      <Route element={<ProtectedRoute allowedRoles={["admin"]} requireAdminLogin />}>
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/admin/orders" element={<AdminOrdersPage />} />
         <Route path="/admin/broadcast" element={<AdminBroadcastPage />} />

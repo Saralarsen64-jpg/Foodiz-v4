@@ -10,7 +10,7 @@ const icon = (value: string, color: ColorValue) => (
 
 export default function CourierLayout() {
   return (
-    <RoleGuard role="courier">
+    <RoleGuard role="courier" requireValidated>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -35,6 +35,13 @@ export default function CourierLayout() {
           options={{
             title: 'Livraisons',
             tabBarIcon: ({ color }) => icon('➤', color),
+          }}
+        />
+        <Tabs.Screen
+          name="earnings"
+          options={{
+            title: 'Gains',
+            tabBarIcon: ({ color }) => icon('€', color),
           }}
         />
         <Tabs.Screen

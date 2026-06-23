@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, Text } from 'react-native';
 
 import {
   FoodizBrand,
@@ -43,17 +44,27 @@ export default function ClientOrdersScreen() {
         </FoodizCard>
       ) : (
         orders.map((order) => (
-          <FoodizCard key={order.id}>
-            <Text style={foodizText.heading}>
-              {order.restaurant?.name || 'Commande Foodiz'}
-            </Text>
-            <Text style={foodizText.body}>
-              #{order.id.slice(0, 8)} · {order.status}
-            </Text>
-            <Text style={[foodizText.heading, foodizText.gold]}>
-              {(order.final_client_total_cents / 100).toFixed(2)} €
-            </Text>
-          </FoodizCard>
+          <Pressable
+            key={order.id}
+            onPress={() =>
+              router.push({
+                pathname: '/client/order/[id]',
+                params: { id: order.id },
+              })
+            }>
+            <FoodizCard>
+              <Text style={foodizText.heading}>
+                {order.restaurant?.name || 'Commande Foodiz'}
+              </Text>
+              <Text style={foodizText.body}>
+                #{order.id.slice(0, 8)} · {order.status}
+              </Text>
+              <Text style={[foodizText.heading, foodizText.gold]}>
+                {(order.final_client_total_cents / 100).toFixed(2)} €
+              </Text>
+              <Text style={foodizText.gold}>Voir le suivi →</Text>
+            </FoodizCard>
+          </Pressable>
         ))
       )}
     </FoodizScreen>

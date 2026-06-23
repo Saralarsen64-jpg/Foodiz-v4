@@ -57,6 +57,14 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autoriser Foodiz à sélectionner vos justificatifs professionnels.",
+          "cameraPermission": "Autoriser Foodiz à photographier vos justificatifs professionnels.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.foodiz.app",

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Mail, Lock, ShieldAlert } from "lucide-react";
+import { clearAdminAccess, grantAdminAccess } from "../../utils/adminAccess";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -9,6 +10,11 @@ export default function AdminLogin() {
   const [password, setPassword] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Visiting the dedicated portal always requires a fresh admin password.
+    clearAdminAccess();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,11 +29,17 @@ export default function AdminLogin() {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role,status")
+      .eq("id", data.user.id)
+      .single();
     
-    if (profile?.role === 'admin') {
-      navigate("/admin");
+    if (!profileError && profile?.role === "admin" && profile.status !== "suspended") {
+      grantAdminAccess(data.user.id);
+      navigate("/admin", { replace: true });
     } else {
+      clearAdminAccess();
       await supabase.auth.signOut();
       setError("Accès refusé. Cette zone est strictement réservée aux administrateurs Foodiz.");
     }
@@ -43,8 +55,7 @@ export default function AdminLogin() {
 
         {error && <div className="p-3 rounded-lg bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 text-xs mb-4 text-center">{error}</div>}
 
-        {/* autoComplete="off" force le navigateur à ne rien pré-remplir */}
-        <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
             <Mail size={18} className="text-foodiz-gold" />
             <input 
@@ -54,7 +65,7 @@ export default function AdminLogin() {
               onChange={(e) => setEmail(e.target.value)} 
               className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" 
               placeholder="Email administrateur" 
-              autoComplete="off" 
+              autoComplete="username"
             />
           </div>
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
@@ -66,13 +77,16 @@ export default function AdminLogin() {
               onChange={(e) => setPassword(e.target.value)} 
               className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" 
               placeholder="Mot de passe" 
-              autoComplete="new-password" 
+              autoComplete="current-password"
             />
           </div>
           <button type="submit" disabled={loading} className="w-full bg-foodiz-red text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
             {loading ? "Vérification..." : "Accéder au Dashboard"}
           </button>
         </form>
+        <p className="mt-5 text-center text-[10px] leading-relaxed text-foodiz-gray">
+          L’accès expire automatiquement après 30 minutes et reste limité à cet onglet.
+        </p>
       </div>
     </div>
   );

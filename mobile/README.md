@@ -1,6 +1,10 @@
 # Foodiz Mobile
 
-Application React Native/Expo destinée aux clients et livreurs Foodiz.
+Application React Native/Expo destinée aux clients, partenaires et livreurs
+Foodiz sur iOS et Android. L'administration reste sur le portail web sécurisé.
+
+Les applications iOS, Android et le site web utilisent le même backend Supabase
+`Foodiz-v4`. Il ne faut pas créer un second projet Supabase pour le mobile.
 
 ## Configuration locale
 

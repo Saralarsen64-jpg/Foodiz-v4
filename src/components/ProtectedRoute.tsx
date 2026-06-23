@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { clearAdminAccess, hasValidAdminAccess } from "../utils/adminAccess";
 
 type AppRole = "client" | "partner" | "courier" | "admin";
 
 type ProtectedRouteProps = {
   allowedRoles?: AppRole[];
   requireValidated?: boolean;
+  requireAdminLogin?: boolean;
 };
 
 function homeForRole(role: AppRole | null | undefined) {
@@ -16,19 +18,28 @@ function homeForRole(role: AppRole | null | undefined) {
   return "/client";
 }
 
-export default function ProtectedRoute({ allowedRoles, requireValidated = false }: ProtectedRouteProps) {
+export default function ProtectedRoute({
+  allowedRoles,
+  requireValidated = false,
+  requireAdminLogin = false,
+}: ProtectedRouteProps) {
   const [session, setSession] = useState<any>(undefined);
   const [role, setRole] = useState<AppRole | null | undefined>(undefined);
   const [validationRedirect, setValidationRedirect] = useState<string | null | undefined>(undefined);
   const [prelaunchBlocked, setPrelaunchBlocked] = useState<boolean | undefined>(undefined);
+  const [adminAccessGranted, setAdminAccessGranted] = useState<boolean | undefined>(
+    requireAdminLogin ? undefined : true,
+  );
 
   useEffect(() => {
     const loadAccess = async (currentSession: any) => {
       setSession(currentSession);
       if (!currentSession?.user) {
+        clearAdminAccess();
         setRole(null);
         setValidationRedirect(null);
         setPrelaunchBlocked(false);
+        setAdminAccessGranted(!requireAdminLogin);
         return;
       }
 
@@ -42,16 +53,23 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
         setRole(null);
         setValidationRedirect(null);
         setPrelaunchBlocked(false);
+        setAdminAccessGranted(!requireAdminLogin);
         return;
       }
       const currentRole = profile.role as AppRole;
       setRole(currentRole);
+      setAdminAccessGranted(
+        !requireAdminLogin
+        || (currentRole === "admin" && hasValidAdminAccess(currentSession.user.id)),
+      );
       if (currentRole !== "admin" && ["suspended", "rejected"].includes(profile.status || "")) {
         await supabase.auth.signOut();
+        clearAdminAccess();
         setSession(null);
         setRole(null);
         setValidationRedirect(null);
         setPrelaunchBlocked(false);
+        setAdminAccessGranted(!requireAdminLogin);
         return;
       }
 
@@ -112,9 +130,25 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
     });
 
     return () => subscription.unsubscribe();
-  }, [requireValidated]);
+  }, [requireAdminLogin, requireValidated]);
 
-  if (session === undefined || role === undefined || validationRedirect === undefined || prelaunchBlocked === undefined) {
+  useEffect(() => {
+    if (!requireAdminLogin || role !== "admin" || !session?.user?.id) return;
+
+    const verifyAdminGrant = () => {
+      setAdminAccessGranted(hasValidAdminAccess(session.user.id));
+    };
+    const interval = window.setInterval(verifyAdminGrant, 15_000);
+    return () => window.clearInterval(interval);
+  }, [requireAdminLogin, role, session?.user?.id]);
+
+  if (
+    session === undefined
+    || role === undefined
+    || validationRedirect === undefined
+    || prelaunchBlocked === undefined
+    || adminAccessGranted === undefined
+  ) {
     return (
       <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
         <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
@@ -124,7 +158,7 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
   }
 
   if (!session) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={requireAdminLogin ? "/admin/auth" : "/auth"} replace />;
   }
 
   if (prelaunchBlocked) {
@@ -132,7 +166,12 @@ export default function ProtectedRoute({ allowedRoles, requireValidated = false 
   }
 
   if (allowedRoles?.length && (!role || !allowedRoles.includes(role))) {
+    if (requireAdminLogin) clearAdminAccess();
     return <Navigate to={homeForRole(role)} replace />;
+  }
+
+  if (requireAdminLogin && !adminAccessGranted) {
+    return <Navigate to="/admin/auth" replace />;
   }
 
   if (validationRedirect) {
