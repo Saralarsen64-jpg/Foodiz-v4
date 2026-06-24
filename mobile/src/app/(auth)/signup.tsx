@@ -6,6 +6,7 @@ import {
   FoodizBrand,
   FoodizButton,
   FoodizField,
+  FoodizLegalLinks,
   FoodizScreen,
   foodizText,
 } from '@/components/foodiz-ui';
@@ -87,6 +88,7 @@ export default function SignupScreen() {
       <Link href="/login" style={styles.link}>
         J’ai déjà un compte
       </Link>
+      <FoodizLegalLinks />
     </FoodizScreen>
   );
 }

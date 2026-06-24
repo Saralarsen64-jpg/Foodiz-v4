@@ -73,6 +73,13 @@ import PrelaunchConfirmed from "./pages/prelaunch/Confirmed";
 import ActivatePrelaunch from "./pages/prelaunch/Activate";
 import PrelaunchCourierDocuments from "./pages/prelaunch/CourierDocuments";
 import PrelaunchPartnerDocuments from "./pages/prelaunch/PartnerDocuments";
+import {
+  CookiesPolicyPage,
+  LegalNoticePage,
+  PrivacyPolicyPage,
+  TermsOfSalePage,
+  TermsOfUsePage,
+} from "./pages/legal/LegalPages";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/Dashboard";
@@ -112,6 +119,11 @@ export default function App() {
       <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route path="/admin/auth" element={<AdminAuth />} />
       <Route path="/admin-auth" element={<Navigate to="/admin/auth" replace />} />
+      <Route path="/mentions-legales" element={<LegalNoticePage />} />
+      <Route path="/cgu" element={<TermsOfUsePage />} />
+      <Route path="/cgv" element={<TermsOfSalePage />} />
+      <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
+      <Route path="/cookies" element={<CookiesPolicyPage />} />
 
       {/* ─── ROUTES PROTÉGÉES PAR RÔLE ───────────────────────────────────── */}
       <Route element={<ProtectedRoute allowedRoles={["client"]} />}>

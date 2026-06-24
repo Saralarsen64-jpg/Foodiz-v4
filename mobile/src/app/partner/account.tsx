@@ -5,6 +5,7 @@ import {
   FoodizBrand,
   FoodizButton,
   FoodizCard,
+  FoodizLegalLinks,
   FoodizScreen,
   foodizText,
 } from '@/components/foodiz-ui';
@@ -69,6 +70,7 @@ export default function PartnerAccountScreen() {
         onPress={confirmDeletion}
         secondary
       />
+      <FoodizLegalLinks />
     </FoodizScreen>
   );
 }

@@ -20,7 +20,7 @@ import {
   Store,
   User,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 
 type Role = "client" | "livreur" | "partenaire";
@@ -888,7 +888,15 @@ export default function WaitlistPage() {
                 className="mt-0.5 h-7 w-7 shrink-0 rounded-md accent-[#D8A84F]"
               />
               <span className="text-[12px] leading-relaxed text-[#d7d0c6]/72">
-                J’accepte que Foodiz utilise ces informations pour gérer ma pré-inscription et m’envoyer les informations liées au lancement.
+                J’accepte les{" "}
+                <Link to="/cgu" className="font-semibold text-foodiz-gold underline decoration-foodiz-gold/35 underline-offset-4">
+                  CGU
+                </Link>
+                {" "}et la{" "}
+                <Link to="/confidentialite" className="font-semibold text-foodiz-gold underline decoration-foodiz-gold/35 underline-offset-4">
+                  politique de confidentialité
+                </Link>
+                , et j’autorise Foodiz à me contacter au sujet de ma pré-inscription et du lancement.
               </span>
             </label>
 
@@ -918,6 +926,25 @@ export default function WaitlistPage() {
             <Lock size={15} className="text-[#d8a84f]/80" />
             <p className="text-[12px] text-[#d8a84f]">Vos informations sont sécurisées et confidentielles.</p>
           </div>
+
+          <footer className="mt-8 rounded-[1.25rem] border border-foodiz-gold/10 bg-white/[0.018] px-5 py-5 text-center">
+            <a
+              href="https://www.instagram.com/foodiz_off/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-foodiz-gold/20 px-4 py-2 text-xs font-semibold text-foodiz-gold transition hover:bg-foodiz-gold/10"
+            >
+              <Star size={15} />
+              Suivre @foodiz_off
+            </a>
+            <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-foodiz-gray">
+              <Link to="/mentions-legales" className="hover:text-foodiz-gold">Mentions légales</Link>
+              <Link to="/cgu" className="hover:text-foodiz-gold">CGU</Link>
+              <Link to="/cgv" className="hover:text-foodiz-gold">CGV</Link>
+              <Link to="/confidentialite" className="hover:text-foodiz-gold">Confidentialité</Link>
+              <Link to="/cookies" className="hover:text-foodiz-gold">Cookies</Link>
+            </nav>
+          </footer>
         </main>
     </div>
   );

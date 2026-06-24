@@ -6,6 +6,7 @@ import {
   FoodizBrand,
   FoodizButton,
   FoodizField,
+  FoodizLegalLinks,
   FoodizScreen,
   foodizText,
 } from '@/components/foodiz-ui';
@@ -90,6 +91,7 @@ export default function LoginScreen() {
           Créer un compte Foodiz
         </Link>
       )}
+      <FoodizLegalLinks />
     </FoodizScreen>
   );
 }

@@ -5,6 +5,7 @@ import {
   FoodizBrand,
   FoodizButton,
   FoodizCard,
+  FoodizLegalLinks,
   FoodizScreen,
   foodizText,
 } from '@/components/foodiz-ui';
@@ -45,6 +46,7 @@ export default function ClientAccountScreen() {
       />
       <FoodizButton label="Se déconnecter" onPress={() => void signOut()} secondary />
       <FoodizButton label="Supprimer définitivement mon compte" onPress={confirmDeletion} secondary />
+      <FoodizLegalLinks />
     </FoodizScreen>
   );
 }

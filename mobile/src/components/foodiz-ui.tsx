@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -116,6 +117,26 @@ export function FoodizCard({ children }: PropsWithChildren) {
       style={styles.card}>
       {children}
     </LinearGradient>
+  );
+}
+
+export function FoodizLegalLinks() {
+  const open = (path: string) => {
+    void Linking.openURL(`https://www.foodiz.co${path}`);
+  };
+
+  return (
+    <View style={styles.legalLinks}>
+      <Pressable onPress={() => open('/cgu')}>
+        <Text style={styles.legalText}>CGU</Text>
+      </Pressable>
+      <Pressable onPress={() => open('/cgv')}>
+        <Text style={styles.legalText}>CGV</Text>
+      </Pressable>
+      <Pressable onPress={() => open('/confidentialite')}>
+        <Text style={styles.legalText}>Confidentialité</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -233,5 +254,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     overflow: 'hidden',
     padding: 20,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 14,
+    paddingVertical: 8,
+  },
+  legalText: {
+    color: colors.muted,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
   },
 });

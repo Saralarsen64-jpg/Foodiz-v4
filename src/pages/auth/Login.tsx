@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
@@ -139,6 +139,11 @@ export default function LoginPage() {
           <p className="text-foodiz-gray text-xs">
             Pas encore de compte ? <button onClick={() => navigate(`/auth/signup?role=${role}`)} className="text-foodiz-gold font-semibold hover:underline">S'inscrire</button>
           </p>
+          <nav className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] text-foodiz-gray">
+            <Link to="/cgu" className="hover:text-foodiz-gold">CGU</Link>
+            <Link to="/cgv" className="hover:text-foodiz-gold">CGV</Link>
+            <Link to="/confidentialite" className="hover:text-foodiz-gold">Confidentialité</Link>
+          </nav>
         </div>
       </main>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Mail, Lock, User, Phone, MapPin, Hash, Briefcase, AlertCircle, CheckCircle } from "lucide-react";
 import { normalizePublicSignupRole } from "../../utils/authRoles";
@@ -150,7 +150,12 @@ export default function SignupPage() {
 
           <div className="flex items-start gap-3 px-2">
             <input type="checkbox" required checked={cguAccepted} onChange={(e) => setCguAccepted(e.target.checked)} className="mt-1 w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold" />
-            <p className="text-[10px] text-foodiz-gray leading-relaxed">J'accepte les <span className="text-foodiz-gold underline">Conditions Générales d'Utilisation</span>.</p>
+            <p className="text-[10px] text-foodiz-gray leading-relaxed">
+              J'accepte les{" "}
+              <Link to="/cgu" className="text-foodiz-gold underline">Conditions Générales d'Utilisation</Link>
+              {" "}et la{" "}
+              <Link to="/confidentialite" className="text-foodiz-gold underline">politique de confidentialité</Link>.
+            </p>
           </div>
 
           <button type="submit" disabled={loading} className="w-full foodiz-btn py-4 mt-2 text-base font-bold disabled:opacity-50">
@@ -161,6 +166,11 @@ export default function SignupPage() {
         <p className="text-center text-xs text-foodiz-gray mt-6">
           Déjà un compte ? <button onClick={() => navigate(`/auth/login?role=${role}`)} className="text-foodiz-gold font-bold hover:underline">Se connecter</button>
         </p>
+        <nav className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] text-foodiz-gray">
+          <Link to="/mentions-legales" className="hover:text-foodiz-gold">Mentions légales</Link>
+          <Link to="/cgv" className="hover:text-foodiz-gold">CGV</Link>
+          <Link to="/cookies" className="hover:text-foodiz-gold">Cookies</Link>
+        </nav>
       </div>
     </div>
   );
