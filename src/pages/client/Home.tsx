@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Search, MapPin, Gift, Star, Clock, ChevronRight, Flame, Beef, Pizza, Cookie, Wine, ShoppingCart, Sandwich, Salad, Navigation, User, ShoppingBag, Bell } from "lucide-react";
+import { Search, Gift, Star, ChevronRight, Flame, Pizza, Wine, ShoppingCart, Sandwich, Salad, Navigation, User, ShoppingBag, Bell, MapPinned, Route, ShieldCheck } from "lucide-react";
+import { FoodizActionCard, FoodizHero, FoodizMetricCard, FoodizPill } from "../../components/FoodizWebUI";
 
 const CATEGORIES = [
   { label: "Market", icon: ShoppingCart, path: "/client/market" },
@@ -28,6 +29,7 @@ export default function ClientHome() {
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [loadingRestos, setLoadingRestos] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [firstName, setFirstName] = useState("");
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -42,7 +44,8 @@ export default function ClientHome() {
         if (count) setUnreadCount(count);
 
         // 3. Localisation
-        const { data: profile } = await supabase.from('profiles').select('latitude, longitude, city').eq('id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('first_name, latitude, longitude, city').eq('id', user.id).single();
+        setFirstName(profile?.first_name || "");
         if (profile?.latitude && profile?.longitude) {
           setLocationEnabled(true);
           setCityName(profile.city || "mon adresse");
@@ -110,7 +113,7 @@ export default function ClientHome() {
             </span>
           </button>
           <h1 className="foodiz-title text-3xl text-foodiz-cream mt-2">
-            Bon appétit !
+            {firstName ? `Bonjour ${firstName}` : "Bon appétit !"}
           </h1>
         </div>
       </header>
@@ -131,11 +134,62 @@ export default function ClientHome() {
           </form>
         </div>
 
+        <FoodizHero
+          eyebrow="Expérience Foodiz"
+          title="Votre ville, vos envies, votre livraison suivie."
+          description="Foodiz réunit les bonnes adresses locales, un suivi live rassurant et un programme fidélité gourmand — sans perdre l’esprit premium noir, doré et kraft."
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <FoodizMetricCard
+              label="Points"
+              value={points.toLocaleString("fr-FR")}
+              helper="Foodiz Club"
+              icon={Gift}
+            />
+            <FoodizMetricCard
+              label="Autour"
+              value={restaurants.length}
+              helper="adresses actives"
+              icon={ShoppingBag}
+              tone={restaurants.length ? "green" : "muted"}
+            />
+            <FoodizMetricCard
+              label="Adresse"
+              value={locationEnabled ? "OK" : "À définir"}
+              helper={cityName || "livraison précise"}
+              icon={MapPinned}
+              tone={locationEnabled ? "green" : "muted"}
+            />
+          </div>
+          <div className="mt-4 grid gap-3">
+            <FoodizActionCard
+              title="Commander maintenant"
+              description="Explorez les restaurants et commerces disponibles autour de votre adresse."
+              icon={ShoppingBag}
+              badge="Local"
+              onClick={() => navigate("/client/restaurants")}
+            />
+            <FoodizActionCard
+              title="Suivi live de commande"
+              description="Dès qu’un livreur prend le relais, retrouvez son avancée et les étapes clés."
+              icon={Route}
+              badge="Live"
+              onClick={() => navigate("/client/orders")}
+            />
+            <FoodizActionCard
+              title="Avantages Foodiz Club"
+              description="Consultez vos points, récompenses et privilèges disponibles."
+              icon={ShieldCheck}
+              onClick={() => navigate("/client/advantages")}
+            />
+          </div>
+        </FoodizHero>
+
         {/* CARTE POINTS FIDÉLITÉ */}
         <div onClick={() => navigate("/client/advantages")} className="foodiz-card p-5 bg-gradient-to-r from-foodiz-gold/10 to-foodiz-card border border-foodiz-gold/30 relative overflow-hidden cursor-pointer group rounded-2xl">
           <div className="relative z-10 flex justify-between items-center">
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-foodiz-gold font-bold mb-1">Foodiz Club</p>
+              <div className="mb-2"><FoodizPill>Foodiz Club</FoodizPill></div>
               <p className="text-2xl font-serif italic text-foodiz-cream">{points.toLocaleString('fr-FR')} <span className="text-sm text-foodiz-gray not-italic font-sans">pts</span></p>
             </div>
             <div className="w-10 h-10 rounded-full bg-foodiz-gold flex items-center justify-center text-foodiz-black group-hover:scale-110 transition-transform">

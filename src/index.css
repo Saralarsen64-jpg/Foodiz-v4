@@ -54,9 +54,11 @@ body {
 
 /* ===== Utility Classes ===== */
 .foodiz-card {
-  background-color: #111111;
+  background:
+    radial-gradient(circle at top right, rgba(216, 168, 79, 0.06), transparent 38%),
+    #111111;
   border: 1px solid rgba(216, 168, 79, 0.15);
-  border-radius: 16px;
+  border-radius: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
@@ -135,6 +137,14 @@ body {
   scrollbar-width: none;
 }
 .scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
