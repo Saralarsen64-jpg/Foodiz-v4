@@ -269,6 +269,8 @@ export default function ClientOrderDetailScreen() {
   const estimatedArrival = formatTime(tracking?.estimated_arrival_at);
   const lastUpdate = formatTime(tracking?.updated_at);
   const liveTrackingAvailable = Boolean(tracking) && ['pickup', 'picked_up', 'delivering', 'delivered'].includes(order.status);
+  const courierPositionLive = Boolean(courierPosition) && ['picked_up', 'delivering'].includes(order.status);
+  const staticPreparationStatus = ['pending', 'preparing', 'ready'].includes(order.status);
   const courierName = courier?.display_name || courier?.first_name || 'Votre livreur Foodiz';
 
   return (
@@ -288,7 +290,7 @@ export default function ClientOrderDetailScreen() {
         <View style={styles.liveHeader}>
           <View style={styles.livePulse} />
           <View style={styles.liveTitle}>
-            <Text style={styles.kicker}>SUIVI LIVE</Text>
+            <Text style={styles.kicker}>{courierPositionLive ? 'SUIVI LIVE' : 'SUIVI COMMANDE'}</Text>
             <Text style={foodizText.heading}>{trackingLabel}</Text>
           </View>
         </View>
@@ -346,10 +348,21 @@ export default function ClientOrderDetailScreen() {
               ) : null}
             </View>
           </>
+        ) : staticPreparationStatus ? (
+          <View style={styles.livePending}>
+            <Text style={foodizText.heading}>
+              Votre commande est suivie, sans déplacement pour le moment.
+            </Text>
+            <Text style={foodizText.body}>
+              Le restaurant prépare la commande. La carte restera statique
+              jusqu’à l’assignation puis la récupération par un livreur Foodiz.
+            </Text>
+          </View>
         ) : (
           <View style={styles.livePending}>
             <Text style={foodizText.body}>
-              Le suivi live s’activera dès qu’un livreur prendra votre commande en charge.
+              Le suivi GPS live s’activera dès que le livreur aura récupéré
+              votre commande chez le partenaire.
             </Text>
           </View>
         )}

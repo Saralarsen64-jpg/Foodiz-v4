@@ -86,6 +86,16 @@ export default function ClientHomeScreen() {
         </Pressable>
       ) : null}
 
+      <FoodizCard>
+        <Text style={styles.kicker}>EXPÉRIENCE FOODIZ</Text>
+        <Text style={foodizText.heading}>Un suivi clair, du four à votre porte.</Text>
+        <View style={styles.promiseList}>
+          <Text style={styles.promise}>• Préparation statique pendant que le restaurant cuisine.</Text>
+          <Text style={styles.promise}>• Suivi live dès que le livreur récupère la commande.</Text>
+          <Text style={styles.promise}>• Code sécurisé à transmettre uniquement à la remise.</Text>
+        </View>
+      </FoodizCard>
+
       <View style={styles.actions}>
         <FoodizActionCard
           icon="🍽️"
@@ -182,6 +192,15 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontSize: 28,
     fontWeight: '900',
+  },
+  promiseList: {
+    gap: 8,
+    marginTop: 12,
+  },
+  promise: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
   },
   discover: {
     color: colors.gold,

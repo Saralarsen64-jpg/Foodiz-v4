@@ -7,12 +7,20 @@ import { supabase } from "../lib/supabase";
 type Role = "partner" | "courier";
 type Category = { key: string; label: string; icon: typeof Package; needsOrder?: boolean };
 
-const CONFIG: Record<Role, { title: string; home: string; intro: string; categories: Category[] }> = {
-  partner: { title: "Support partenaire", home: "/partner", intro: "Foodiz vérifie votre établissement avant de transmettre une demande à l'équipe.", categories: [
+const CONFIG: Record<Role, { title: string; home: string; intro: string; promise: string; categories: Category[]; faq: { title: string; text: string }[] }> = {
+  partner: { title: "Support partenaire", home: "/partner", intro: "Foodiz vérifie votre établissement avant de transmettre une demande à l'équipe.", promise: "Objectif : moins d'attente, moins de flou, plus de ventes sereines.", categories: [
     { key: "order", label: "Une commande", icon: Package, needsOrder: true }, { key: "menu", label: "Ma carte", icon: UtensilsCrossed }, { key: "payout", label: "Revenus & versements", icon: Landmark }, { key: "account", label: "Établissement", icon: Store },
+  ], faq: [
+    { title: "Une commande n’apparaît pas", text: "Vérifiez d’abord le statut de votre établissement et les commandes actives. Si le diagnostic détecte un blocage, Foodiz reçoit le contexte complet." },
+    { title: "Un produit n’est pas visible", text: "Assurez-vous que le produit est actif, rattaché à une catégorie et correctement illustré. Une carte claire inspire plus confiance." },
+    { title: "Un règlement semble incomplet", text: "Les virements restent suivis depuis l’admin. Foodiz conserve l’historique des montants partenaire, frais et ajustements éventuels." },
   ] },
-  courier: { title: "Support livreur", home: "/courier", intro: "Foodiz analyse votre course et votre compte pour vous orienter immédiatement.", categories: [
+  courier: { title: "Support livreur", home: "/courier", intro: "Foodiz analyse votre course et votre compte pour vous orienter immédiatement.", promise: "Objectif : une course claire, sécurisée, traçable et rémunérée correctement.", categories: [
     { key: "delivery", label: "Livraison en cours", icon: Package, needsOrder: true }, { key: "availability", label: "Disponibilité", icon: Wifi }, { key: "payout", label: "Gains & versements", icon: Landmark }, { key: "account", label: "Mon compte", icon: CircleUserRound },
+  ], faq: [
+    { title: "Je ne reçois pas de courses", text: "Votre dossier doit être validé, votre position récente et votre statut en ligne. Le dispatch privilégie la proximité et la fiabilité." },
+    { title: "Le chrono de retard démarre quand ?", text: "Uniquement après la récupération de la commande au restaurant, avec ETA serveur et GPS précis." },
+    { title: "Je ne peux pas valider une étape", text: "Ne forcez pas. Vérifiez votre connexion, votre GPS et ouvrez un ticket avec la course concernée si le blocage continue." },
   ] },
 };
 
@@ -91,10 +99,39 @@ export default function GuidedBusinessSupport({ role }: { role: Role }) {
   return <div className="min-h-screen bg-foodiz-black pb-24">
     <header className="sticky top-0 z-30 border-b border-foodiz-gold/10 bg-foodiz-card px-4 py-3"><div className="mx-auto flex max-w-3xl items-center gap-3"><button onClick={() => navigate(config.home)} className="text-foodiz-gold"><ChevronLeft size={21}/></button><h1 className="foodiz-title text-lg">{config.title}</h1></div></header>
     <main className="mx-auto max-w-3xl space-y-7 px-4 py-6">
-      <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.16),rgba(13,13,13,0.98)_52%)] p-6"><Headphones className="text-foodiz-gold" size={26}/><h2 className="foodiz-title mt-4 text-2xl">Une aide utile, sans détour</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-foodiz-gray">{config.intro}</p></section>
+      <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.16),rgba(13,13,13,0.98)_52%)] p-6">
+        <Headphones className="text-foodiz-gold" size={26}/>
+        <h2 className="foodiz-title mt-4 text-2xl">Une aide utile, sans détour</h2>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-foodiz-gray">{config.intro}</p>
+        <p className="mt-2 text-xs font-semibold text-foodiz-gold">{config.promise}</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "Diagnostic", icon: RefreshCw, text: "Foodiz vérifie les données avant le ticket." },
+            { label: "Priorité", icon: AlertCircle, text: "Les urgences sont clairement identifiées." },
+            { label: "Traçabilité", icon: Clock3, text: "Chaque demande garde son historique." },
+          ].map(({ label, icon: Icon, text }) => (
+            <div key={label} className="rounded-2xl border border-foodiz-gold/10 bg-black/25 p-4">
+              <Icon size={17} className="text-foodiz-gold" />
+              <p className="mt-3 text-xs font-semibold text-foodiz-cream">{label}</p>
+              <p className="mt-1 text-[10px] leading-relaxed text-foodiz-gray">{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
       <section><h2 className="foodiz-title text-lg">Quel est le problème ?</h2><div className="mt-4 grid grid-cols-2 gap-3">{config.categories.map((item) => <button key={item.key} onClick={() => { setCategory(item.key); setOrderId(""); setDiagnosis(null); }} className={`foodiz-card p-4 text-left transition-all ${category === item.key ? "border-foodiz-gold bg-foodiz-gold/5" : "border-foodiz-gold/10"}`}><item.icon size={19} className="text-foodiz-gold"/><p className="mt-3 text-sm text-foodiz-cream">{item.label}</p></button>)}</div></section>
       {category && <section className="foodiz-card space-y-4 p-5"><h3 className="foodiz-title text-base">Diagnostic sécurisé</h3>{selectedCategory?.needsOrder && <select value={orderId} onChange={(event) => { setOrderId(event.target.value); setDiagnosis(null); }} className="w-full rounded-xl border border-foodiz-gold/20 bg-foodiz-black p-3 text-sm text-foodiz-cream"><option value="">Choisir la commande concernée</option>{orders.map((order) => <option key={order.id} value={order.id}>#{order.id.slice(0, 8)} · {order.restaurant?.name || "Établissement"} · {order.status}</option>)}</select>}<button onClick={runDiagnosis} disabled={diagnosing || Boolean(selectedCategory?.needsOrder && !orderId)} className="foodiz-btn flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40"><RefreshCw size={15} className={diagnosing ? "animate-spin" : ""}/>{diagnosing ? "Analyse..." : "Analyser ma situation"}</button></section>}
       {diagnosis && <section className={`foodiz-card border p-5 ${diagnosis.resolved ? "border-foodiz-green/20 bg-foodiz-green/5" : "border-foodiz-gold/20"}`}><div className="flex gap-3">{diagnosis.resolved ? <CheckCircle2 className="shrink-0 text-foodiz-green"/> : <AlertCircle className="shrink-0 text-foodiz-gold"/>}<div><h3 className="font-semibold text-foodiz-cream">{diagnosis.title}</h3><p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{diagnosis.explanation}</p></div></div>{diagnosis.action && <button onClick={() => navigate(diagnosis.action.path)} className="mt-4 flex items-center gap-1 text-xs text-foodiz-gold">{diagnosis.action.label}<ChevronRight size={14}/></button>}<div className="mt-5 border-t border-white/10 pt-4"><p className="mb-3 text-xs text-foodiz-gray">Toujours bloqué ? Précisez uniquement ce qui n'a pas été résolu.</p><textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Décrivez le problème restant..." className="h-24 w-full resize-none rounded-xl border border-foodiz-gold/20 bg-foodiz-black p-3 text-sm text-foodiz-cream outline-none"/><button onClick={createTicket} disabled={sending || !message.trim()} className="foodiz-btn mt-3 flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40"><Send size={15}/>{sending ? "Envoi..." : "Transmettre au support"}</button></div></section>}
+      <section>
+        <h2 className="foodiz-title mb-4 text-lg">Réponses rapides</h2>
+        <div className="grid gap-3 md:grid-cols-3">
+          {config.faq.map((item) => (
+            <article key={item.title} className="rounded-2xl border border-foodiz-gold/10 bg-white/[0.025] p-4">
+              <p className="text-sm font-semibold text-foodiz-cream">{item.title}</p>
+              <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
       <section><h2 className="foodiz-title mb-4 flex items-center gap-2 text-lg"><Clock3 size={18} className="text-foodiz-gold"/>Mes demandes</h2>{loading ? <p className="text-sm text-foodiz-gray animate-pulse">Chargement...</p> : tickets.length === 0 ? <div className="foodiz-card p-5 text-center text-xs text-foodiz-gray">Aucune demande en cours.</div> : <div className="space-y-3">{tickets.map((ticket) => <article key={ticket.id} className="foodiz-card p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-foodiz-cream">{ticket.subject}</p><p className="mt-1 text-[10px] text-foodiz-gray">{new Date(ticket.created_at).toLocaleString("fr-FR")}</p></div><span className={`rounded-full border px-2 py-1 text-[9px] uppercase ${["closed", "resolved"].includes(ticket.status) ? "border-foodiz-green/20 text-foodiz-green" : "border-foodiz-gold/20 text-foodiz-gold"}`}>{ticket.status}</span></div><p className="mt-3 text-xs text-foodiz-gray">{ticket.message}</p>{ticket.admin_response && <div className="mt-3 rounded-xl border border-foodiz-green/15 bg-foodiz-green/5 p-3"><p className="mb-1 text-[9px] uppercase text-foodiz-green">Réponse Foodiz</p><p className="text-xs text-foodiz-cream">{ticket.admin_response}</p></div>}</article>)}</div>}</section>
     </main>
   </div>;

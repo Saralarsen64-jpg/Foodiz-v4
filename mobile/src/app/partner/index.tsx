@@ -167,6 +167,16 @@ export default function PartnerDashboardScreen() {
           </Text>
         </FoodizCard>
 
+        <FoodizCard>
+          <Text style={styles.kicker}>PLAN D’ACTION</Text>
+          <Text style={foodizText.heading}>Votre vitrine doit donner faim et confiance.</Text>
+          <View style={styles.planList}>
+            <Text style={styles.planItem}>• Carte courte, lisible, avec vos produits les plus rentables.</Text>
+            <Text style={styles.planItem}>• Photos nettes et descriptions simples pour réduire les questions.</Text>
+            <Text style={styles.planItem}>• Commandes acceptées vite : c’est le premier luxe Foodiz.</Text>
+          </View>
+        </FoodizCard>
+
         <View style={styles.actions}>
           <FoodizActionCard
             icon="🔔"
@@ -208,6 +218,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actions: { gap: 10 },
+  planList: {
+    gap: 8,
+    marginTop: 12,
+  },
+  planItem: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
   kicker: {
     color: colors.gold,
     fontSize: 10,

@@ -140,9 +140,14 @@ export default function DeliveryTrackingPage() {
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       pending: "En attente",
+      preparing: "En préparation",
+      ready: "Prête au restaurant",
+      pickup: "Livreur assigné",
       accepted: "Acceptée",
+      at_restaurant: "Livreur au restaurant",
       picked_up: "Récupérée",
       in_transit: "En route",
+      at_customer: "Livreur arrivé",
       delivered: "Livrée",
       cancelled: "Annulée",
     };
@@ -152,9 +157,14 @@ export default function DeliveryTrackingPage() {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       pending: "bg-foodiz-gray",
+      preparing: "bg-foodiz-gold",
+      ready: "bg-foodiz-gold",
+      pickup: "bg-foodiz-gold",
       accepted: "bg-blue-500",
+      at_restaurant: "bg-foodiz-gold",
       picked_up: "bg-yellow-500",
       in_transit: "bg-foodiz-gold",
+      at_customer: "bg-foodiz-green",
       delivered: "bg-foodiz-green",
       cancelled: "bg-foodiz-red",
     };
@@ -178,6 +188,9 @@ export default function DeliveryTrackingPage() {
       </div>
     );
   }
+
+  const visualStatus = tracking?.status || order.status || "pending";
+  const staticPreparationStatus = ["pending", "preparing", "ready"].includes(order.status);
 
   return (
     <div className="min-h-screen bg-foodiz-black">
@@ -226,6 +239,18 @@ export default function DeliveryTrackingPage() {
             )}
           </MapContainer>
         )}
+        {(!tracking || !restaurant || !client) && staticPreparationStatus && (
+          <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(216,168,79,.16),transparent_42%),#0a0a0a] p-6 text-center">
+            <div className="max-w-sm rounded-[2rem] border border-foodiz-gold/20 bg-black/35 p-6">
+              <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Suivi statique</p>
+              <h2 className="foodiz-title mt-3 text-2xl text-foodiz-cream">La commande se prépare</h2>
+              <p className="mt-3 text-sm leading-relaxed text-foodiz-gray">
+                La carte GPS s’activera après récupération par le livreur.
+                Pour l’instant, Foodiz suit l’état restaurant.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6 pb-20">
@@ -238,8 +263,8 @@ export default function DeliveryTrackingPage() {
         )}
         {/* Status */}
         <div className="foodiz-card p-6 text-center">
-          <div className={`inline-block ${getStatusColor(tracking?.status || "pending")} rounded-full px-4 py-2 mb-4`}>
-            <p className="text-white text-sm font-bold">{getStatusLabel(tracking?.status || "pending")}</p>
+          <div className={`inline-block ${getStatusColor(visualStatus)} rounded-full px-4 py-2 mb-4`}>
+            <p className="text-white text-sm font-bold">{getStatusLabel(visualStatus)}</p>
           </div>
           <h2 className="foodiz-title text-2xl text-foodiz-cream mb-2">Commande #{orderId?.slice(0, 8)}</h2>
           {tracking?.estimated_arrival_at && (

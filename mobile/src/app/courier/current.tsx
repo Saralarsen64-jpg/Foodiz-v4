@@ -59,14 +59,70 @@ type ActiveOrder = {
   } | null;
 };
 
+type DeliveryTracking = {
+  status: DeliveryStep | null;
+  pickup_at: string | null;
+  pickup_expected_arrival_at: string | null;
+  pickup_route_duration_seconds: number | null;
+  pickup_route_distance_meters: number | null;
+  eta_provider: string | null;
+  updated_at: string | null;
+};
+
+function formatCurrency(cents: number) {
+  return `${(Math.max(0, cents) / 100).toFixed(2)} €`;
+}
+
+function formatDuration(seconds: number) {
+  const absolute = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(absolute / 60);
+  const remainingSeconds = absolute % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
+    .toString()
+    .padStart(2, '0')}`;
+}
+
+function formatDistanceMeters(meters?: number | null) {
+  if (typeof meters !== 'number' || !Number.isFinite(meters)) return 'Distance calculée au pickup';
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+
+function delayPenaltyCents(delaySeconds: number) {
+  if (delaySeconds > 1200) return 200;
+  if (delaySeconds > 900) return 100;
+  if (delaySeconds >= 600) return 50;
+  return 0;
+}
+
+function delayStatus(delaySeconds: number) {
+  if (delaySeconds > 1200) return 'Retard +20 min';
+  if (delaySeconds > 900) return 'Retard +15 min';
+  if (delaySeconds >= 600) return 'Retard +10 min';
+  if (delaySeconds > 0) return 'Tolérance retard';
+  return 'À l’heure';
+}
+
 export default function CurrentDeliveryScreen() {
   const params = useLocalSearchParams<{ orderId?: string }>();
   const { session } = useAuth();
   const [order, setOrder] = useState<ActiveOrder | null>(null);
+  const [tracking, setTracking] = useState<DeliveryTracking | null>(null);
   const [step, setStep] = useState<DeliveryStep>('accepted');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const watchRef = useRef<Location.LocationSubscription | null>(null);
+
+  async function refreshTracking(orderId: string) {
+    const { data } = await supabase
+      .from('delivery_tracking')
+      .select('status,pickup_at,pickup_expected_arrival_at,pickup_route_duration_seconds,pickup_route_distance_meters,eta_provider,updated_at')
+      .eq('order_id', orderId)
+      .maybeSingle();
+    setTracking((data || null) as DeliveryTracking | null);
+    return data as DeliveryTracking | null;
+  }
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -90,11 +146,7 @@ export default function CurrentDeliveryScreen() {
       }
 
       const normalized = data as unknown as ActiveOrder;
-      const { data: tracking } = await supabase
-        .from('delivery_tracking')
-        .select('status')
-        .eq('order_id', normalized.id)
-        .maybeSingle();
+      const tracking = await refreshTracking(normalized.id);
       if (!active) return;
 
       setOrder(normalized);
@@ -112,6 +164,11 @@ export default function CurrentDeliveryScreen() {
       active = false;
     };
   }, [params.orderId, session]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!order || step === 'delivered') return;
@@ -165,7 +222,7 @@ export default function CurrentDeliveryScreen() {
         });
       }
 
-      await foodizApi('courier-delivery-action', {
+      const result = await foodizApi<{ expectedArrivalAt?: string | null; routeDurationSeconds?: number | null }>('courier-delivery-action', {
         method: 'POST',
         body: JSON.stringify({
           orderId: order.id,
@@ -188,6 +245,11 @@ export default function CurrentDeliveryScreen() {
             : order.status;
       setOrder({ ...order, status: orderStatus });
       setStep(next);
+      if (next === 'picked_up') {
+        await refreshTracking(order.id);
+      } else if (result?.expectedArrivalAt || result?.routeDurationSeconds) {
+        await refreshTracking(order.id);
+      }
     } catch (error) {
       Alert.alert(
         'Étape impossible',
@@ -252,6 +314,26 @@ export default function CurrentDeliveryScreen() {
     order.delivery_fee_cents +
     order.courier_earnings_cents +
     order.courier_prime_fund_cents;
+  const maxDelayPenaltyCents = Math.min(200, earnings);
+  const expectedArrivalMs = tracking?.pickup_expected_arrival_at
+    ? new Date(tracking.pickup_expected_arrival_at).getTime()
+    : null;
+  const hasRegulatedTimer = ['picked_up', 'in_transit', 'at_customer'].includes(step)
+    && typeof expectedArrivalMs === 'number'
+    && Number.isFinite(expectedArrivalMs);
+  const delaySeconds = hasRegulatedTimer
+    ? Math.max(0, Math.floor((now - expectedArrivalMs!) / 1000))
+    : 0;
+  const remainingSeconds = hasRegulatedTimer
+    ? Math.max(0, Math.floor((expectedArrivalMs! - now) / 1000))
+    : 0;
+  const currentPenalty = delayPenaltyCents(delaySeconds);
+  const expectedArrivalLabel = tracking?.pickup_expected_arrival_at
+    ? new Date(tracking.pickup_expected_arrival_at).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
   return (
     <FoodizScreen>
@@ -263,7 +345,7 @@ export default function CurrentDeliveryScreen() {
         <FoodizPill label={`${index + 1}/${steps.length}`} />
       </View>
       <Text style={foodizText.title}>{steps[index]?.label}</Text>
-      <Text style={styles.earnings}>Gain prévu : {(earnings / 100).toFixed(2)} €</Text>
+      <Text style={styles.earnings}>Gain max si à l’heure : {formatCurrency(earnings)}</Text>
 
       <View style={styles.timeline}>
         {steps.map((candidate, stepIndex) => (
@@ -276,6 +358,56 @@ export default function CurrentDeliveryScreen() {
           />
         ))}
       </View>
+
+      {['accepted', 'at_restaurant'].includes(step) ? (
+        <FoodizCard>
+          <Text style={styles.kicker}>NUMÉRO À PRÉSENTER AU RESTAURANT</Text>
+          <Text style={styles.pickupCode}>#{order.id.slice(0, 8).toUpperCase()}</Text>
+          <Text style={foodizText.body}>
+            Présentez ce numéro au partenaire pour récupérer la bonne commande.
+            Le chrono de ponctualité démarre uniquement après “Commande récupérée”.
+          </Text>
+        </FoodizCard>
+      ) : null}
+
+      <FoodizCard>
+        <View style={styles.moneyGrid}>
+          <View style={styles.moneyBox}>
+            <Text style={styles.kicker}>GAIN MAX</Text>
+            <Text style={styles.moneyValue}>{formatCurrency(earnings)}</Text>
+            <Text style={styles.moneyHint}>Si livraison à l’heure</Text>
+          </View>
+          <View style={styles.moneyBox}>
+            <Text style={styles.kicker}>GAIN MINI</Text>
+            <Text style={[styles.moneyValue, styles.moneyDanger]}>
+              {formatCurrency(earnings - maxDelayPenaltyCents)}
+            </Text>
+            <Text style={styles.moneyHint}>Si retard maximal appliqué</Text>
+          </View>
+        </View>
+        {hasRegulatedTimer ? (
+          <View style={styles.timerBox}>
+            <Text style={styles.kicker}>CHRONO RÉGLEMENTÉ</Text>
+            <Text style={[styles.timerValue, currentPenalty > 0 && styles.timerLate]}>
+              {delaySeconds > 0
+                ? `+${formatDuration(delaySeconds)}`
+                : formatDuration(remainingSeconds)}
+            </Text>
+            <Text style={foodizText.body}>
+              Arrivée prévue {expectedArrivalLabel || 'en calcul'} · {delayStatus(delaySeconds)}
+              {currentPenalty > 0 ? ` · pénalité actuelle -${formatCurrency(currentPenalty)}` : ''}
+            </Text>
+          </View>
+        ) : (
+          <Text style={foodizText.body}>
+            Le chrono exact et les pénalités éventuelles seront calculés au moment
+            où vous confirmez la récupération avec GPS précis.
+          </Text>
+        )}
+        <Text style={styles.moneyHint}>
+          Règles Foodiz : +10 min = -0,50 €, +15 min = -1 €, +20 min = -2 € et priorité réduite.
+        </Text>
+      </FoodizCard>
 
       <FoodizCard>
         <Text style={styles.kicker}>RÉCUPÉRATION</Text>
@@ -387,5 +519,54 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 12,
     textAlign: 'center',
+  },
+  pickupCode: {
+    color: colors.cream,
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: 3,
+  },
+  moneyGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  moneyBox: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  moneyValue: {
+    color: colors.success,
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 6,
+  },
+  moneyDanger: {
+    color: colors.gold,
+  },
+  moneyHint: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 4,
+  },
+  timerBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    padding: 16,
+    backgroundColor: 'rgba(216,168,79,0.06)',
+  },
+  timerValue: {
+    color: colors.success,
+    fontSize: 32,
+    fontWeight: '900',
+    marginVertical: 4,
+  },
+  timerLate: {
+    color: colors.danger,
   },
 });

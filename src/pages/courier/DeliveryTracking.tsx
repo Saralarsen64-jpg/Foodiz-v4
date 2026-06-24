@@ -45,6 +45,32 @@ function currentPosition() {
   });
 }
 
+function euros(cents: number) {
+  return `${(Math.max(0, cents) / 100).toFixed(2)} €`;
+}
+
+function formatTimer(seconds: number) {
+  const absolute = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(absolute / 60);
+  const remaining = absolute % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
+}
+
+function penaltyForDelay(delaySeconds: number) {
+  if (delaySeconds > 1200) return 200;
+  if (delaySeconds > 900) return 100;
+  if (delaySeconds >= 600) return 50;
+  return 0;
+}
+
+function delayLabel(delaySeconds: number) {
+  if (delaySeconds > 1200) return "Retard +20 min";
+  if (delaySeconds > 900) return "Retard +15 min";
+  if (delaySeconds >= 600) return "Retard +10 min";
+  if (delaySeconds > 0) return "Tolérance retard";
+  return "À l’heure";
+}
+
 export default function DeliveryTrackingPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -55,6 +81,7 @@ export default function DeliveryTrackingPage() {
   const [codeError, setCodeError] = useState("");
   const [busy, setBusy] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const [now, setNow] = useState(() => Date.now());
   const lastLocationUpdate = useRef(0);
 
   const loadDelivery = async () => {
@@ -86,6 +113,11 @@ export default function DeliveryTrackingPage() {
   }, [id]);
 
   useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     if (!id || !navigator.geolocation || step === "delivered") return;
     const watchId = navigator.geolocation.watchPosition(async (position) => {
       const now = Date.now();
@@ -108,7 +140,17 @@ export default function DeliveryTrackingPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [id, step]);
 
-  const earnings = ((order?.delivery_fee_cents || 0) + (order?.courier_earnings_cents || 0) + (order?.courier_prime_fund_cents || 0) - (order?.courier_delay_penalty_cents || 0)) / 100;
+  const grossCourierCents = (order?.delivery_fee_cents || 0) + (order?.courier_earnings_cents || 0) + (order?.courier_prime_fund_cents || 0);
+  const earnings = (grossCourierCents - (order?.courier_delay_penalty_cents || 0)) / 100;
+  const maxDelayPenaltyCents = Math.min(200, grossCourierCents);
+  const expectedArrivalMs = tracking?.pickup_expected_arrival_at ? new Date(tracking.pickup_expected_arrival_at).getTime() : null;
+  const hasRegulatedTimer = ["picked_up", "in_transit", "at_customer"].includes(step) && typeof expectedArrivalMs === "number" && Number.isFinite(expectedArrivalMs);
+  const delaySeconds = hasRegulatedTimer ? Math.max(0, Math.floor((now - expectedArrivalMs!) / 1000)) : 0;
+  const remainingSeconds = hasRegulatedTimer ? Math.max(0, Math.floor((expectedArrivalMs! - now) / 1000)) : 0;
+  const currentPenaltyCents = penaltyForDelay(delaySeconds);
+  const expectedArrivalLabel = tracking?.pickup_expected_arrival_at
+    ? new Date(tracking.pickup_expected_arrival_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    : null;
   const currentIndex = STEPS.findIndex((item) => item.key === step);
   const progress = ((currentIndex + 1) / STEPS.length) * 100;
   const clientName = order?.client?.display_name || order?.client?.first_name || "Client Foodiz";
@@ -212,6 +254,58 @@ export default function DeliveryTrackingPage() {
           </div>
           <div className="h-2 bg-white/5 rounded-full mt-6 overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-foodiz-gold-dark via-foodiz-gold to-foodiz-green transition-all duration-700" style={{ width: `${progress}%` }} /></div>
           <div className="flex justify-between mt-2 text-[9px] text-foodiz-gray"><span>Restaurant</span><span>Client</span><span>Validée</span></div>
+        </section>
+
+        {["accepted", "at_restaurant"].includes(step) && (
+          <section className="foodiz-card border-foodiz-gold/25 bg-foodiz-gold/[0.05] p-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-foodiz-gold">
+              Numéro à présenter au restaurant
+            </p>
+            <p className="mt-3 text-4xl font-black tracking-[0.15em] text-foodiz-cream">
+              #{id?.slice(0, 8).toUpperCase()}
+            </p>
+            <p className="mt-3 text-xs leading-relaxed text-foodiz-gray">
+              Présentez ce numéro au partenaire pour récupérer la bonne commande.
+              Le chrono réglementé démarre uniquement après “Commande récupérée”.
+            </p>
+          </section>
+        )}
+
+        <section className="foodiz-card p-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodiz-gold">Gain max</p>
+              <p className="mt-2 text-2xl font-serif italic text-foodiz-green">{euros(grossCourierCents)}</p>
+              <p className="mt-1 text-[10px] text-foodiz-gray">Si livraison à l’heure</p>
+            </div>
+            <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodiz-gold">Gain mini</p>
+              <p className="mt-2 text-2xl font-serif italic text-foodiz-gold">{euros(grossCourierCents - maxDelayPenaltyCents)}</p>
+              <p className="mt-1 text-[10px] text-foodiz-gray">Si pénalité max appliquée</p>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[0.04] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodiz-gold">Chrono réglementé</p>
+            {hasRegulatedTimer ? (
+              <>
+                <p className={`mt-2 text-4xl font-black ${currentPenaltyCents > 0 ? "text-foodiz-red" : "text-foodiz-green"}`}>
+                  {delaySeconds > 0 ? `+${formatTimer(delaySeconds)}` : formatTimer(remainingSeconds)}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">
+                  Arrivée prévue {expectedArrivalLabel || "en calcul"} · {delayLabel(delaySeconds)}
+                  {currentPenaltyCents > 0 ? ` · pénalité actuelle -${euros(currentPenaltyCents)}` : ""}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">
+                Le chrono exact sera calculé au moment où vous confirmez la récupération avec GPS précis.
+              </p>
+            )}
+            <p className="mt-3 text-[10px] leading-relaxed text-foodiz-gray">
+              Règles Foodiz : +10 min = -0,50 €, +15 min = -1 €, +20 min = -2 € et priorité réduite.
+            </p>
+          </div>
         </section>
 
         {locationError && <div className="rounded-2xl border border-foodiz-red/20 bg-foodiz-red/10 p-4 text-xs text-foodiz-red">{locationError}</div>}

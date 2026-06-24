@@ -1,5 +1,10 @@
 # Foodiz
 
+## Pré-lancement
+
+La checklist de recette avant App Store / Google Play est disponible ici :
+[`docs/foodiz-launch-readiness.md`](docs/foodiz-launch-readiness.md).
+
 ## Routage serveur
 
 Foodiz utilise OpenRouteService comme fournisseur principal pour calculer les

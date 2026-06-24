@@ -174,9 +174,92 @@ export default function AdminDashboard() {
     { label: "Livreurs validés", value: areaTotals.approvedCouriers, icon: Bike },
     { label: "Documents à traiter", value: areaTotals.documentsToReview, icon: ClipboardCheck },
   ];
+  const launchChecklist = [
+    {
+      label: "1. Parcours commande complet",
+      detail: "Client → panier → paiement test → restaurant → livreur → suivi live → code client.",
+      status: stats.orders > 0 ? "À rejouer sur build mobile" : "À faire",
+      icon: ShoppingBag,
+      path: "/admin/orders",
+      ready: stats.orders > 0,
+    },
+    {
+      label: "2. Partenaires Mont-de-Marsan",
+      detail: "Dossiers, documents, carte, statut opérationnel et ville pilote.",
+      status: areaTotals.approvedPartners > 0 ? `${areaTotals.approvedPartners} validé(s)` : "À valider",
+      icon: Store,
+      path: "/admin/partner-applications",
+      ready: areaTotals.approvedPartners > 0,
+    },
+    {
+      label: "3. Livreurs + GPS",
+      detail: "Documents validés, position récente, ETA serveur, chrono et pénalités visibles.",
+      status: areaTotals.approvedCouriers > 0 ? `${areaTotals.approvedCouriers} validé(s)` : "À valider",
+      icon: Bike,
+      path: "/admin/courier-applications",
+      ready: areaTotals.approvedCouriers > 0,
+    },
+    {
+      label: "4. Cockpit admin sécurisé",
+      detail: "Support, documents, villes, paiements manuels et incidents au même endroit.",
+      status: "Actif",
+      icon: Gauge,
+      path: "/admin/support",
+      ready: true,
+    },
+    {
+      label: "5. Help center pilotable",
+      detail: "Tickets guidés, diagnostic, SLA et réponse admin historisée.",
+      status: stats.tickets ? `${stats.tickets} ticket(s)` : "Prêt",
+      icon: LifeBuoy,
+      path: "/admin/support",
+      ready: true,
+    },
+    {
+      label: "6. Builds iOS / Android",
+      detail: "À confirmer avec EAS : build dev iPhone puis preview Android/iOS avant stores.",
+      status: "À tester sur appareil",
+      icon: CreditCard,
+      path: "/admin/service-areas",
+      ready: false,
+    },
+  ];
 
   return <AdminShell title="Dashboard administrateur" subtitle="Pilotage réel de l’activité, des partenaires et des flux financiers">
     {loading ? <div className="foodiz-card p-8 text-foodiz-gray animate-pulse">Chargement des indicateurs...</div> : <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label, value, Icon, color, path]) => <button key={label} onClick={() => navigate(path)} className="foodiz-card group border-foodiz-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.12),transparent_42%)] p-5 text-left shadow-[0_0_45px_rgba(216,168,79,0.04)] transition-all hover:-translate-y-0.5 hover:border-foodiz-gold/35 hover:shadow-[0_0_55px_rgba(216,168,79,0.11)]"><Icon size={20} className={color}/><p className="mt-4 text-[10px] uppercase tracking-widest text-foodiz-gray">{label}</p><p className="mt-2 text-2xl font-semibold text-foodiz-cream">{value}</p></button>)}</section>}
+
+    <section className="foodiz-card overflow-hidden border-foodiz-gold/25 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.14),transparent_34%),#080808]">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Recette pré-lancement</p>
+          <h2 className="foodiz-title mt-1 text-2xl">Les 6 points avant App Store & Google Play</h2>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-foodiz-gray">
+            Cette checklist garde Foodiz disciplinée : beau, utile, sécurisé, testé sur une vraie commande et prêt à être piloté ville par ville.
+          </p>
+        </div>
+        <button onClick={() => navigate("/admin/service-areas")} className="rounded-2xl border border-foodiz-gold/25 px-4 py-3 text-xs font-bold text-foodiz-gold transition hover:bg-foodiz-gold hover:text-foodiz-black">
+          Voir la ville pilote
+        </button>
+      </div>
+      <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3 lg:p-6">
+        {launchChecklist.map(({ label, detail, status, icon: Icon, path, ready }) => (
+          <button key={label} onClick={() => navigate(path)} className="group rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-4 text-left transition hover:-translate-y-0.5 hover:border-foodiz-gold/30">
+            <div className="flex items-start gap-3">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${ready ? "border-foodiz-green/20 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"}`}>
+                <Icon size={19} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foodiz-cream">{label}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-foodiz-gray">{detail}</p>
+                <span className={`mt-3 inline-flex rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-widest ${ready ? "border-foodiz-green/20 text-foodiz-green" : "border-foodiz-gold/20 text-foodiz-gold"}`}>
+                  {status}
+                </span>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
 
     <section className="foodiz-card overflow-hidden border-foodiz-gold/30 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.16),transparent_38%),#0a0a0a]">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">

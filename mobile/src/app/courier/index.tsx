@@ -128,6 +128,16 @@ export default function CourierDashboardScreen() {
         secondary={online}
       />
 
+      <FoodizCard>
+        <Text style={styles.kicker}>RÈGLES DE COURSE</Text>
+        <Text style={foodizText.heading}>Tout doit être clair avant de partir.</Text>
+        <View style={styles.rules}>
+          <Text style={styles.rule}>• Présentez le numéro de commande au restaurant.</Text>
+          <Text style={styles.rule}>• Le chrono démarre après “Commande récupérée”.</Text>
+          <Text style={styles.rule}>• L’écran de course affiche gain max, gain mini et retard.</Text>
+        </View>
+      </FoodizCard>
+
       <View style={styles.actions}>
         <FoodizActionCard
           icon="⚡"
@@ -173,6 +183,15 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 10,
+  },
+  rules: {
+    gap: 8,
+    marginTop: 12,
+  },
+  rule: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
   },
   kicker: {
     color: colors.gold,
