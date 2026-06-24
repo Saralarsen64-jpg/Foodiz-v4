@@ -7,6 +7,7 @@ import {
   ChevronDown,
   FileCheck2,
   FileText,
+  Gift,
   Eye,
   EyeOff,
   LoaderCircle,
@@ -15,6 +16,7 @@ import {
   MapPin,
   Phone,
   ShoppingBag,
+  Star,
   Store,
   User,
 } from "lucide-react";
@@ -24,9 +26,34 @@ import { supabase } from "../../lib/supabase";
 type Role = "client" | "livreur" | "partenaire";
 
 const ROLES = [
-  { value: "client" as const, label: "Client", detail: "Commander local", icon: ShoppingBag },
-  { value: "livreur" as const, label: "Livreur", detail: "Livrer avec Foodiz", icon: Bike },
-  { value: "partenaire" as const, label: "Partenaire", detail: "Développer mon activité", icon: Store },
+  { value: "client" as const, label: "Client", detail: "Commandez, cumulez des avantages et découvrez Foodiz dès son ouverture.", icon: ShoppingBag },
+  { value: "livreur" as const, label: "Livreur", detail: "Déposez votre dossier, faites valider vos justificatifs et rejoignez le pilote Foodiz.", icon: Bike },
+  { value: "partenaire" as const, label: "Partenaire", detail: "Présentez votre établissement, transmettez vos documents et préparez vos futures ventes.", icon: Store },
+];
+
+const BENEFITS = [
+  { title: "Compte prêt dès le lancement", icon: User },
+  { title: "Avantages exclusifs réservés aux pré-inscrits", icon: Gift },
+  { title: "Accès prioritaire à Foodiz", icon: Star },
+];
+
+const COURIER_AVAILABILITY_SLOTS = [
+  { value: "matin", label: "Matin", detail: "7h – 11h" },
+  { value: "midi", label: "Midi", detail: "11h – 14h" },
+  { value: "apres_midi", label: "Après-midi", detail: "14h – 18h" },
+  { value: "soiree", label: "Soirée", detail: "18h – 23h" },
+  { value: "nuit", label: "Nuit", detail: "23h – 2h" },
+  { value: "week_end", label: "Week-end", detail: "Sam. / Dim." },
+];
+
+const COURIER_AVAILABILITY_DAYS = [
+  { value: "lundi", label: "Lun." },
+  { value: "mardi", label: "Mar." },
+  { value: "mercredi", label: "Mer." },
+  { value: "jeudi", label: "Jeu." },
+  { value: "vendredi", label: "Ven." },
+  { value: "samedi", label: "Sam." },
+  { value: "dimanche", label: "Dim." },
 ];
 
 const initialForm = {
@@ -42,6 +69,9 @@ const initialForm = {
   siret: "",
   vehicleType: "velo",
   availability: "journee",
+  availabilitySlots: [] as string[],
+  availabilityDays: [] as string[],
+  availabilityFlexible: false,
   address: "",
   postalCode: "",
   handlesAnimalProducts: false,
@@ -104,8 +134,8 @@ async function validateCourierFile(file: File, allowPdf: boolean) {
 
 function InputShell({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3.5 transition-all hover:border-foodiz-gold/50 focus-within:border-foodiz-gold focus-within:shadow-[0_0_18px_rgba(216,168,79,.08)]">
-      <span className="shrink-0 text-foodiz-gold [filter:drop-shadow(0_0_4px_rgba(216,168,79,.4))]">
+    <div className="flex items-center gap-3 rounded-[1.15rem] border border-[#9d742d]/45 bg-[linear-gradient(180deg,rgba(12,12,10,.94),rgba(4,4,4,.92))] px-4 py-3.5 shadow-[inset_0_1px_0_rgba(245,205,122,.06)] transition-all hover:border-[#d8a84f]/65 focus-within:border-[#efc368] focus-within:shadow-[0_0_22px_rgba(216,168,79,.13),inset_0_1px_0_rgba(245,205,122,.1)]">
+      <span className="shrink-0 text-[#d8a84f] [filter:drop-shadow(0_0_5px_rgba(216,168,79,.35))]">
         {icon}
       </span>
       {children}
@@ -144,7 +174,7 @@ function Field({
         placeholder={placeholder}
         required={required}
         autoComplete={autoComplete}
-        className="min-w-0 flex-1 bg-transparent text-sm text-foodiz-cream outline-none placeholder:text-foodiz-gray/60"
+        className="min-w-0 flex-1 bg-transparent text-[15px] text-foodiz-cream outline-none placeholder:text-[#b8b0a2]/60"
       />
       {trailing}
     </InputShell>
@@ -195,7 +225,7 @@ function DocumentField({
   onFile: (file: File) => Promise<void>;
 }) {
   return (
-    <label className="block cursor-pointer rounded-2xl border border-foodiz-gold/25 bg-foodiz-black p-4 transition hover:border-foodiz-gold/60">
+    <label className="block cursor-pointer rounded-[1.35rem] border border-[#9d742d]/40 bg-[linear-gradient(180deg,rgba(12,12,10,.95),rgba(5,5,5,.92))] p-4 shadow-[inset_0_1px_0_rgba(245,205,122,.06)] transition hover:border-[#d8a84f]/70">
       <input
         type="file"
         accept={allowPdf ? "image/jpeg,image/png,application/pdf" : "image/jpeg,image/png"}
@@ -208,14 +238,14 @@ function DocumentField({
         }}
       />
       <div className="flex items-start gap-3">
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
-          file ? "border-foodiz-green/30 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/25 bg-foodiz-gold/5 text-foodiz-gold"
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${
+          file ? "border-foodiz-green/30 bg-foodiz-green/10 text-foodiz-green" : "border-[#d8a84f]/35 bg-[#d8a84f]/10 text-[#d8a84f]"
         }`}>
           {file ? <FileCheck2 size={19} /> : <FileText size={19} />}
         </span>
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-foodiz-cream">{label}</span>
-          <span className="mt-1 block text-[10px] leading-relaxed text-foodiz-gray">{file ? file.name : description}</span>
+          <span className="mt-1 block text-[10px] leading-relaxed text-[#b8b0a2]/70">{file ? file.name : description}</span>
         </span>
       </div>
     </label>
@@ -263,11 +293,24 @@ export default function WaitlistPage() {
   const buttonLabel = useMemo(() => {
     if (role === "livreur") return "Pré-inscrire mon profil livreur";
     if (role === "partenaire") return "Pré-inscrire mon établissement";
-    return "Rejoindre la liste d’attente";
+    return "Je réserve ma place sur Foodiz";
   }, [role]);
 
   const update = (name: string, value: string | boolean) => {
     setForm((current) => ({ ...current, [name]: value }));
+    setError("");
+  };
+
+  const toggleArrayValue = (name: "availabilitySlots" | "availabilityDays", value: string) => {
+    setForm((current) => {
+      const values = current[name];
+      return {
+        ...current,
+        [name]: values.includes(value)
+          ? values.filter((candidate) => candidate !== value)
+          : [...values, value],
+      };
+    });
     setError("");
   };
 
@@ -462,50 +505,59 @@ export default function WaitlistPage() {
   };
 
   return (
-    <div className="min-h-screen bg-foodiz-black text-foodiz-cream">
-      <div className="relative w-full overflow-hidden pb-10">
-        <img
-          src="/images/Logo-Foodiz.PNG"
-          alt="Foodiz"
-          className="block h-auto w-full align-top"
-        />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-foodiz-black/35 to-foodiz-black" />
-      </div>
+    <div className="min-h-screen overflow-hidden bg-[#050504] text-foodiz-cream">
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(216,168,79,.16),transparent_28%),radial-gradient(circle_at_20%_45%,rgba(170,115,38,.12),transparent_24%),linear-gradient(180deg,#11100d_0%,#050505_31%,#060604_100%)]" />
+      <div className="fixed inset-0 -z-10 opacity-[.18] [background-image:radial-gradient(rgba(216,168,79,.7)_0.65px,transparent_0.65px)] [background-size:18px_18px]" />
 
-      <section
-        className="relative z-10 mx-4 -mt-16 max-w-[560px] overflow-hidden rounded-[34px] border border-foodiz-gold/35 md:mx-auto"
-        style={{
-          background: "radial-gradient(circle at top, rgba(216,168,79,.1), transparent 34%), #050505",
-          boxShadow: "0 -1px 0 rgba(224,180,92,.35), 0 28px 90px rgba(0,0,0,.7), 0 0 48px rgba(216,168,79,.13)",
-        }}
-      >
-        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-foodiz-gold/70 to-transparent" />
-        <div className="pointer-events-none absolute -top-24 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-foodiz-gold/10 blur-3xl" />
+      <header className="relative mx-auto max-w-[980px] overflow-visible">
+        <div className="mx-auto overflow-hidden rounded-b-[2.6rem] border-x border-b border-[#d8a84f]/35 bg-[#050504] shadow-[0_24px_58px_rgba(0,0,0,.78),0_0_0_1px_rgba(245,205,122,.08)_inset]">
+          <img
+            src="/images/Logo-Foodiz.PNG"
+            alt="Foodiz"
+            className="mx-auto block h-auto max-h-[330px] w-full object-contain object-center sm:max-h-[405px]"
+          />
+        </div>
+      </header>
 
-        <main className="relative z-10 mx-auto max-w-lg px-5 pb-8 pt-8 sm:px-7">
-          <div className="text-center">
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-foodiz-gold/25 bg-foodiz-gold/[.06] px-4 py-2">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foodiz-gold shadow-[0_0_9px_#D8A84F]" />
-              <span className="text-[9px] font-bold uppercase tracking-[.24em] text-foodiz-gold">Ouverture prochaine</span>
-            </div>
-            <h1 className="mt-5 text-3xl sm:text-4xl" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 500 }}>
-              <span className="text-foodiz-cream">Foodiz arrive </span>
-              <span className="italic text-foodiz-gold">bientôt</span>
-            </h1>
-            <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-foodiz-gray">
-              L’app qui régale clients, livreurs et partenaires.
-              <br />
-              Préparez votre compte avant l’ouverture officielle.
-            </p>
+      <main className="relative z-10 mx-auto mt-5 max-w-[780px] px-5 pb-12 sm:mt-7 sm:px-8">
+        <div className="text-center">
+          <h1 className="mx-auto max-w-[720px] text-[44px] leading-[.98] tracking-[-.045em] text-white drop-shadow-[0_8px_22px_rgba(0,0,0,.85)] sm:text-[64px]" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+            Rejoignez les premiers
+            <span className="mt-1 block bg-[linear-gradient(180deg,#f0d08a_0%,#b98735_72%,#8d6228_100%)] bg-clip-text italic text-transparent">
+              Foodizers.
+            </span>
+          </h1>
+
+          <div className="mx-auto mt-7 flex max-w-[260px] items-center justify-center gap-4 text-[#c19443]">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent to-[#c19443]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#c19443]" />
+            <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[#c19443]" />
           </div>
 
-          <div className="my-7 flex items-center gap-4">
-            <div className="h-px flex-1 bg-foodiz-gold/20" />
-            <span className="text-[10px] font-semibold uppercase tracking-[.18em] text-foodiz-gold">Je suis</span>
-            <div className="h-px flex-1 bg-foodiz-gold/20" />
-          </div>
+          <p className="mx-auto mt-5 max-w-[650px] text-[21px] leading-relaxed text-[#d7d0c6]/78 sm:text-[25px]">
+            Parce que tout le monde mérite sa part du gâteau.
+          </p>
+        </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <section className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {BENEFITS.map((benefit) => (
+            <article key={benefit.title} className="rounded-[1.2rem] border border-[#d8a84f]/35 bg-[linear-gradient(180deg,rgba(216,168,79,.18),rgba(17,17,15,.96)_48%,rgba(6,6,5,.98)_100%)] p-5 text-center text-foodiz-cream shadow-[0_18px_35px_rgba(0,0,0,.36),inset_0_1px_0_rgba(255,238,190,.08)]">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#d8a84f]/40 bg-[#d8a84f]/10 text-[#d8a84f] shadow-[0_8px_24px_rgba(0,0,0,.32)]">
+                <benefit.icon size={26} strokeWidth={1.8} />
+              </span>
+              <h2 className="mx-auto mt-4 max-w-[175px] text-[17px] font-black leading-tight">{benefit.title}</h2>
+              <span className="mx-auto mt-4 block h-px w-16 bg-[#d8a84f]/45" />
+            </article>
+          ))}
+        </section>
+
+        <div className="my-7 flex items-center gap-5">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#c19443]/75 to-[#c19443]/75" />
+          <span className="text-[16px] font-black uppercase tracking-[.34em] text-[#c19443]">Je suis</span>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent via-[#c19443]/75 to-[#c19443]/75" />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 sm:gap-6">
             {ROLES.map((option) => {
               const selected = role === option.value;
               return (
@@ -516,30 +568,38 @@ export default function WaitlistPage() {
                     setRole(option.value);
                     setError("");
                   }}
-                  className={`relative flex min-h-[118px] flex-col items-center justify-center rounded-2xl border px-2 py-4 text-center transition-all ${
+                  className={`relative flex min-h-[150px] flex-col items-center justify-center rounded-[1.05rem] border px-2 py-5 text-center transition-all ${
                     selected
-                      ? "border-foodiz-gold bg-foodiz-gold/[.1] shadow-[0_0_20px_rgba(216,168,79,.13)]"
-                      : "border-foodiz-gold/25 bg-foodiz-card hover:border-foodiz-gold/50"
+                      ? "border-[#ffd36b] bg-[radial-gradient(circle_at_35%_10%,rgba(216,168,79,.34),rgba(15,12,8,.96)_48%,rgba(5,5,5,.98)_100%)] shadow-[0_0_34px_rgba(216,168,79,.25),inset_0_1px_0_rgba(255,230,170,.16)]"
+                      : "border-[#8e6424]/60 bg-[linear-gradient(180deg,rgba(17,17,15,.96),rgba(5,5,5,.96))] shadow-[inset_0_1px_0_rgba(245,205,122,.05)] hover:border-[#d8a84f]/70"
                   }`}
                 >
                   {selected && (
-                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-foodiz-gold text-foodiz-black">
-                      <Check size={12} strokeWidth={3} />
+                    <span className="absolute -right-2 -top-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#ffe09a]/65 bg-[linear-gradient(180deg,#e7c66f,#c69335)] text-[#070705] shadow-[0_10px_20px_rgba(0,0,0,.35)]">
+                      <Check size={23} strokeWidth={3.5} />
                     </span>
                   )}
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-full border ${
-                    selected ? "border-foodiz-gold bg-foodiz-gold/10" : "border-foodiz-gold/45"
+                  <span className={`flex h-20 w-20 items-center justify-center rounded-full border-2 ${
+                    selected ? "border-[#ffd36b] bg-[#d8a84f]/10" : "border-[#9f742d]/75 bg-[#d8a84f]/[.03]"
                   }`}>
-                    <option.icon size={20} className="text-foodiz-gold [filter:drop-shadow(0_0_4px_rgba(216,168,79,.45))]" strokeWidth={1.6} />
+                    <option.icon size={34} className="text-[#d8a84f] [filter:drop-shadow(0_0_6px_rgba(216,168,79,.45))]" strokeWidth={1.55} />
                   </span>
-                  <span className="mt-3 text-xs font-bold text-foodiz-cream sm:text-sm">{option.label}</span>
-                  <span className="mt-1 hidden text-[9px] leading-tight text-foodiz-gray/60 sm:block">{option.detail}</span>
+                  <span className="mt-4 text-[18px] font-black text-white sm:text-[22px]">{option.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <form onSubmit={submit} className="mt-7 space-y-3.5">
+          <div className="mt-4 flex items-center gap-4 rounded-[1.05rem] border border-[#8e6424]/55 bg-[linear-gradient(180deg,rgba(14,14,12,.9),rgba(5,5,5,.9))] px-5 py-4 shadow-[inset_0_1px_0_rgba(245,205,122,.05)]">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#d8a84f]/55 bg-[#d8a84f]/10 text-[#d8a84f]">
+              {role === "client" ? <User size={25} /> : role === "livreur" ? <Bike size={25} /> : <Store size={25} />}
+            </span>
+            <p className="text-[15px] leading-relaxed text-[#d7d0c6]/78">
+              {ROLES.find((option) => option.value === role)?.detail}
+            </p>
+          </div>
+
+          <form onSubmit={submit} className="mt-5 space-y-3.5">
             <input
               tabIndex={-1}
               autoComplete="off"
@@ -695,18 +755,69 @@ export default function WaitlistPage() {
                       { value: "autre", label: "Autre" },
                     ]}
                   />
-                  <SelectField
-                    icon={<ArrowRight size={17} />}
-                    name="availability"
-                    value={form.availability}
-                    onChange={update}
-                    options={[
-                      { value: "journee", label: "Journée" },
-                      { value: "soiree", label: "Soirée" },
-                      { value: "nuit", label: "Nuit" },
-                      { value: "week_end", label: "Week-end" },
-                    ]}
-                  />
+                  <label className="flex items-center gap-3 rounded-[1.15rem] border border-[#9d742d]/45 bg-[linear-gradient(180deg,rgba(12,12,10,.94),rgba(4,4,4,.92))] px-4 py-3.5 text-sm text-foodiz-cream">
+                    <input
+                      type="checkbox"
+                      checked={form.availabilityFlexible}
+                      onChange={(event) => update("availabilityFlexible", event.target.checked)}
+                      className="h-5 w-5 accent-[#D8A84F]"
+                    />
+                    <span>
+                      <span className="block font-semibold text-foodiz-cream">Je suis flexible</span>
+                      <span className="mt-0.5 block text-[10px] text-[#b8b0a2]/70">Foodiz pourra me proposer plusieurs créneaux.</span>
+                    </span>
+                  </label>
+                </div>
+                <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
+                  <div className="flex items-start gap-3">
+                    <ArrowRight size={17} className="mt-0.5 shrink-0 text-foodiz-gold" />
+                    <div>
+                      <p className="text-xs font-semibold text-foodiz-cream">Mes créneaux préférés</p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-foodiz-gray">Sélectionnez plusieurs tranches si vous êtes disponible sur plusieurs moments.</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {COURIER_AVAILABILITY_SLOTS.map((slot) => {
+                      const selected = form.availabilitySlots.includes(slot.value);
+                      return (
+                        <button
+                          key={slot.value}
+                          type="button"
+                          onClick={() => toggleArrayValue("availabilitySlots", slot.value)}
+                          className={`rounded-xl border px-3 py-3 text-left transition ${
+                            selected
+                              ? "border-foodiz-gold bg-foodiz-gold/15 text-foodiz-cream"
+                              : "border-foodiz-gold/15 bg-white/[0.02] text-foodiz-gray hover:border-foodiz-gold/45"
+                          }`}
+                        >
+                          <span className="block text-xs font-semibold">{slot.label}</span>
+                          <span className="mt-1 block text-[9px] opacity-70">{slot.detail}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
+                  <p className="text-xs font-semibold text-foodiz-cream">Jours souhaités</p>
+                  <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-7">
+                    {COURIER_AVAILABILITY_DAYS.map((day) => {
+                      const selected = form.availabilityDays.includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleArrayValue("availabilityDays", day.value)}
+                          className={`rounded-xl border px-2 py-2 text-xs font-semibold transition ${
+                            selected
+                              ? "border-foodiz-gold bg-foodiz-gold/15 text-foodiz-cream"
+                              : "border-foodiz-gold/15 bg-white/[0.02] text-foodiz-gray hover:border-foodiz-gold/45"
+                          }`}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/[.04] p-4">
                   <p className="text-xs font-semibold text-foodiz-cream">Justificatifs obligatoires</p>
@@ -768,15 +879,15 @@ export default function WaitlistPage() {
               10 caractères minimum, avec une majuscule, une minuscule et un chiffre.
             </p>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-foodiz-gold/20 bg-foodiz-card px-4 py-3.5">
+            <label className="flex cursor-pointer items-start gap-4 rounded-[1.05rem] border border-[#8e6424]/35 bg-[linear-gradient(180deg,rgba(14,14,12,.84),rgba(5,5,5,.88))] px-5 py-4 shadow-[inset_0_1px_0_rgba(245,205,122,.05)]">
               <input
                 type="checkbox"
                 checked={form.marketingConsent}
                 onChange={(event) => update("marketingConsent", event.target.checked)}
                 required
-                className="mt-0.5 h-4 w-4 shrink-0 accent-[#D8A84F]"
+                className="mt-0.5 h-7 w-7 shrink-0 rounded-md accent-[#D8A84F]"
               />
-              <span className="text-[10px] leading-relaxed text-foodiz-gray">
+              <span className="text-[12px] leading-relaxed text-[#d7d0c6]/72">
                 J’accepte que Foodiz utilise ces informations pour gérer ma pré-inscription et m’envoyer les informations liées au lancement.
               </span>
             </label>
@@ -788,10 +899,10 @@ export default function WaitlistPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-semibold text-foodiz-black transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-foodiz-gold/30 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-3 rounded-[1.05rem] border border-[#f0cf84]/45 py-5 text-[18px] font-black text-[#070705] transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-foodiz-gold/30 disabled:opacity-50 sm:text-[20px]"
               style={{
-                background: "linear-gradient(180deg, #E0B45C 0%, #D8A84F 50%, #C9A45C 100%)",
-                boxShadow: "0 4px 20px rgba(216,168,79,.25), inset 0 1px 0 rgba(255,255,255,.25)",
+                background: "linear-gradient(180deg, #e7c778 0%, #c8943b 62%, #a86f25 100%)",
+                boxShadow: "0 14px 28px rgba(0,0,0,.46), 0 0 28px rgba(216,168,79,.20), inset 0 1px 0 rgba(255,241,198,.48)",
               }}
             >
               {submitting ? <LoaderCircle size={19} className="animate-spin" /> : <ArrowRight size={19} />}
@@ -803,18 +914,11 @@ export default function WaitlistPage() {
             </button>
           </form>
 
-          <div className="mt-7 flex items-center justify-center gap-2 text-center">
-            <Lock size={13} className="text-foodiz-gold/70" />
-            <p className="text-[9px] uppercase tracking-[.12em] text-foodiz-gray/45">Mot de passe sécurisé par Supabase Auth</p>
+          <div className="mt-5 flex items-center justify-center gap-2 text-center">
+            <Lock size={15} className="text-[#d8a84f]/80" />
+            <p className="text-[12px] text-[#d8a84f]">Vos informations sont sécurisées et confidentielles.</p>
           </div>
         </main>
-
-        <footer className="border-t border-foodiz-gold/10 px-6 py-5 text-center">
-          <p className="text-[9px] tracking-[.16em] text-foodiz-gray/25">© {new Date().getFullYear()} · FOODIZ</p>
-        </footer>
-      </section>
-
-      <div className="h-14" />
     </div>
   );
 }

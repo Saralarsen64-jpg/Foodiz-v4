@@ -46,6 +46,9 @@ type CourierApplicationRow = {
   dispatch_priority_score?: number;
   created_at: string | null;
   service_area_id?: string | null;
+  availability_slots?: string[] | null;
+  availability_days?: string[] | null;
+  availability_flexible?: boolean | null;
   service_area?: { id: string; city: string; department_code?: string | null; status: string } | null;
   prelaunch?: { access_enabled: boolean } | null;
   profiles?: { first_name?: string | null; last_name?: string | null; email?: string | null; phone?: string | null } | null;
@@ -56,6 +59,25 @@ const documentLabels: Record<DocumentType, string> = {
   identity_front: "Pièce d’identité — recto",
   identity_back: "Pièce d’identité — verso",
   activity_proof: "Justificatif officiel d’activité",
+};
+
+const slotLabels: Record<string, string> = {
+  matin: "matin",
+  midi: "midi",
+  apres_midi: "après-midi",
+  soiree: "soirée",
+  nuit: "nuit",
+  week_end: "week-end",
+};
+
+const dayLabels: Record<string, string> = {
+  lundi: "lun.",
+  mardi: "mar.",
+  mercredi: "mer.",
+  jeudi: "jeu.",
+  vendredi: "ven.",
+  samedi: "sam.",
+  dimanche: "dim.",
 };
 
 async function adminCourierRequest(method = "GET", body?: unknown) {
@@ -255,6 +277,17 @@ export default function AdminCourierApplicationsPage() {
                     <p className="text-foodiz-gray">Accès pilote</p>
                     <p className={item.prelaunch?.access_enabled ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.prelaunch?.access_enabled ? "Autorisé" : "Bloqué"}</p>
                   </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs">
+                  <p className="font-semibold text-foodiz-cream">Disponibilités souhaitées</p>
+                  <p className="mt-2 text-foodiz-gray">
+                    Créneaux : {(item.availability_slots || []).map((slot) => slotLabels[slot] || slot).join(", ") || "non précisés"}
+                  </p>
+                  <p className="mt-1 text-foodiz-gray">
+                    Jours : {(item.availability_days || []).map((day) => dayLabels[day] || day).join(", ") || "non précisés"}
+                  </p>
+                  {item.availability_flexible && <p className="mt-2 text-foodiz-gold">Profil flexible : peut accepter d’autres créneaux.</p>}
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs text-foodiz-gray">

@@ -26,6 +26,7 @@ const handler: Handler = async (event) => {
           id,user_id,city,vehicle_type,legal_name,siret,address,postal_code,status,
           document_review_status,document_review_comment,identity_name_confirmed,
           business_identity_confirmed,dispatch_priority_score,reviewed_at,created_at,service_area_id,
+          availability_slots,availability_days,availability_flexible,
           profiles:profiles!courier_applications_user_id_fkey(first_name,last_name,email,phone)
         `)
         .order("created_at", { ascending: false }),

@@ -28,6 +28,31 @@ const documentTypes = Object.keys(
   courierDocumentLabels,
 ) as CourierDocumentType[];
 
+const availabilitySlots = [
+  ['matin', 'Matin', '7h–11h'],
+  ['midi', 'Midi', '11h–14h'],
+  ['apres_midi', 'Après-midi', '14h–18h'],
+  ['soiree', 'Soirée', '18h–23h'],
+  ['nuit', 'Nuit', '23h–2h'],
+  ['week_end', 'Week-end', 'Sam./Dim.'],
+] as const;
+
+const availabilityDays = [
+  ['lundi', 'Lun.'],
+  ['mardi', 'Mar.'],
+  ['mercredi', 'Mer.'],
+  ['jeudi', 'Jeu.'],
+  ['vendredi', 'Ven.'],
+  ['samedi', 'Sam.'],
+  ['dimanche', 'Dim.'],
+] as const;
+
+function toggleValue(values: string[], value: string) {
+  return values.includes(value)
+    ? values.filter((candidate) => candidate !== value)
+    : [...values, value];
+}
+
 export default function CourierOnboardingScreen() {
   const { session, profile, refreshProfile } = useAuth();
   const [form, setForm] = useState({
@@ -39,6 +64,9 @@ export default function CourierOnboardingScreen() {
     postalCode: '',
     city: '',
     vehicle: 'bike',
+    availabilitySlots: [] as string[],
+    availabilityDays: [] as string[],
+    availabilityFlexible: false,
   });
   const [documents, setDocuments] = useState<CourierDocument[]>([]);
   const [busyDocument, setBusyDocument] =
@@ -56,7 +84,7 @@ export default function CourierOnboardingScreen() {
         .maybeSingle(),
       supabase
         .from('courier_applications')
-        .select('legal_name,siret,address,postal_code,city,vehicle_type')
+        .select('legal_name,siret,address,postal_code,city,vehicle_type,availability_slots,availability_days,availability_flexible')
         .eq('user_id', session.user.id)
         .maybeSingle(),
       loadCourierDocuments().catch(() => ({ documents: [] })),
@@ -78,6 +106,13 @@ export default function CourierOnboardingScreen() {
           application?.postal_code || userProfile?.postal_code || '',
         city: application?.city || userProfile?.city || profile?.city || '',
         vehicle: application?.vehicle_type || 'bike',
+        availabilitySlots: Array.isArray(application?.availability_slots)
+          ? application.availability_slots
+          : [],
+        availabilityDays: Array.isArray(application?.availability_days)
+          ? application.availability_days
+          : [],
+        availabilityFlexible: Boolean(application?.availability_flexible),
       });
       setDocuments(documentData.documents);
     });
@@ -174,10 +209,14 @@ export default function CourierOnboardingScreen() {
       || !form.city.trim()
       || !/^\d{14}$/.test(siret)
       || !/^\d{5}$/.test(form.postalCode)
+      || (
+        !form.availabilityFlexible
+        && (form.availabilitySlots.length === 0 || form.availabilityDays.length === 0)
+      )
     ) {
       Alert.alert(
         'Dossier incomplet',
-        'Complétez toutes les informations avec un SIRET de 14 chiffres et un code postal de 5 chiffres.',
+        'Complétez toutes les informations avec un SIRET, un code postal, vos créneaux et vos jours de disponibilité.',
       );
       return;
     }
@@ -218,6 +257,9 @@ export default function CourierOnboardingScreen() {
         siret,
         address: form.address.trim(),
         postal_code: form.postalCode,
+        availability_slots: form.availabilitySlots,
+        availability_days: form.availabilityDays,
+        availability_flexible: form.availabilityFlexible,
         status: 'pending',
         document_review_status: 'pending_review',
         updated_at: new Date().toISOString(),
@@ -355,6 +397,92 @@ export default function CourierOnboardingScreen() {
         </FoodizCard>
 
         <FoodizCard>
+          <Text style={foodizText.heading}>Mes disponibilités</Text>
+          <Text style={foodizText.body}>
+            Indiquez les créneaux et les jours où vous souhaitez travailler.
+            Foodiz utilisera ces préférences pour préparer le dispatch.
+          </Text>
+          <Pressable
+            onPress={() =>
+              setForm((current) => ({
+                ...current,
+                availabilityFlexible: !current.availabilityFlexible,
+              }))
+            }
+            style={[
+              styles.flexibleBox,
+              form.availabilityFlexible && styles.flexibleBoxActive,
+            ]}>
+            <Text
+              style={[
+                styles.vehicleText,
+                form.availabilityFlexible && styles.vehicleTextActive,
+              ]}>
+              Je suis flexible
+            </Text>
+          </Pressable>
+          <Text style={styles.sectionLabel}>Créneaux préférés</Text>
+          <View style={styles.vehicleRow}>
+            {availabilitySlots.map(([value, label, detail]) => {
+              const selected = form.availabilitySlots.includes(value);
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() =>
+                    setForm((current) => ({
+                      ...current,
+                      availabilitySlots: toggleValue(
+                        current.availabilitySlots,
+                        value,
+                      ),
+                    }))
+                  }
+                  style={[styles.slot, selected && styles.vehicleActive]}>
+                  <Text
+                    style={[
+                      styles.vehicleText,
+                      selected && styles.vehicleTextActive,
+                    ]}>
+                    {label}
+                  </Text>
+                  <Text style={[styles.slotDetail, selected && styles.slotDetailActive]}>
+                    {detail}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.sectionLabel}>Jours souhaités</Text>
+          <View style={styles.vehicleRow}>
+            {availabilityDays.map(([value, label]) => {
+              const selected = form.availabilityDays.includes(value);
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() =>
+                    setForm((current) => ({
+                      ...current,
+                      availabilityDays: toggleValue(
+                        current.availabilityDays,
+                        value,
+                      ),
+                    }))
+                  }
+                  style={[styles.day, selected && styles.vehicleActive]}>
+                  <Text
+                    style={[
+                      styles.vehicleText,
+                      selected && styles.vehicleTextActive,
+                    ]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </FoodizCard>
+
+        <FoodizCard>
           <Text style={foodizText.heading}>Justificatifs obligatoires</Text>
           <Text style={foodizText.body}>
             Photos nettes, sans reflet, avec les quatre bords visibles. Le
@@ -421,6 +549,41 @@ const styles = StyleSheet.create({
   vehicleActive: { backgroundColor: colors.gold, borderColor: colors.gold },
   vehicleText: { color: colors.cream, fontWeight: '700' },
   vehicleTextActive: { color: colors.black },
+  flexibleBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: 14,
+  },
+  flexibleBoxActive: {
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
+  },
+  sectionLabel: {
+    color: colors.gold,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  slot: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: '30%',
+  },
+  slotDetail: { color: colors.muted, fontSize: 10, marginTop: 3 },
+  slotDetailActive: { color: colors.black },
+  day: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   document: {
     gap: 10,
     borderTopWidth: 1,

@@ -19,6 +19,26 @@ const roleToAuthRole: Record<PublicRole, "client" | "courier" | "partner"> = {
 };
 
 const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const validCourierAvailabilitySlots = ["matin", "midi", "apres_midi", "soiree", "nuit", "week_end"];
+const validCourierAvailabilityDays = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+function cleanStringArray(value: unknown, allowedValues: string[], maxItems: number) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(
+    value
+      .map((entry) => cleanText(entry, 30))
+      .filter((entry) => allowedValues.includes(entry)),
+  )).slice(0, maxItems);
+}
+
+function legacyAvailabilityFromSlots(slots: string[], flexible: boolean, submittedAvailability: string) {
+  if (["journee", "soiree", "nuit", "week_end"].includes(submittedAvailability)) return submittedAvailability;
+  if (slots.includes("week_end")) return "week_end";
+  if (slots.includes("nuit")) return "nuit";
+  if (slots.includes("soiree")) return "soiree";
+  return flexible || slots.length > 0 ? "journee" : "";
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -76,7 +96,14 @@ const handler: Handler = async (event) => {
   const establishmentType = cleanText(input.establishmentType, 30);
   const siret = cleanText(input.siret, 20).replace(/\s+/g, "");
   const vehicleType = cleanText(input.vehicleType, 30);
-  const availability = cleanText(input.availability, 30);
+  const availabilitySlots = cleanStringArray(input.availabilitySlots, validCourierAvailabilitySlots, 6);
+  const availabilityDays = cleanStringArray(input.availabilityDays, validCourierAvailabilityDays, 7);
+  const availabilityFlexible = input.availabilityFlexible === true;
+  const availability = legacyAvailabilityFromSlots(
+    availabilitySlots,
+    availabilityFlexible,
+    cleanText(input.availability, 30),
+  );
   const address = cleanText(input.address, 180);
   const postalCode = cleanText(input.postalCode, 10);
   const handlesAnimalProducts = input.handlesAnimalProducts === true;
@@ -102,8 +129,9 @@ const handler: Handler = async (event) => {
     || !/^[0-9]{5}$/.test(postalCode)
     || !["velo", "scooter", "voiture", "autre"].includes(vehicleType)
     || !["journee", "soiree", "nuit", "week_end"].includes(availability)
+    || (!availabilityFlexible && (availabilitySlots.length === 0 || availabilityDays.length === 0))
   )) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Renseignez un SIRET valide, votre adresse professionnelle, votre véhicule et vos disponibilités." }) };
+    return { statusCode: 400, body: JSON.stringify({ error: "Renseignez un SIRET valide, votre adresse professionnelle, votre véhicule, vos créneaux et vos jours de disponibilité." }) };
   }
 
   const fingerprint = requestFingerprint(event.headers);
@@ -329,6 +357,9 @@ const handler: Handler = async (event) => {
         postal_code: postalCode,
         vehicle_type: vehicleType,
         availability,
+        availability_slots: availabilitySlots,
+        availability_days: availabilityDays,
+        availability_flexible: availabilityFlexible,
         document_review_status: "documents_required",
         document_upload_token_hash: courierUploadToken?.hash,
         document_upload_token_expires_at: courierUploadTokenExpiresAt,
@@ -344,6 +375,9 @@ const handler: Handler = async (event) => {
           postal_code: postalCode,
           city,
           vehicle_type: vehicleType,
+          availability_slots: availabilitySlots,
+          availability_days: availabilityDays,
+          availability_flexible: availabilityFlexible,
           service_area_id: serviceAreaId,
           status: "pending",
           document_review_status: "documents_required",

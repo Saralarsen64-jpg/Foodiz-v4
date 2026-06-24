@@ -15,7 +15,21 @@ type Profile = {
   status: string;
   created_at: string;
   partner?: { establishment_name?: string } | { establishment_name?: string }[] | null;
-  driver?: { siret?: string; vehicle_type?: string; availability?: string } | { siret?: string; vehicle_type?: string; availability?: string }[] | null;
+  driver?: {
+    siret?: string;
+    vehicle_type?: string;
+    availability?: string;
+    availability_slots?: string[];
+    availability_days?: string[];
+    availability_flexible?: boolean;
+  } | {
+    siret?: string;
+    vehicle_type?: string;
+    availability?: string;
+    availability_slots?: string[];
+    availability_days?: string[];
+    availability_flexible?: boolean;
+  }[] | null;
 };
 
 type Payload = {
@@ -73,7 +87,7 @@ export default function AdminPrelaunch() {
   const exportCsv = () => {
     const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
     const rows = [
-      ["Rôle", "Prénom", "Nom", "Établissement", "SIRET livreur", "Véhicule", "Disponibilité", "Email", "Téléphone", "Ville", "Statut", "Date"],
+      ["Rôle", "Prénom", "Nom", "Établissement", "SIRET livreur", "Véhicule", "Créneaux livreur", "Jours livreur", "Flexible", "Email", "Téléphone", "Ville", "Statut", "Date"],
       ...(data?.profiles || []).map((profile) => {
         const partner = Array.isArray(profile.partner) ? profile.partner[0] : profile.partner;
         const driver = Array.isArray(profile.driver) ? profile.driver[0] : profile.driver;
@@ -84,7 +98,9 @@ export default function AdminPrelaunch() {
           partner?.establishment_name || "",
           driver?.siret || "",
           driver?.vehicle_type || "",
-          driver?.availability || "",
+          driver?.availability_slots?.join(", ") || driver?.availability || "",
+          driver?.availability_days?.join(", ") || "",
+          driver?.availability_flexible ? "oui" : "non",
           profile.email,
           profile.phone,
           profile.city,
@@ -186,6 +202,13 @@ export default function AdminPrelaunch() {
                         {driver?.siret && (
                           <p className="text-[11px] text-foodiz-gray mt-1">
                             SIRET {driver.siret} · {driver.vehicle_type || "véhicule à préciser"}
+                          </p>
+                        )}
+                        {driver && (driver.availability_slots?.length || driver.availability_days?.length || driver.availability_flexible) && (
+                          <p className="text-[11px] text-foodiz-gray mt-1">
+                            Dispos : {driver.availability_flexible ? "flexible · " : ""}
+                            {driver.availability_slots?.join(", ") || driver.availability || "créneaux à préciser"}
+                            {driver.availability_days?.length ? ` · ${driver.availability_days.join(", ")}` : ""}
                           </p>
                         )}
                       </td>
