@@ -18,6 +18,9 @@ type Area = {
     activeRestaurants: number;
     courierApplications: number;
     approvedCouriers: number;
+    partnerDocumentsToReview?: number;
+    courierDocumentsToReview?: number;
+    documentsToReview?: number;
   };
 };
 
@@ -152,6 +155,13 @@ export default function AdminServiceAreasPage() {
                     <p className="mt-2 text-2xl text-foodiz-cream">{area.counts.approvedCouriers}/{area.counts.courierApplications}</p>
                     <p className="text-[9px] uppercase text-foodiz-gray">Livreurs validés / candidats</p>
                   </div>
+                </div>
+                <div className={`mt-3 rounded-2xl border p-4 ${area.counts.documentsToReview ? "border-foodiz-red/20 bg-foodiz-red/5" : "border-white/5 bg-white/[0.02]"}`}>
+                  <p className="text-[10px] uppercase tracking-widest text-foodiz-gray">Documents à traiter</p>
+                  <p className={`mt-2 text-2xl font-serif italic ${area.counts.documentsToReview ? "text-foodiz-red" : "text-foodiz-cream"}`}>{area.counts.documentsToReview || 0}</p>
+                  <p className="mt-1 text-[10px] text-foodiz-gray">
+                    Partenaires {area.counts.partnerDocumentsToReview || 0} · Livreurs {area.counts.courierDocumentsToReview || 0}
+                  </p>
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_150px_auto]">

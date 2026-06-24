@@ -1,15 +1,56 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowRight, BarChart3, Bike, CreditCard, Euro, FileText, Hourglass, LifeBuoy, MapPin, ShoppingBag, Store, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, Bike, ClipboardCheck, CreditCard, Euro, FileText, Gauge, Hourglass, LifeBuoy, MapPin, ShoppingBag, Store, Users } from "lucide-react";
 import AdminShell from "../../components/AdminShell";
 import { supabase } from "../../lib/supabase";
 
 const euros = (cents: number) => `${((cents || 0) / 100).toFixed(2)} €`;
 
+type CityArea = {
+  id: string;
+  city: string;
+  department_code?: string | null;
+  status: "recruiting" | "preparing" | "pilot" | "open" | "paused" | "closed";
+  delivery_radius_km?: number | null;
+  counts: {
+    partnerApplications: number;
+    approvedPartners: number;
+    partnerApplicationsToReview?: number;
+    partnerDocumentsToReview?: number;
+    activeRestaurants: number;
+    courierApplications: number;
+    approvedCouriers: number;
+    courierApplicationsToReview?: number;
+    courierDocumentsToReview?: number;
+    documentsToReview?: number;
+  };
+};
+
+const areaStatusLabels: Record<CityArea["status"], string> = {
+  recruiting: "Recrutement",
+  preparing: "Préparation",
+  pilot: "Pilote",
+  open: "Ouverte",
+  paused: "En pause",
+  closed: "Fermée",
+};
+
+const areaReadiness = (area: CityArea) => {
+  let score = 0;
+  if (area.counts.approvedPartners > 0) score += 32;
+  if (area.counts.activeRestaurants > 0) score += 18;
+  if (area.counts.approvedCouriers >= 2) score += 32;
+  else if (area.counts.approvedCouriers === 1) score += 16;
+  if ((area.counts.documentsToReview || 0) === 0) score += 10;
+  if (["pilot", "open"].includes(area.status)) score += 8;
+  return Math.min(100, score);
+};
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ users: 0, orders: 0, collected: 0, foodiz: 0, tickets: 0, partners: 0, subscriptions: 0, payable: 0, incidents: 0 });
   const [ledger, setLedger] = useState<any[]>([]);
+  const [areas, setAreas] = useState<CityArea[]>([]);
   const [prelaunch, setPrelaunch] = useState<{
     counts: { total: number; clients: number; drivers: number; partners: number };
     cities: { city: string; count: number }[];
@@ -19,7 +60,7 @@ export default function AdminDashboard() {
 
   useEffect(() => { void (async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    const [users, orders, tickets, partners, subscriptions, balances, payables, ledgerRows, prelaunchResponse] = await Promise.all([
+    const [users, orders, tickets, partners, subscriptions, balances, payables, ledgerRows, prelaunchResponse, serviceAreasResponse] = await Promise.all([
       supabase.from("profiles").select("*", { count: "exact", head: true }).neq("role", "admin"),
       supabase.from("orders").select("*", { count: "exact", head: true }),
       supabase.from("support_tickets").select("*", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
@@ -29,6 +70,9 @@ export default function AdminDashboard() {
       supabase.from("admin_weekly_payables").select("amount_cents"),
       supabase.from("order_financial_ledger").select("client_collected_cents,foodiz_revenue_cents,partner_cents,courier_earnings_cents,courier_prime_cents,courier_penalty_cents,delivery_fee_cents,loyalty_fund_cents,created_at").order("created_at", { ascending: false }).limit(200),
       fetch("/api/admin/prelaunch", {
+        headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+      }),
+      fetch("/api/admin/service-areas", {
         headers: { Authorization: `Bearer ${session?.access_token || ""}` },
       }),
     ]);
@@ -52,6 +96,10 @@ export default function AdminDashboard() {
         cities: payload.cities || [],
         statuses: payload.statuses || {},
       });
+    }
+    if (serviceAreasResponse.ok) {
+      const payload = await serviceAreasResponse.json();
+      setAreas(payload.areas || []);
     }
     setLoading(false);
   })(); }, []);
@@ -101,6 +149,31 @@ export default function AdminDashboard() {
   ];
   const prelaunchMaxRole = Math.max(1, ...prelaunchRoles.map((item) => item.value));
   const prelaunchMaxCity = Math.max(1, ...(prelaunch?.cities || []).map((item) => item.count));
+  const priorityAreas = useMemo(() => (
+    [...areas].sort((a, b) => {
+      const aMont = a.city.toLowerCase().includes("mont-de-marsan") || a.city.toLowerCase().includes("mont de marsan");
+      const bMont = b.city.toLowerCase().includes("mont-de-marsan") || b.city.toLowerCase().includes("mont de marsan");
+      if (aMont !== bMont) return aMont ? -1 : 1;
+      const aDocs = a.counts.documentsToReview || 0;
+      const bDocs = b.counts.documentsToReview || 0;
+      if (aDocs !== bDocs) return bDocs - aDocs;
+      return areaReadiness(b) - areaReadiness(a);
+    }).slice(0, 6)
+  ), [areas]);
+  const areaTotals = useMemo(() => areas.reduce((acc, area) => ({
+    cities: acc.cities + 1,
+    openOrPilot: acc.openOrPilot + (["open", "pilot"].includes(area.status) ? 1 : 0),
+    approvedPartners: acc.approvedPartners + Number(area.counts.approvedPartners || 0),
+    approvedCouriers: acc.approvedCouriers + Number(area.counts.approvedCouriers || 0),
+    documentsToReview: acc.documentsToReview + Number(area.counts.documentsToReview || 0),
+  }), { cities: 0, openOrPilot: 0, approvedPartners: 0, approvedCouriers: 0, documentsToReview: 0 }), [areas]);
+  const areaSummaryCards = [
+    { label: "Villes suivies", value: areaTotals.cities, icon: MapPin },
+    { label: "Pilotes / ouvertes", value: areaTotals.openOrPilot, icon: Gauge },
+    { label: "Partenaires validés", value: areaTotals.approvedPartners, icon: Store },
+    { label: "Livreurs validés", value: areaTotals.approvedCouriers, icon: Bike },
+    { label: "Documents à traiter", value: areaTotals.documentsToReview, icon: ClipboardCheck },
+  ];
 
   return <AdminShell title="Dashboard administrateur" subtitle="Pilotage réel de l’activité, des partenaires et des flux financiers">
     {loading ? <div className="foodiz-card p-8 text-foodiz-gray animate-pulse">Chargement des indicateurs...</div> : <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label, value, Icon, color, path]) => <button key={label} onClick={() => navigate(path)} className="foodiz-card group border-foodiz-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.12),transparent_42%)] p-5 text-left shadow-[0_0_45px_rgba(216,168,79,0.04)] transition-all hover:-translate-y-0.5 hover:border-foodiz-gold/35 hover:shadow-[0_0_55px_rgba(216,168,79,0.11)]"><Icon size={20} className={color}/><p className="mt-4 text-[10px] uppercase tracking-widest text-foodiz-gray">{label}</p><p className="mt-2 text-2xl font-semibold text-foodiz-cream">{value}</p></button>)}</section>}
@@ -182,6 +255,87 @@ export default function AdminDashboard() {
             ))}
           </div>
         </article>
+      </div>
+    </section>
+
+    <section className="foodiz-card overflow-hidden border-foodiz-gold/30 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.16),transparent_36%),#090909]">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-foodiz-gold/30 bg-foodiz-gold/10 text-foodiz-gold">
+            <Gauge size={23} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.2em] text-foodiz-gold">Déploiement ville par ville</p>
+            <h2 className="foodiz-title mt-1 text-2xl">Cockpit des villes Foodiz</h2>
+            <p className="mt-1 text-xs text-foodiz-gray">Mont-de-Marsan d’abord, puis chaque ville dès qu’elle a ses partenaires et livreurs validés.</p>
+          </div>
+        </div>
+        <button onClick={() => navigate("/admin/service-areas")} className="foodiz-btn flex items-center gap-2 !px-4 !py-2.5">
+          Piloter les villes <ArrowRight size={16} />
+        </button>
+      </div>
+
+      <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-5 lg:p-6">
+        {areaSummaryCards.map(({ label, value, icon: Icon }) => (
+          <article key={label} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+            <Icon size={17} className="text-foodiz-gold" />
+            <p className="mt-3 text-[9px] uppercase tracking-widest text-foodiz-gray">{label}</p>
+            <p className="mt-1 text-2xl font-serif italic text-foodiz-cream">{value}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="grid gap-4 px-5 pb-6 xl:grid-cols-3 lg:px-6">
+        {priorityAreas.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-sm text-foodiz-gray xl:col-span-3">Aucune ville classée pour le moment. Les villes apparaissent quand une pré-inscription professionnelle contient une ville exploitable.</div>
+        ) : priorityAreas.map((area) => {
+          const readiness = areaReadiness(area);
+          const documentsToReview = area.counts.documentsToReview || 0;
+          const statusIsLive = ["open", "pilot"].includes(area.status);
+          return (
+            <article key={area.id} className="rounded-[1.6rem] border border-foodiz-gold/15 bg-black/25 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-foodiz-cream">{area.city}</h3>
+                  <p className="mt-1 text-[10px] uppercase tracking-widest text-foodiz-gray">Département {area.department_code || "—"}</p>
+                </div>
+                <span className={`rounded-full border px-3 py-1 text-[9px] uppercase ${statusIsLive ? "border-foodiz-green/20 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"}`}>
+                  {areaStatusLabels[area.status]}
+                </span>
+              </div>
+
+              <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-2xl bg-white/[0.03] p-3">
+                  <p className="text-xl font-serif italic text-foodiz-cream">{area.counts.approvedPartners}</p>
+                  <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Partenaires</p>
+                </div>
+                <div className="rounded-2xl bg-white/[0.03] p-3">
+                  <p className="text-xl font-serif italic text-foodiz-cream">{area.counts.approvedCouriers}</p>
+                  <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Livreurs</p>
+                </div>
+                <div className={`rounded-2xl p-3 ${documentsToReview ? "bg-foodiz-red/10" : "bg-white/[0.03]"}`}>
+                  <p className={`text-xl font-serif italic ${documentsToReview ? "text-foodiz-red" : "text-foodiz-cream"}`}>{documentsToReview}</p>
+                  <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Docs</p>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between text-xs">
+                  <span className="text-foodiz-gray">Prêt au lancement</span>
+                  <span className="font-semibold text-foodiz-gold">{readiness}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                  <div className="h-full rounded-full bg-gradient-to-r from-foodiz-gold/50 to-foodiz-gold" style={{ width: `${readiness}%` }} />
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                <button onClick={() => navigate("/admin/partner-applications")} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-foodiz-gray hover:border-foodiz-gold/40 hover:text-foodiz-cream">Partenaires</button>
+                <button onClick={() => navigate("/admin/courier-applications")} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-foodiz-gray hover:border-foodiz-gold/40 hover:text-foodiz-cream">Livreurs</button>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </section>
 

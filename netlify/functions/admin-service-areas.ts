@@ -18,6 +18,8 @@ const handler: Handler = async (event) => {
       { data: partners, error: partnersError },
       { data: couriers, error: couriersError },
       { data: restaurants, error: restaurantsError },
+      { data: partnerDocuments, error: partnerDocumentsError },
+      { data: courierDocuments, error: courierDocumentsError },
     ] = await Promise.all([
       adminSupabase
         .from("service_areas")
@@ -25,15 +27,21 @@ const handler: Handler = async (event) => {
         .order("city", { ascending: true }),
       adminSupabase
         .from("partner_applications")
-        .select("service_area_id,status,compliance_status"),
+        .select("id,service_area_id,status,compliance_status"),
       adminSupabase
         .from("courier_applications")
-        .select("service_area_id,status,document_review_status"),
+        .select("user_id,service_area_id,status,document_review_status"),
       adminSupabase
         .from("restaurants")
         .select("service_area_id,is_active"),
+      adminSupabase
+        .from("partner_documents")
+        .select("application_id,status"),
+      adminSupabase
+        .from("courier_documents")
+        .select("user_id,status"),
     ]);
-    const loadError = areasError || partnersError || couriersError || restaurantsError;
+    const loadError = areasError || partnersError || couriersError || restaurantsError || partnerDocumentsError || courierDocumentsError;
     if (loadError) {
       console.error("Service area dashboard load failed", loadError);
       return reply(500, { error: "Impossible de charger les villes Foodiz." });
@@ -43,16 +51,31 @@ const handler: Handler = async (event) => {
       areas: (areas || []).map((area) => {
         const areaPartners = (partners || []).filter((item) => item.service_area_id === area.id);
         const areaCouriers = (couriers || []).filter((item) => item.service_area_id === area.id);
+        const partnerApplicationIds = new Set(areaPartners.map((item) => item.id));
+        const courierUserIds = new Set(areaCouriers.map((item) => item.user_id));
+        const partnerDocumentsToReview = (partnerDocuments || []).filter((document) => (
+          partnerApplicationIds.has(document.application_id)
+          && document.status !== "approved"
+        )).length;
+        const courierDocumentsToReview = (courierDocuments || []).filter((document) => (
+          courierUserIds.has(document.user_id)
+          && document.status !== "approved"
+        )).length;
         return {
           ...area,
           counts: {
             partnerApplications: areaPartners.length,
             approvedPartners: areaPartners.filter((item) => item.compliance_status === "approved").length,
+            partnerApplicationsToReview: areaPartners.filter((item) => ["pending", "pending_review", "documents_required", "replacement_requested"].includes(item.compliance_status || item.status || "")).length,
+            partnerDocumentsToReview,
             activeRestaurants: (restaurants || []).filter((item) => item.service_area_id === area.id && item.is_active).length,
             courierApplications: areaCouriers.length,
             approvedCouriers: areaCouriers.filter((item) => (
               item.status === "validated" && item.document_review_status === "approved"
             )).length,
+            courierApplicationsToReview: areaCouriers.filter((item) => ["pending", "pending_review", "documents_required", "replacement_requested"].includes(item.document_review_status || item.status || "")).length,
+            courierDocumentsToReview,
+            documentsToReview: partnerDocumentsToReview + courierDocumentsToReview,
           },
         };
       }),
