@@ -49,7 +49,7 @@ const handler: Handler = async (event) => {
     console.error("Error retrieving subscription:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: "L’abonnement n’a pas pu être récupéré." }),
     };
   }
 };

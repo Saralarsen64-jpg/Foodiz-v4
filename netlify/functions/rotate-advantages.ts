@@ -89,7 +89,10 @@ const handler: Handler = async (event) => {
   });
 
   const { data: cycleId, error } = await adminSupabase.rpc("publish_foodiz_advantage_cycle", { proposals });
-  if (error) return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+  if (error) {
+    console.error("Advantage cycle publication failed", error);
+    return { statusCode: 500, body: JSON.stringify({ error: "Le cycle d’avantages n’a pas pu être publié." }) };
+  }
 
   const { data: currentCycle } = await adminSupabase
     .from("advantage_catalog")
@@ -108,7 +111,10 @@ const handler: Handler = async (event) => {
     .eq("cycle_id", currentCycle.cycle_id)
     .eq("is_active", true)
     .order("points_cost");
-  if (offersError) return { statusCode: 500, body: JSON.stringify({ error: offersError.message }) };
+  if (offersError) {
+    console.error("Advantage offers retrieval failed", offersError);
+    return { statusCode: 500, body: JSON.stringify({ error: "Les avantages n’ont pas pu être chargés." }) };
+  }
 
   return {
     statusCode: 200,

@@ -482,7 +482,7 @@ const handler: Handler = async (event) => {
     console.error("Error creating checkout session:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: "Le paiement n’a pas pu être préparé." }),
     };
   }
 };

@@ -84,6 +84,19 @@ const adaptedHandlers = Object.fromEntries(
   Object.entries(handlers).map(([name, handler]) => [name, adaptNetlifyHandler(handler)]),
 );
 
+const API_SECURITY_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+  "X-Content-Type-Options": "nosniff",
+  "X-Robots-Tag": "noindex, nofollow",
+} as const;
+
+const LARGE_UPLOAD_ROUTES = new Set([
+  "courier-documents",
+  "partner-documents",
+  "prelaunch/courier-documents",
+  "prelaunch/partner-documents",
+]);
+
 const publicPrelaunchRoutes = new Set([
   "launch-status",
   "prelaunch/register",
@@ -94,6 +107,40 @@ const publicPrelaunchRoutes = new Set([
   "rotate-advantages",
 ]);
 
+function responseWithSecurityHeaders(response: Response) {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(API_SECURITY_HEADERS)) {
+    if (!headers.has(key)) headers.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function jsonWithSecurityHeaders(body: Record<string, unknown>, init: ResponseInit = {}) {
+  const headers = new Headers(init.headers);
+  for (const [key, value] of Object.entries(API_SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  return Response.json(body, { ...init, headers });
+}
+
+function maxBodyBytesForRoute(functionName: string) {
+  if (LARGE_UPLOAD_ROUTES.has(functionName)) return 16 * 1024 * 1024;
+  if (functionName === "stripe-webhook") return 2 * 1024 * 1024;
+  if (functionName === "prelaunch/register") return 128 * 1024;
+  return 1024 * 1024;
+}
+
+function requestContentLength(request: Request) {
+  const rawLength = request.headers.get("content-length");
+  if (!rawLength) return null;
+  const length = Number(rawLength);
+  return Number.isFinite(length) && length >= 0 ? length : null;
+}
+
 export default {
   async fetch(request: Request) {
     const url = new URL(request.url);
@@ -101,7 +148,16 @@ export default {
     const target = adaptedHandlers[functionName];
 
     if (!target) {
-      return Response.json({ error: "API route not found" }, { status: 404 });
+      return jsonWithSecurityHeaders({ error: "API route not found" }, { status: 404 });
+    }
+
+    const contentLength = requestContentLength(request);
+    const maxBodyBytes = maxBodyBytesForRoute(functionName);
+    if (contentLength !== null && contentLength > maxBodyBytes) {
+      return jsonWithSecurityHeaders(
+        { error: "Requête trop volumineuse.", code: "PAYLOAD_TOO_LARGE" },
+        { status: 413 },
+      );
     }
 
     if (!publicPrelaunchRoutes.has(functionName)) {
@@ -112,7 +168,7 @@ export default {
         const launched = await appIsLaunched();
         const allowed = user ? await userHasApplicationAccess(user.id) : launched;
         if (!allowed) {
-          return Response.json(
+          return jsonWithSecurityHeaders(
             {
               error: launched
                 ? "Activez votre accès Foodiz avant de continuer."
@@ -125,6 +181,14 @@ export default {
       }
     }
 
-    return target.fetch(request);
+    try {
+      return responseWithSecurityHeaders(await target.fetch(request));
+    } catch (error) {
+      console.error("Unhandled Foodiz API error", { functionName, error });
+      return jsonWithSecurityHeaders(
+        { error: "Erreur serveur Foodiz.", code: "INTERNAL_SERVER_ERROR" },
+        { status: 500 },
+      );
+    }
   },
 };

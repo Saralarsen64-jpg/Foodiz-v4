@@ -333,7 +333,7 @@ const handler: Handler = async (event) => {
     console.error("Webhook error:", error);
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: "Webhook Stripe invalide." }),
     };
   }
 };
