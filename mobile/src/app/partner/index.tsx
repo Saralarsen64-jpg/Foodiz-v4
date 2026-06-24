@@ -38,17 +38,24 @@ async function fetchPartnerDashboard(userId: string) {
     .eq('owner_id', userId)
     .maybeSingle();
   if (!establishment) {
-    return { restaurant: null, orders: [] as PartnerOrder[] };
+    return { restaurant: null, orders: [] as PartnerOrder[], productsCount: 0 };
   }
-  const { data } = await supabase
-    .from('orders')
-    .select('id,status,partner_total_cents,created_at,delivered_at')
-    .eq('restaurant_id', establishment.id)
-    .order('created_at', { ascending: false })
-    .limit(100);
+  const [ordersResult, productsResult] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('id,status,partner_total_cents,created_at,delivered_at')
+      .eq('restaurant_id', establishment.id)
+      .order('created_at', { ascending: false })
+      .limit(100),
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('restaurant_id', establishment.id),
+  ]);
   return {
     restaurant: establishment as Restaurant,
-    orders: (data || []) as PartnerOrder[],
+    orders: (ordersResult.data || []) as PartnerOrder[],
+    productsCount: productsResult.count || 0,
   };
 }
 
@@ -57,6 +64,7 @@ export default function PartnerDashboardScreen() {
   const userId = session?.user.id;
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [orders, setOrders] = useState<PartnerOrder[]>([]);
+  const [productsCount, setProductsCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
@@ -65,6 +73,7 @@ export default function PartnerDashboardScreen() {
     const data = await fetchPartnerDashboard(userId);
     setRestaurant(data.restaurant);
     setOrders(data.orders);
+    setProductsCount(data.productsCount || 0);
     setRefreshing(false);
   }
 
@@ -75,6 +84,7 @@ export default function PartnerDashboardScreen() {
       if (!active) return;
       setRestaurant(data.restaurant);
       setOrders(data.orders);
+      setProductsCount(data.productsCount || 0);
     });
     return () => {
       active = false;
@@ -101,6 +111,14 @@ export default function PartnerDashboardScreen() {
 
   const activeLabel = restaurant?.is_active ? 'En vente' : 'Non visible';
   const statusTone = restaurant?.is_active ? 'success' : restaurant ? 'muted' : 'danger';
+  const readinessItems = [
+    restaurant?.is_active,
+    productsCount >= 5,
+    metrics.current === 0,
+  ];
+  const readinessScore = Math.round(
+    (readinessItems.filter(Boolean).length / readinessItems.length) * 100,
+  );
 
   return (
     <View style={styles.safe}>
@@ -134,6 +152,12 @@ export default function PartnerDashboardScreen() {
               value={metrics.deliveredToday}
               helper="aujourd’hui"
               tone={metrics.deliveredToday > 0 ? 'success' : 'muted'}
+            />
+            <FoodizMetric
+              label="Carte"
+              value={productsCount}
+              helper={productsCount >= 5 ? 'base solide' : 'produits à enrichir'}
+              tone={productsCount >= 5 ? 'success' : 'muted'}
             />
           </View>
         </FoodizHero>
@@ -170,6 +194,15 @@ export default function PartnerDashboardScreen() {
         <FoodizCard>
           <Text style={styles.kicker}>PLAN D’ACTION</Text>
           <Text style={foodizText.heading}>Votre vitrine doit donner faim et confiance.</Text>
+          <View style={styles.readinessRow}>
+            <Text style={styles.readinessValue}>{readinessScore}%</Text>
+            <View style={styles.readinessTextBlock}>
+              <Text style={styles.readinessLabel}>Préparation partenaire</Text>
+              <Text style={foodizText.body}>
+                Dossier, carte et fluidité des commandes.
+              </Text>
+            </View>
+          </View>
           <View style={styles.planList}>
             <Text style={styles.planItem}>• Carte courte, lisible, avec vos produits les plus rentables.</Text>
             <Text style={styles.planItem}>• Photos nettes et descriptions simples pour réduire les questions.</Text>
@@ -221,6 +254,30 @@ const styles = StyleSheet.create({
   planList: {
     gap: 8,
     marginTop: 12,
+  },
+  readinessRow: {
+    alignItems: 'center',
+    borderColor: 'rgba(216,168,79,0.18)',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 14,
+    marginTop: 14,
+    padding: 14,
+  },
+  readinessValue: {
+    color: colors.gold,
+    fontSize: 34,
+    fontStyle: 'italic',
+    fontWeight: '900',
+  },
+  readinessTextBlock: {
+    flex: 1,
+  },
+  readinessLabel: {
+    color: colors.cream,
+    fontSize: 14,
+    fontWeight: '800',
   },
   planItem: {
     color: colors.muted,

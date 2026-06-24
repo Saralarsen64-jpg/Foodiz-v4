@@ -26,6 +26,10 @@ import {
   Crown,
   Sparkles,
   Target,
+  Flame,
+  ShieldCheck,
+  TimerReset,
+  PackageCheck,
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import Logo from "../../components/Logo";
@@ -269,6 +273,37 @@ export default function PartnerDashboard() {
   ];
   const readinessScore = Math.round((readinessItems.filter((item) => item.ready).length / readinessItems.length) * 100);
   const priorityItem = readinessItems.find((item) => !item.ready) || readinessItems[0];
+  const activeBreakdown = {
+    pending: activeOrders.filter((order) => order.status === "pending").length,
+    preparing: activeOrders.filter((order) => order.status === "preparing").length,
+    ready: activeOrders.filter((order) => order.status === "ready").length,
+  };
+  const partnerStandards = [
+    {
+      title: "Accepter vite",
+      detail: "Les premières minutes donnent le ton de l’expérience client.",
+      icon: TimerReset,
+      ready: activeBreakdown.pending === 0,
+    },
+    {
+      title: "Préparer proprement",
+      detail: "Sac fermé, commande complète, numéro prêt pour le livreur.",
+      icon: PackageCheck,
+      ready: activeBreakdown.preparing === 0,
+    },
+    {
+      title: "Signaler prêt",
+      detail: "Dès que la commande attend le livreur, passez-la en prête.",
+      icon: Flame,
+      ready: activeBreakdown.ready > 0 || activeOrders.length === 0,
+    },
+    {
+      title: "Confiance Foodiz",
+      detail: "Documents, fiche, support et carte gardent votre compte solide.",
+      icon: ShieldCheck,
+      ready: operationalStatus && openSupportCount === 0,
+    },
+  ];
 
   const quickActions = [
     { label: "Créer un produit", icon: Plus, path: "/partner/products/new", desc: "Ajouter un nouveau plat" },
@@ -396,6 +431,65 @@ export default function PartnerDashboard() {
             </div>
           </div>
         </div>
+
+        <section className="grid gap-4 xl:grid-cols-[1.05fr_.95fr]">
+          <article className="foodiz-card border-foodiz-gold/25 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.14),transparent_35%),#080808] p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Tour de contrôle</p>
+                <h2 className="foodiz-title mt-1 text-2xl">Commandes à piloter maintenant</h2>
+                <p className="mt-2 max-w-xl text-xs leading-relaxed text-foodiz-gray">
+                  Une commande bien rythmée rassure le client, protège le livreur et donne envie de revenir.
+                </p>
+              </div>
+              <button onClick={() => navigate("/partner/orders/current")} className="rounded-2xl bg-foodiz-gold px-4 py-3 text-xs font-black text-foodiz-black transition hover:scale-[1.02]">
+                Ouvrir les commandes
+              </button>
+            </div>
+            <div className="mt-5 grid grid-cols-3 gap-3">
+              {[
+                ["Nouvelles", activeBreakdown.pending, "text-foodiz-gold"],
+                ["En préparation", activeBreakdown.preparing, "text-amber-300"],
+                ["Prêtes", activeBreakdown.ready, "text-foodiz-green"],
+              ].map(([label, value, color]) => (
+                <div key={String(label)} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-center">
+                  <p className={`text-3xl font-serif italic ${color}`}>{value}</p>
+                  <p className="mt-1 text-[9px] uppercase tracking-widest text-foodiz-gray">{label}</p>
+                </div>
+              ))}
+            </div>
+            {activeOrders.length === 0 && (
+              <div className="mt-4 rounded-2xl border border-foodiz-gold/10 bg-foodiz-gold/[0.04] p-4">
+                <p className="text-sm font-semibold text-foodiz-cream">Tout est calme pour le moment.</p>
+                <p className="mt-1 text-xs leading-relaxed text-foodiz-gray">
+                  Profitez-en pour améliorer une photo, une description ou préparer votre prochaine campagne locale.
+                </p>
+              </div>
+            )}
+          </article>
+
+          <article className="foodiz-card border-foodiz-gold/15 p-5">
+            <div className="mb-4">
+              <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Standard Foodiz</p>
+              <h2 className="foodiz-title mt-1 text-xl">Le rituel qui fait revenir les clients</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {partnerStandards.map((standard) => (
+                <div key={standard.title} className={`rounded-2xl border p-4 ${standard.ready ? "border-foodiz-green/20 bg-foodiz-green/[0.035]" : "border-foodiz-gold/15 bg-white/[0.025]"}`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${standard.ready ? "border-foodiz-green/20 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"}`}>
+                      <standard.icon size={18} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foodiz-cream">{standard.title}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-foodiz-gray">{standard.detail}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
 
         <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
           <article className="foodiz-card relative overflow-hidden border-foodiz-gold/20 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.18),transparent_35%),linear-gradient(145deg,rgba(11,11,11,.98),rgba(5,5,5,1))] p-6">
@@ -603,6 +697,11 @@ export default function PartnerDashboard() {
               </button>
             </div>
             <div className="space-y-3">
+              {activeOrders.length === 0 && (
+                <div className="foodiz-card border-foodiz-gold/10 p-5 text-sm text-foodiz-gray">
+                  Aucune commande active. Votre cockpit reste prêt dès qu’une commande arrive.
+                </div>
+              )}
               {activeOrders.slice(0, 3).map((order) => (
                 <button
                   key={order.id}
@@ -643,6 +742,11 @@ export default function PartnerDashboard() {
                 </button>
               </div>
               <div className="space-y-2">
+                {historyOrders.length === 0 && (
+                  <div className="foodiz-card border-foodiz-gold/10 p-5 text-sm text-foodiz-gray">
+                    Aucune commande livrée pour le moment. Les premières ventes apparaîtront ici.
+                  </div>
+                )}
                 {historyOrders.slice(0, 4).map((order) => (
                   <div key={order.id} className="foodiz-card p-4 flex items-center justify-between gap-4">
                     <div>
