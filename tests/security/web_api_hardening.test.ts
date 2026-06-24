@@ -29,6 +29,26 @@ test("les routes API sont non indexables, non cachées et limitées en taille", 
   assert.match(apiRouter, /responseWithSecurityHeaders/);
 });
 
+test("le routeur API refuse les origines inconnues sans bloquer l'app mobile", () => {
+  assert.match(apiRouter, /DEFAULT_TRUSTED_ORIGINS/);
+  assert.match(apiRouter, /FOODIZ_ALLOWED_ORIGINS/);
+  assert.match(apiRouter, /requestHasTrustedOrigin/);
+  assert.match(apiRouter, /if \(!origin\) return true/);
+  assert.match(apiRouter, /ORIGIN_FORBIDDEN/);
+  assert.match(apiRouter, /https:\/\/www\.foodiz\.co/);
+});
+
+test("le routeur API limite les rafales d'appels sur les routes sensibles", () => {
+  assert.match(apiRouter, /apiRateLimits/);
+  assert.match(apiRouter, /apiRateLimitBuckets/);
+  assert.match(apiRouter, /consumeApiRateLimit/);
+  assert.match(apiRouter, /RATE_LIMITED/);
+  assert.match(apiRouter, /Retry-After/);
+  assert.match(apiRouter, /"prelaunch\/register": \{ limit: 12, windowMs: 10 \* 60 \* 1000 \}/);
+  assert.match(apiRouter, /"verify-delivery-code": \{ limit: 12, windowMs: 5 \* 60 \* 1000 \}/);
+  assert.match(apiRouter, /"admin\/prelaunch\/send-launch-access": \{ limit: 20, windowMs: 10 \* 60 \* 1000 \}/);
+});
+
 test("le routeur API applique un pare-feu serveur par rôle", () => {
   assert.match(apiRouter, /routeRoleAllowlist/);
   assert.match(apiRouter, /routeAllowsRole/);

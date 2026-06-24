@@ -90,6 +90,11 @@ const API_SECURITY_HEADERS = {
   "X-Robots-Tag": "noindex, nofollow",
 } as const;
 
+const DEFAULT_TRUSTED_ORIGINS = new Set([
+  "https://foodiz.co",
+  "https://www.foodiz.co",
+]);
+
 const LARGE_UPLOAD_ROUTES = new Set([
   "courier-documents",
   "partner-documents",
@@ -138,6 +143,34 @@ const routeRoleAllowlist = {
   "verify-delivery-code": ["courier"],
 } as const satisfies Record<string, readonly string[]>;
 
+type ApiRateLimit = {
+  limit: number;
+  windowMs: number;
+};
+
+const DEFAULT_API_RATE_LIMIT: ApiRateLimit = {
+  limit: 240,
+  windowMs: 60 * 1000,
+};
+
+const apiRateLimits: Record<string, ApiRateLimit> = {
+  "admin/courier-applications": { limit: 80, windowMs: 60 * 1000 },
+  "admin/partner-applications": { limit: 80, windowMs: 60 * 1000 },
+  "admin/service-areas": { limit: 80, windowMs: 60 * 1000 },
+  "admin/order-action": { limit: 40, windowMs: 60 * 1000 },
+  "admin/prelaunch": { limit: 120, windowMs: 60 * 1000 },
+  "admin/prelaunch/send-launch-access": { limit: 20, windowMs: 10 * 60 * 1000 },
+  "admin/support-ticket-action": { limit: 40, windowMs: 60 * 1000 },
+  "create-checkout-session": { limit: 30, windowMs: 5 * 60 * 1000 },
+  "create-payment-intent": { limit: 30, windowMs: 5 * 60 * 1000 },
+  "prelaunch/activate": { limit: 20, windowMs: 10 * 60 * 1000 },
+  "prelaunch/register": { limit: 12, windowMs: 10 * 60 * 1000 },
+  "support-diagnostic": { limit: 30, windowMs: 5 * 60 * 1000 },
+  "verify-delivery-code": { limit: 12, windowMs: 5 * 60 * 1000 },
+};
+
+const apiRateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+
 function responseWithSecurityHeaders(response: Response) {
   const headers = new Headers(response.headers);
   for (const [key, value] of Object.entries(API_SECURITY_HEADERS)) {
@@ -182,6 +215,87 @@ function routeAllowsRole(functionName: string, role: string | null) {
   return Boolean(role && (allowedRoles as readonly string[]).includes(role));
 }
 
+function configuredTrustedOrigins() {
+  const configuredOrigins = process.env.FOODIZ_ALLOWED_ORIGINS || "";
+  return new Set([
+    ...DEFAULT_TRUSTED_ORIGINS,
+    ...configuredOrigins
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  ]);
+}
+
+function isLocalhost(hostname: string) {
+  return hostname === "localhost"
+    || hostname === "127.0.0.1"
+    || hostname === "::1"
+    || hostname.endsWith(".localhost");
+}
+
+function requestHasTrustedOrigin(request: Request, requestUrl: URL) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  try {
+    const originUrl = new URL(origin);
+    if (originUrl.host === requestUrl.host) return true;
+    if (isLocalhost(originUrl.hostname) && isLocalhost(requestUrl.hostname)) return true;
+    return configuredTrustedOrigins().has(originUrl.origin);
+  } catch {
+    return false;
+  }
+}
+
+function clientAddressForRateLimit(request: Request) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+
+  return request.headers.get("x-real-ip")
+    || request.headers.get("cf-connecting-ip")
+    || "unknown";
+}
+
+function rateLimitForRoute(functionName: string) {
+  if (LARGE_UPLOAD_ROUTES.has(functionName)) {
+    return { limit: 30, windowMs: 10 * 60 * 1000 };
+  }
+  return apiRateLimits[functionName] || DEFAULT_API_RATE_LIMIT;
+}
+
+function cleanupExpiredRateLimitBuckets(now: number) {
+  if (apiRateLimitBuckets.size < 5_000) return;
+  for (const [key, bucket] of apiRateLimitBuckets.entries()) {
+    if (bucket.resetAt <= now) apiRateLimitBuckets.delete(key);
+  }
+}
+
+function consumeApiRateLimit(functionName: string, request: Request, now = Date.now()) {
+  cleanupExpiredRateLimitBuckets(now);
+  const rateLimit = rateLimitForRoute(functionName);
+  const clientAddress = clientAddressForRateLimit(request);
+  const bucketKey = `${clientAddress}:${functionName}`;
+  const bucket = apiRateLimitBuckets.get(bucketKey);
+
+  if (!bucket || bucket.resetAt <= now) {
+    apiRateLimitBuckets.set(bucketKey, {
+      count: 1,
+      resetAt: now + rateLimit.windowMs,
+    });
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  if (bucket.count >= rateLimit.limit) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
+    };
+  }
+
+  bucket.count += 1;
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
 export default {
   async fetch(request: Request) {
     const url = new URL(request.url);
@@ -190,6 +304,24 @@ export default {
 
     if (!target) {
       return jsonWithSecurityHeaders({ error: "API route not found" }, { status: 404 });
+    }
+
+    if (!requestHasTrustedOrigin(request, url)) {
+      return jsonWithSecurityHeaders(
+        { error: "Origine non autorisée.", code: "ORIGIN_FORBIDDEN" },
+        { status: 403 },
+      );
+    }
+
+    const rateLimit = consumeApiRateLimit(functionName, request);
+    if (!rateLimit.allowed) {
+      return jsonWithSecurityHeaders(
+        { error: "Trop de requêtes. Réessayez dans un instant.", code: "RATE_LIMITED" },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+        },
+      );
     }
 
     const contentLength = requestContentLength(request);
