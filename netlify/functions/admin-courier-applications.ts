@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import { adminSupabase, authenticatedUser, userRole } from "./_lib/auth.js";
-import { createLaunchToken } from "./_lib/prelaunch.js";
+import { createLaunchToken, sendPrelaunchEmail } from "./_lib/prelaunch.js";
 
 const reply = (statusCode: number, body: unknown) => ({
   statusCode,
@@ -141,7 +141,53 @@ const handler: Handler = async (event) => {
     }
   }
 
-  return reply(200, { reviewed: true, result: data, replacementUploadUrl });
+  let emailSent = false;
+  try {
+    const targetUserId = data?.userId;
+    if (targetUserId) {
+      const { data: prelaunchProfile } = await adminSupabase
+        .from("prelaunch_profiles")
+        .select("email,first_name,user_id")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+      if (prelaunchProfile?.email) {
+        const approved = decision === "approve";
+        const replacement = decision === "request_replacement";
+        const emailResult = await sendPrelaunchEmail({
+          to: prelaunchProfile.email,
+          subject: approved
+            ? "Votre dossier livreur Foodiz est validé"
+            : replacement
+              ? "Document livreur à remplacer sur Foodiz"
+              : "Votre dossier livreur Foodiz nécessite une correction",
+          headline: approved
+            ? "Votre profil livreur est validé"
+            : replacement
+              ? "Un justificatif doit être remplacé"
+              : "Votre dossier n’a pas pu être validé",
+          body: approved
+            ? "Bonne nouvelle : votre dossier livreur est validé. L’accès aux courses dépendra ensuite de l’ouverture pilote de votre ville et de l’activation opérationnelle par Foodiz."
+            : replacement
+              ? `Foodiz a besoin d’un ou plusieurs justificatifs plus lisibles ou conformes. Motif : ${comment}`
+              : `Foodiz ne peut pas valider votre dossier en l’état. Motif : ${comment}`,
+          actionLabel: replacementUploadUrl ? "Renvoyer mes documents" : undefined,
+          actionUrl: replacementUploadUrl || undefined,
+          recipientUserId: prelaunchProfile.user_id,
+          emailType: approved
+            ? "professional_approved"
+            : replacement
+              ? "professional_replacement_requested"
+              : "professional_rejected",
+          required: false,
+        });
+        emailSent = emailResult.sent === true;
+      }
+    }
+  } catch (emailError) {
+    console.error("Courier review email failed", emailError);
+  }
+
+  return reply(200, { reviewed: true, result: data, replacementUploadUrl, emailSent });
 };
 
 export { handler };

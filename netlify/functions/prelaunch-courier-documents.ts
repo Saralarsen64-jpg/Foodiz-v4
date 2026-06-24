@@ -2,7 +2,7 @@ import type { Handler } from "@netlify/functions";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { adminSupabase } from "./_lib/auth.js";
 import { verifyStoredCourierDocument } from "./_lib/courier-documents.js";
-import { cleanText, sha256 } from "./_lib/prelaunch.js";
+import { cleanText, sendPrelaunchEmail, sha256 } from "./_lib/prelaunch.js";
 
 const allowedDocumentTypes = new Set(["identity_front", "identity_back", "activity_proof"]);
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "application/pdf"]);
@@ -34,7 +34,7 @@ async function resolveDriver(uploadToken: string) {
     .select(`
       id,prelaunch_profile_id,document_review_status,document_review_comment,
       document_upload_token_hash,document_upload_token_expires_at,
-      profile:prelaunch_profiles!prelaunch_driver_details_prelaunch_profile_id_fkey(id,user_id,role)
+      profile:prelaunch_profiles!prelaunch_driver_details_prelaunch_profile_id_fkey(id,user_id,role,email,first_name)
     `)
     .eq("document_upload_token_hash", tokenHash)
     .maybeSingle();
@@ -241,6 +241,20 @@ const handler: Handler = async (event) => {
       .from("profiles")
       .update({ status: "pending", updated_at: submittedAt })
       .eq("id", profile.user_id);
+
+    try {
+      await sendPrelaunchEmail({
+        to: profile.email,
+        subject: "Vos justificatifs livreur Foodiz ont bien été reçus",
+        headline: "Dossier transmis à Foodiz",
+        body: "Merci. Votre pièce d’identité et votre justificatif d’activité sont bien transmis. L’équipe Foodiz va vérifier la lisibilité, la cohérence de l’identité, le SIRET et l’activité déclarée avant toute activation.",
+        recipientUserId: profile.user_id,
+        emailType: "professional_documents_received",
+        required: false,
+      });
+    } catch (emailError) {
+      console.error("Courier documents received email failed", emailError);
+    }
 
     return reply(200, {
       submitted: true,

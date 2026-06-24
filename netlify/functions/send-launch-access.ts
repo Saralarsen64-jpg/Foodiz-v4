@@ -41,6 +41,7 @@ const handler: Handler = async (event) => {
   const appUrl = (process.env.APP_URL || "https://www.foodiz.co").replace(/\/$/, "");
   let sent = 0;
   let skippedUnvalidatedCouriers = 0;
+  let skippedUnvalidatedPartners = 0;
   const failed: string[] = [];
 
   for (const profile of profiles || []) {
@@ -55,6 +56,17 @@ const handler: Handler = async (event) => {
         continue;
       }
     }
+    if (profile.role === "partenaire") {
+      const { data: partnerApplication } = await adminSupabase
+        .from("partner_applications")
+        .select("status,compliance_status")
+        .eq("user_id", profile.user_id)
+        .maybeSingle();
+      if (partnerApplication?.status !== "approved" || partnerApplication.compliance_status !== "approved") {
+        skippedUnvalidatedPartners += 1;
+        continue;
+      }
+    }
 
     const token = createLaunchToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -65,9 +77,12 @@ const handler: Handler = async (event) => {
         to: profile.email,
         subject: "Votre accès Foodiz est ouvert",
         headline: `Foodiz est lancé, ${profile.first_name}`,
-        body: "Votre compte est prêt. Activez maintenant votre accès sécurisé pour rejoindre Foodiz.",
+        body: "Votre compte est prêt. Activez maintenant votre accès sécurisé pour rejoindre Foodiz. Le lien est valable 7 jours et ne doit pas être partagé.",
         actionLabel: "Activer mon accès",
         actionUrl: activationUrl,
+        recipientUserId: profile.user_id,
+        emailType: "launch_access",
+        required: true,
       });
 
       const notifiedAt = new Date().toISOString();
@@ -94,6 +109,7 @@ const handler: Handler = async (event) => {
     body: JSON.stringify({
       sent,
       skippedUnvalidatedCouriers,
+      skippedUnvalidatedPartners,
       failed: failed.length,
       failedProfileIds: failed,
     }),

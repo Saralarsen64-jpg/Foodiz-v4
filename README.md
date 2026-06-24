@@ -56,3 +56,18 @@ Test réel entre l'Hôtel de Ville de Paris et la Tour Eiffel :
 ```bash
 OPENROUTESERVICE_API_KEY=... npm run test:routing:live
 ```
+
+## Emails automatiques
+
+La suite d'emails transactionnels Foodiz est documentée dans
+[`docs/foodiz-email-automation.md`](docs/foodiz-email-automation.md).
+
+Les variables serveur principales sont :
+
+```env
+RESEND_API_KEY=...
+FOODIZ_EMAIL_FROM=Foodiz <contact@foodiz.co>
+```
+
+Les emails de lancement restent manuels : ils ne partent que depuis l'admin
+après validation officielle du lancement.

@@ -6,6 +6,7 @@ import {
   Clock,
   DollarSign,
   ChevronRight,
+  CheckCircle2,
   Bell,
   Users,
   Star,
@@ -20,6 +21,11 @@ import {
   History,
   Megaphone,
   LogOut,
+  Camera,
+  ClipboardCheck,
+  Crown,
+  Sparkles,
+  Target,
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import Logo from "../../components/Logo";
@@ -47,6 +53,11 @@ export default function PartnerDashboard() {
   const [location, setLocation] = useState("Adresse non renseignée");
   const [topCustomers, setTopCustomers] = useState<any[]>([]);
   const [chartData, setChartData] = useState(EMPTY_CHART);
+  const [productsCount, setProductsCount] = useState(0);
+  const [openSupportCount, setOpenSupportCount] = useState(0);
+  const [restaurantStatus, setRestaurantStatus] = useState("pending");
+  const [restaurantIsActive, setRestaurantIsActive] = useState(false);
+  const [hasCustomCover, setHasCustomCover] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,12 +99,31 @@ export default function PartnerDashboard() {
         if (restaurant.name) {
           setRestaurantName(restaurant.name);
         }
-        setCoverImage(restaurant.cover_image || "/images/auth-restaurant.jpg");
-        setLocation([restaurant.address, restaurant.postal_code, restaurant.city].filter(Boolean).join(", ") || "Adresse non renseignée");
+        const restaurantCover = restaurant.cover_image || restaurant.image_url || "";
+        const restaurantLocation = [restaurant.address, restaurant.postal_code, restaurant.city].filter(Boolean).join(", ") || "Adresse non renseignée";
+        setCoverImage(restaurantCover || "/images/auth-restaurant.jpg");
+        setLocation(restaurantLocation);
+        setRestaurantStatus(restaurant.status || "pending");
+        setRestaurantIsActive(restaurant.is_active === true);
+        setHasCustomCover(Boolean(restaurantCover));
 
         const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").eq("orders.restaurant_id", restaurant.id);
         const ratings = (reviews || []).map((review: any) => review.restaurant_rating).filter(Boolean);
         if (ratings.length) setRating((ratings.reduce((sum: number, value: number) => sum + value, 0) / ratings.length).toFixed(1).replace(".", ","));
+
+        const [{ count: productsTotal }, { count: supportTotal }] = await Promise.all([
+          supabase
+            .from("products")
+            .select("id", { count: "exact", head: true })
+            .eq("restaurant_id", restaurant.id),
+          supabase
+            .from("support_tickets")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .in("status", ["open", "in_progress"]),
+        ]);
+        setProductsCount(productsTotal || 0);
+        setOpenSupportCount(supportTotal || 0);
 
         // 3. Récupérer les commandes actives
         const [{ data: activeOrdersData }, contacts] = await Promise.all([
@@ -191,6 +221,54 @@ export default function PartnerDashboard() {
   const chartPoints = chartData[period];
   const chartMax = Math.max(1, ...chartPoints.map((d) => d.value));
   const currentRevenue = chartPoints.reduce((sum, item) => sum + item.value, 0);
+  const operationalStatus = restaurantIsActive || ["active", "validated", "approved"].includes(restaurantStatus);
+
+  const readinessItems = [
+    {
+      label: "Dossier opérationnel",
+      detail: operationalStatus ? "Compte prêt à vendre" : "Validation Foodiz en cours",
+      ready: operationalStatus,
+      icon: ClipboardCheck,
+      path: "/partner/validation-status",
+    },
+    {
+      label: "Adresse & zone",
+      detail: location !== "Adresse non renseignée" ? "Adresse renseignée" : "Adresse à compléter",
+      ready: location !== "Adresse non renseignée",
+      icon: Settings,
+      path: "/partner/settings",
+    },
+    {
+      label: "Image de marque",
+      detail: hasCustomCover ? "Couverture personnalisée" : "Ajoutez une photo premium",
+      ready: hasCustomCover,
+      icon: Camera,
+      path: "/partner/settings",
+    },
+    {
+      label: "Carte Foodiz",
+      detail: productsCount >= 5 ? `${productsCount} produits en carte` : "Visez au moins 5 produits",
+      ready: productsCount >= 5,
+      icon: UtensilsCrossed,
+      path: "/partner/products",
+    },
+    {
+      label: "Support propre",
+      detail: openSupportCount === 0 ? "Aucun ticket ouvert" : `${openSupportCount} ticket(s) à suivre`,
+      ready: openSupportCount === 0,
+      icon: Bell,
+      path: "/partner/support",
+    },
+    {
+      label: "Traction client",
+      detail: historyOrders.length || activeOrders.length ? "Premiers signaux clients" : "Préparez votre lancement",
+      ready: Boolean(historyOrders.length || activeOrders.length),
+      icon: Target,
+      path: "/partner/marketing",
+    },
+  ];
+  const readinessScore = Math.round((readinessItems.filter((item) => item.ready).length / readinessItems.length) * 100);
+  const priorityItem = readinessItems.find((item) => !item.ready) || readinessItems[0];
 
   const quickActions = [
     { label: "Créer un produit", icon: Plus, path: "/partner/products/new", desc: "Ajouter un nouveau plat" },
@@ -318,6 +396,124 @@ export default function PartnerDashboard() {
             </div>
           </div>
         </div>
+
+        <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+          <article className="foodiz-card relative overflow-hidden border-foodiz-gold/20 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.18),transparent_35%),linear-gradient(145deg,rgba(11,11,11,.98),rgba(5,5,5,1))] p-6">
+            <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full border border-foodiz-gold/10 bg-foodiz-gold/5 blur-sm" />
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/10">
+                  <Crown size={22} className="text-foodiz-gold" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-foodiz-gold">Cockpit réussite</p>
+                  <h2 className="foodiz-title text-2xl">Votre niveau de préparation</h2>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-6xl font-serif italic text-foodiz-cream">{readinessScore}%</p>
+                  <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">
+                    Score calculé sur la fiche, le menu, les visuels, le support et les signaux de vente.
+                  </p>
+                </div>
+                <div className="hidden h-24 w-24 shrink-0 items-center justify-center rounded-full border border-foodiz-gold/30 bg-black/35 sm:flex">
+                  <Sparkles size={30} className="text-foodiz-gold" />
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-foodiz-gold/15 bg-black/30 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-foodiz-gold">Action prioritaire</p>
+                <p className="mt-2 text-base font-semibold text-foodiz-cream">{priorityItem.label}</p>
+                <p className="mt-1 text-xs leading-relaxed text-foodiz-gray">{priorityItem.detail}</p>
+                <button
+                  onClick={() => navigate(priorityItem.path)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-foodiz-gold px-4 py-2 text-xs font-bold text-foodiz-black transition hover:scale-[1.02]"
+                >
+                  Améliorer maintenant <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article className="foodiz-card border-foodiz-gold/15 p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="foodiz-title text-xl">Plan d’action partenaire</h2>
+                <p className="mt-1 text-xs text-foodiz-gray">Les détails qui transforment une fiche en vraie vitrine Foodiz.</p>
+              </div>
+              <span className="rounded-full border border-foodiz-gold/20 px-3 py-1 text-[10px] uppercase tracking-widest text-foodiz-gold">
+                {readinessItems.filter((item) => item.ready).length}/{readinessItems.length}
+              </span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {readinessItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => navigate(item.path)}
+                  className={`group rounded-2xl border p-4 text-left transition-all ${
+                    item.ready
+                      ? "border-foodiz-green/20 bg-foodiz-green/[0.04]"
+                      : "border-foodiz-gold/15 bg-white/[0.025] hover:border-foodiz-gold/35"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
+                      item.ready ? "border-foodiz-green/20 bg-foodiz-green/10" : "border-foodiz-gold/20 bg-foodiz-gold/10"
+                    }`}>
+                      {item.ready ? (
+                        <CheckCircle2 size={18} className="text-foodiz-green" />
+                      ) : (
+                        <item.icon size={18} className="text-foodiz-gold" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foodiz-cream">{item.label}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-foodiz-gray">{item.detail}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          {[
+            {
+              title: "Photos qui donnent faim",
+              text: "Une photo claire, lumineuse et cohérente augmente la confiance avant même le premier clic.",
+              icon: Camera,
+              path: "/partner/products",
+            },
+            {
+              title: "Carte courte, lisible, rentable",
+              text: "Mettez en avant les produits stars, les formules simples et les plats faciles à livrer.",
+              icon: UtensilsCrossed,
+              path: "/partner/menu",
+            },
+            {
+              title: "Réactivité = préférence",
+              text: "Plus vos commandes sont acceptées et préparées vite, plus l’expérience Foodiz devient mémorable.",
+              icon: Clock,
+              path: "/partner/orders/current",
+            },
+          ].map((tip) => (
+            <button
+              key={tip.title}
+              onClick={() => navigate(tip.path)}
+              className="foodiz-card group border-foodiz-gold/15 bg-[linear-gradient(145deg,rgba(216,168,79,.08),rgba(10,10,10,.98)_34%)] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-foodiz-gold/35"
+            >
+              <GoldIcon icon={tip.icon} size={20} />
+              <h3 className="mt-4 font-semibold text-foodiz-cream">{tip.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{tip.text}</p>
+              <p className="mt-4 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">
+                Optimiser <ChevronRight size={12} />
+              </p>
+            </button>
+          ))}
+        </section>
 
         <div>
           <div className="flex items-center justify-between mb-4">

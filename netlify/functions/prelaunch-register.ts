@@ -7,6 +7,7 @@ import {
   normalizeEmail,
   normalizeFoodizPhone,
   requestFingerprint,
+  sendPrelaunchEmail,
   sha256,
 } from "./_lib/prelaunch.js";
 
@@ -392,6 +393,38 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Votre pré-inscription n’a pas pu être enregistrée." }) };
   }
 
+  const appUrl = (process.env.APP_URL || "https://www.foodiz.co").replace(/\/$/, "");
+  const documentUrl = role === "livreur" && courierUploadToken?.raw
+    ? `${appUrl}/courier-documents?token=${encodeURIComponent(courierUploadToken.raw)}`
+    : role === "partenaire" && partnerUploadToken?.raw
+      ? `${appUrl}/partner-documents?token=${encodeURIComponent(partnerUploadToken.raw)}`
+      : null;
+  let emailSent = false;
+  try {
+    const emailResult = await sendPrelaunchEmail({
+      to: email,
+      subject: role === "client" ? "Votre pré-inscription Foodiz est confirmée" : "Votre dossier Foodiz est créé",
+      headline: role === "client"
+        ? `Bienvenue chez Foodiz, ${firstName}`
+        : role === "livreur"
+          ? "Votre dossier livreur Foodiz est prêt"
+          : "Votre établissement Foodiz est prêt à être vérifié",
+      body: role === "client"
+        ? "Votre pré-inscription est bien enregistrée. Vous serez informé par email dès que Foodiz ouvrira dans votre ville. En attendant, vous pouvez suivre les coulisses sur Instagram @foodiz_off."
+        : role === "livreur"
+          ? "Votre compte est créé. La prochaine étape consiste à transmettre votre pièce d’identité et votre justificatif officiel d’activité. Sans validation Foodiz, aucune course ni aucun revenu ne seront accessibles."
+          : "Votre établissement est pré-inscrit. Transmettez vos justificatifs professionnels afin que Foodiz puisse vérifier votre activité avant toute activation commerciale.",
+      actionLabel: documentUrl ? "Transmettre mes justificatifs" : undefined,
+      actionUrl: documentUrl || undefined,
+      recipientUserId: userId,
+      emailType: "prelaunch_confirmation",
+      required: false,
+    });
+    emailSent = emailResult.sent === true;
+  } catch (emailError) {
+    console.error("Prelaunch confirmation email failed", emailError);
+  }
+
   return {
     statusCode: 201,
     headers: { "Content-Type": "application/json" },
@@ -401,7 +434,7 @@ const handler: Handler = async (event) => {
       courierDocumentUploadExpiresAt: courierUploadTokenExpiresAt,
       partnerDocumentUploadToken: partnerUploadToken?.raw,
       partnerDocumentUploadExpiresAt: partnerUploadTokenExpiresAt,
-      emailSent: false,
+      emailSent,
       message: role === "livreur"
         ? "Votre compte est créé. Transmettez maintenant vos trois justificatifs obligatoires."
         : role === "partenaire"

@@ -12,6 +12,7 @@ import { handler as adminPartnerApplications } from "../netlify/functions/admin-
 import { handler as adminServiceAreas } from "../netlify/functions/admin-service-areas.js";
 import { handler as adminOrderAction } from "../netlify/functions/admin-order-action.js";
 import { handler as addressManagement } from "../netlify/functions/address-management.js";
+import { handler as adminSupportTicketAction } from "../netlify/functions/admin-support-ticket-action.js";
 import { handler as cancelSubscription } from "../netlify/functions/cancel-subscription.js";
 import { handler as cancelMobileOrder } from "../netlify/functions/cancel-mobile-order.js";
 import { handler as clientCatalog } from "../netlify/functions/client-catalog.js";
@@ -49,6 +50,7 @@ const handlers: Record<string, Handler> = {
   "admin/order-action": adminOrderAction,
   "admin/prelaunch": adminPrelaunch,
   "admin/prelaunch/send-launch-access": sendLaunchAccess,
+  "admin/support-ticket-action": adminSupportTicketAction,
   "cancel-subscription": cancelSubscription,
   "cancel-mobile-order": cancelMobileOrder,
   "client-catalog": clientCatalog,

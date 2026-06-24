@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { Resend } from "resend";
+import { sendFoodizEmail } from "./foodiz-email.js";
 
 export function normalizeEmail(value: unknown) {
   return String(value || "").trim().toLowerCase();
@@ -49,6 +49,9 @@ export async function sendPrelaunchEmail({
   body,
   actionLabel,
   actionUrl,
+  recipientUserId,
+  emailType = "launch_access",
+  required = true,
 }: {
   to: string;
   subject: string;
@@ -56,29 +59,18 @@ export async function sendPrelaunchEmail({
   body: string;
   actionLabel?: string;
   actionUrl?: string;
+  recipientUserId?: string | null;
+  emailType?: "prelaunch_confirmation" | "launch_access" | "professional_documents_received" | "professional_approved" | "professional_replacement_requested" | "professional_rejected";
+  required?: boolean;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.FOODIZ_EMAIL_FROM;
-  if (!apiKey || !from) throw new Error("Missing Resend environment variables");
-
-  const action = actionLabel && actionUrl
-    ? `<p style="margin:30px 0"><a href="${escapeHtml(actionUrl)}" style="display:inline-block;background:#d8a84f;color:#050505;text-decoration:none;padding:14px 24px;border-radius:12px;font-weight:700">${escapeHtml(actionLabel)}</a></p>`
-    : "";
-
-  await new Resend(apiKey).emails.send({
-    from,
+  return sendFoodizEmail({
     to,
     subject,
-    html: `
-      <div style="background:#050505;padding:36px 18px;font-family:Arial,sans-serif;color:#fff8ea">
-        <div style="max-width:620px;margin:0 auto;border:1px solid rgba(216,168,79,.35);border-radius:24px;padding:34px;background:#111">
-          <p style="color:#d8a84f;font-size:13px;letter-spacing:.2em;text-transform:uppercase;margin:0 0 18px">Foodiz</p>
-          <h1 style="font-family:Georgia,serif;font-size:32px;margin:0 0 18px">${escapeHtml(headline)}</h1>
-          <p style="color:#d8d0c2;line-height:1.7;font-size:16px">${escapeHtml(body)}</p>
-          ${action}
-          <p style="color:#8d877e;font-size:12px;margin-top:30px">Foodiz — l’app qui régale clients, livreurs et partenaires.</p>
-        </div>
-      </div>
-    `,
+    headline,
+    body,
+    emailType,
+    recipientUserId,
+    required,
+    action: actionLabel && actionUrl ? { label: actionLabel, url: actionUrl } : null,
   });
 }

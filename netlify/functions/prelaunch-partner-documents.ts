@@ -2,7 +2,7 @@ import type { Handler } from "@netlify/functions";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { adminSupabase } from "./_lib/auth.js";
 import { verifyStoredDocument } from "./_lib/courier-documents.js";
-import { cleanText, sha256 } from "./_lib/prelaunch.js";
+import { cleanText, sendPrelaunchEmail, sha256 } from "./_lib/prelaunch.js";
 
 const allDocumentTypes = new Set([
   "registration_proof",
@@ -53,7 +53,7 @@ async function resolvePartner(uploadToken: string) {
       id,prelaunch_profile_id,document_review_status,document_review_comment,
       document_upload_token_hash,document_upload_token_expires_at,
       requires_hygiene_proof,handles_animal_products,sells_alcohol,
-      profile:prelaunch_profiles!prelaunch_partner_details_prelaunch_profile_id_fkey(id,user_id,role)
+      profile:prelaunch_profiles!prelaunch_partner_details_prelaunch_profile_id_fkey(id,user_id,role,email,first_name)
     `)
     .eq("document_upload_token_hash", tokenHash)
     .maybeSingle();
@@ -251,6 +251,20 @@ const handler: Handler = async (event) => {
         .eq("id", application.id),
     ]);
     if (detailsError || applicationError) throw detailsError || applicationError;
+
+    try {
+      await sendPrelaunchEmail({
+        to: profile.email,
+        subject: "Vos justificatifs partenaire Foodiz ont bien été reçus",
+        headline: "Dossier établissement transmis",
+        body: "Merci. Les justificatifs de votre établissement sont bien transmis. L’équipe Foodiz vérifie l’activité, les documents légaux, l’assurance et les éléments réglementaires avant toute activation commerciale.",
+        recipientUserId: profile.user_id,
+        emailType: "professional_documents_received",
+        required: false,
+      });
+    } catch (emailError) {
+      console.error("Partner documents received email failed", emailError);
+    }
 
     return reply(200, {
       submitted: true,

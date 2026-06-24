@@ -147,9 +147,12 @@ test("la migration refuse les doublons historiques au lieu de les modifier", () 
   assert.match(uniquePhoneMigration, /Cannot enable unique phone identity/);
 });
 
-test("aucun email de pré-inscription n’est envoyé automatiquement", () => {
-  assert.doesNotMatch(registerApi, /sendPrelaunchEmail/);
-  assert.match(registerApi, /emailSent: false/);
+test("la pré-inscription peut envoyer un accusé mais jamais un accès de lancement", () => {
+  assert.match(registerApi, /sendPrelaunchEmail/);
+  assert.match(registerApi, /emailType: "prelaunch_confirmation"/);
+  assert.match(registerApi, /required: false/);
+  assert.doesNotMatch(registerApi, /emailType: "launch_access"/);
+  assert.match(sendLaunchAccess, /emailType: "launch_access"/);
 });
 
 test("les partenaires ont un bucket privé et une validation documentaire serveur", () => {

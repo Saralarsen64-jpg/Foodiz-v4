@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import { adminSupabase, authenticatedUser, userRole } from "./_lib/auth.js";
-import { createLaunchToken } from "./_lib/prelaunch.js";
+import { createLaunchToken, sendPrelaunchEmail } from "./_lib/prelaunch.js";
 
 const partnerDocumentTypes = new Set([
   "registration_proof",
@@ -151,7 +151,49 @@ const handler: Handler = async (event) => {
         replacementUploadUrl = `${appUrl}/partner-documents?token=${encodeURIComponent(replacementToken.raw)}`;
       }
     }
-    return reply(200, { reviewed: true, replacementUploadUrl, emailSent: false });
+    let emailSent = false;
+    try {
+      const { data: prelaunchProfile } = await adminSupabase
+        .from("prelaunch_profiles")
+        .select("email,first_name,user_id")
+        .eq("user_id", application.user_id)
+        .maybeSingle();
+      if (prelaunchProfile?.email) {
+        const approved = decision === "approve";
+        const replacement = decision === "request_replacement";
+        const emailResult = await sendPrelaunchEmail({
+          to: prelaunchProfile.email,
+          subject: approved
+            ? "Votre dossier partenaire Foodiz est validé"
+            : replacement
+              ? "Document partenaire à remplacer sur Foodiz"
+              : "Votre dossier partenaire Foodiz nécessite une correction",
+          headline: approved
+            ? "Votre établissement est validé"
+            : replacement
+              ? "Un justificatif doit être remplacé"
+              : "Votre dossier n’a pas pu être validé",
+          body: approved
+            ? "Bonne nouvelle : votre dossier partenaire est validé. Foodiz vous donnera accès aux fonctionnalités commerciales selon l’ouverture de votre ville et les paramètres opérationnels définis par l’administration."
+            : replacement
+              ? `Foodiz a besoin d’un ou plusieurs justificatifs plus lisibles ou conformes. Motif : ${comment}`
+              : `Foodiz ne peut pas valider votre dossier en l’état. Motif : ${comment}`,
+          actionLabel: replacementUploadUrl ? "Renvoyer mes documents" : undefined,
+          actionUrl: replacementUploadUrl || undefined,
+          recipientUserId: prelaunchProfile.user_id,
+          emailType: approved
+            ? "professional_approved"
+            : replacement
+              ? "professional_replacement_requested"
+              : "professional_rejected",
+          required: false,
+        });
+        emailSent = emailResult.sent === true;
+      }
+    } catch (emailError) {
+      console.error("Partner review email failed", emailError);
+    }
+    return reply(200, { reviewed: true, replacementUploadUrl, emailSent });
   }
 
   if (action === "set_access") {

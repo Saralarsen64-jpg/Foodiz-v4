@@ -16,14 +16,16 @@
   --color-foodiz-red: #B84444;
 
   --font-serif: 'Playfair Display', serif;
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: 'Nunito Sans', sans-serif;
 }
 
 /* ===== Base Styles ===== */
 body {
   background-color: #050505;
   color: #FFF8EA;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
+  font-optical-sizing: auto;
+  letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
