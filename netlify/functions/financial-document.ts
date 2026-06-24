@@ -24,8 +24,14 @@ const handler: Handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ sent: true, messageId }) };
     }
     return { statusCode: 405, body: "Method Not Allowed" };
-  } catch (error: any) {
-    return { statusCode: 500, body: JSON.stringify({ error: error?.message || "Document operation failed" }) };
+  } catch (error) {
+    console.error("Financial document operation failed", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: "Le document financier n'a pas pu être traité.",
+      }),
+    };
   }
 };
 

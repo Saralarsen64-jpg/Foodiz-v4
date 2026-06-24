@@ -3,6 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Mail, Lock, ShieldAlert } from "lucide-react";
 import { clearAdminAccess, grantAdminAccess } from "../../utils/adminAccess";
+import {
+  clearAdminLoginThrottle,
+  getAdminLoginThrottle,
+  recordAdminLoginFailure,
+} from "../../utils/adminLoginThrottle";
+
+function formatLockDuration(milliseconds: number) {
+  const minutes = Math.max(1, Math.ceil(milliseconds / 60_000));
+  return `${minutes} minute${minutes > 1 ? "s" : ""}`;
+}
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -10,21 +20,52 @@ export default function AdminLogin() {
   const [password, setPassword] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [lockRemainingMs, setLockRemainingMs] = useState(() => (
+    getAdminLoginThrottle().remainingLockMs
+  ));
 
   useEffect(() => {
     // Visiting the dedicated portal always requires a fresh admin password.
     clearAdminAccess();
+    const throttle = getAdminLoginThrottle();
+    if (throttle.locked) {
+      setLockRemainingMs(throttle.remainingLockMs);
+      setError(`Trop de tentatives. Réessayez dans ${formatLockDuration(throttle.remainingLockMs)}.`);
+    }
   }, []);
+
+  useEffect(() => {
+    if (lockRemainingMs <= 0) return undefined;
+
+    const interval = window.setInterval(() => {
+      setLockRemainingMs(getAdminLoginThrottle().remainingLockMs);
+    }, 1_000);
+
+    return () => window.clearInterval(interval);
+  }, [lockRemainingMs]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const throttle = getAdminLoginThrottle();
+    if (throttle.locked) {
+      setLockRemainingMs(throttle.remainingLockMs);
+      setError(`Trop de tentatives. Réessayez dans ${formatLockDuration(throttle.remainingLockMs)}.`);
+      return;
+    }
+
     setLoading(true);
     setError("");
     
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     
     if (authError) {
-      setError("Identifiants incorrects.");
+      const nextThrottle = recordAdminLoginFailure();
+      setLockRemainingMs(nextThrottle.remainingLockMs);
+      setError(
+        nextThrottle.locked
+          ? `Trop de tentatives. Réessayez dans ${formatLockDuration(nextThrottle.remainingLockMs)}.`
+          : "Identifiants incorrects.",
+      );
       setLoading(false);
       return;
     }
@@ -36,12 +77,19 @@ export default function AdminLogin() {
       .single();
     
     if (!profileError && profile?.role === "admin" && profile.status !== "suspended") {
+      clearAdminLoginThrottle();
       grantAdminAccess(data.user.id);
       navigate("/admin", { replace: true });
     } else {
+      const nextThrottle = recordAdminLoginFailure();
       clearAdminAccess();
       await supabase.auth.signOut();
-      setError("Accès refusé. Cette zone est strictement réservée aux administrateurs Foodiz.");
+      setLockRemainingMs(nextThrottle.remainingLockMs);
+      setError(
+        nextThrottle.locked
+          ? `Trop de tentatives. Réessayez dans ${formatLockDuration(nextThrottle.remainingLockMs)}.`
+          : "Accès refusé. Cette zone est strictement réservée aux administrateurs Foodiz.",
+      );
     }
     setLoading(false);
   };
@@ -80,8 +128,12 @@ export default function AdminLogin() {
               autoComplete="current-password"
             />
           </div>
-          <button type="submit" disabled={loading} className="w-full bg-foodiz-red text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
-            {loading ? "Vérification..." : "Accéder au Dashboard"}
+          <button type="submit" disabled={loading || lockRemainingMs > 0} className="w-full bg-foodiz-red text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
+            {loading
+              ? "Vérification..."
+              : lockRemainingMs > 0
+                ? `Réessayez dans ${formatLockDuration(lockRemainingMs)}`
+                : "Accéder au Dashboard"}
           </button>
         </form>
         <p className="mt-5 text-center text-[10px] leading-relaxed text-foodiz-gray">

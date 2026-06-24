@@ -107,6 +107,37 @@ const publicPrelaunchRoutes = new Set([
   "rotate-advantages",
 ]);
 
+const routeRoleAllowlist = {
+  "address-management": ["client", "partner"],
+  "admin/courier-applications": ["admin"],
+  "admin/partner-applications": ["admin"],
+  "admin/service-areas": ["admin"],
+  "admin/order-action": ["admin"],
+  "admin/prelaunch": ["admin"],
+  "admin/prelaunch/send-launch-access": ["admin"],
+  "admin/support-ticket-action": ["admin"],
+  "cancel-mobile-order": ["client"],
+  "cancel-subscription": ["partner"],
+  "client-catalog": ["client"],
+  "courier-deliveries": ["courier"],
+  "courier-delivery-action": ["courier"],
+  "courier-documents": ["courier"],
+  "courier-presence": ["courier"],
+  "create-billing-portal": ["partner"],
+  "create-checkout-session": ["client"],
+  "create-payment-intent": ["client"],
+  "create-subscription": ["partner"],
+  "delete-account": ["admin", "client", "courier", "partner"],
+  "financial-document": ["admin", "client", "courier", "partner"],
+  "foodiz-plus": ["partner"],
+  "get-subscription": ["partner"],
+  "partner-order-action": ["partner"],
+  "partner-documents": ["partner"],
+  "support-diagnostic": ["courier", "partner"],
+  "track-marketing-notification": ["admin", "client", "courier", "partner"],
+  "verify-delivery-code": ["courier"],
+} as const satisfies Record<string, readonly string[]>;
+
 function responseWithSecurityHeaders(response: Response) {
   const headers = new Headers(response.headers);
   for (const [key, value] of Object.entries(API_SECURITY_HEADERS)) {
@@ -141,6 +172,16 @@ function requestContentLength(request: Request) {
   return Number.isFinite(length) && length >= 0 ? length : null;
 }
 
+function rolesAllowedForRoute(functionName: string) {
+  return routeRoleAllowlist[functionName as keyof typeof routeRoleAllowlist] || null;
+}
+
+function routeAllowsRole(functionName: string, role: string | null) {
+  const allowedRoles = rolesAllowedForRoute(functionName);
+  if (!allowedRoles) return true;
+  return Boolean(role && (allowedRoles as readonly string[]).includes(role));
+}
+
 export default {
   async fetch(request: Request) {
     const url = new URL(request.url);
@@ -163,7 +204,14 @@ export default {
     if (!publicPrelaunchRoutes.has(functionName)) {
       const headers = Object.fromEntries(request.headers.entries());
       const user = await authenticatedUser(headers);
-      const admin = user ? await userRole(user.id) === "admin" : false;
+      const currentRole = user ? await userRole(user.id) : null;
+      const admin = currentRole === "admin";
+      if (!routeAllowsRole(functionName, currentRole)) {
+        return jsonWithSecurityHeaders(
+          { error: "Accès refusé.", code: "ROLE_FORBIDDEN" },
+          { status: user ? 403 : 401 },
+        );
+      }
       if (!admin) {
         const launched = await appIsLaunched();
         const allowed = user ? await userHasApplicationAccess(user.id) : launched;
