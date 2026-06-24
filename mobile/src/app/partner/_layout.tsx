@@ -5,7 +5,7 @@ import { RoleGuard } from '@/components/role-guard';
 import { colors } from '@/theme/colors';
 
 const icon = (value: string, color: ColorValue) => (
-  <Text style={{ color, fontSize: 18 }}>{value}</Text>
+  <Text style={{ color, fontSize: 19 }}>{value}</Text>
 );
 
 export default function PartnerLayout() {
@@ -17,10 +17,16 @@ export default function PartnerLayout() {
           tabBarActiveTintColor: colors.gold,
           tabBarInactiveTintColor: colors.muted,
           tabBarStyle: {
-            backgroundColor: colors.surface,
+            backgroundColor: '#10100F',
             borderTopColor: colors.border,
-            height: 72,
-            paddingBottom: 10,
+            borderTopWidth: 1,
+            height: 76,
+            paddingBottom: 12,
+            paddingTop: 8,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '800',
           },
         }}>
         <Tabs.Screen

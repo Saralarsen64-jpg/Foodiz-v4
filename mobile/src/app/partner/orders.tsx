@@ -13,6 +13,8 @@ import {
   FoodizBrand,
   FoodizButton,
   FoodizCard,
+  FoodizHero,
+  FoodizPill,
   foodizText,
 } from '@/components/foodiz-ui';
 import { foodizApi } from '@/lib/api';
@@ -134,6 +136,16 @@ export default function PartnerOrdersScreen() {
           />
         }>
         <FoodizBrand subtitle="Commandes partenaire" />
+        <FoodizHero
+          eyebrow="Cuisine & timing"
+          title="Commandes à piloter"
+          body="Acceptez vite, préparez avec précision, puis signalez la commande prête pour déclencher le relais livreur.">
+          <View style={styles.heroPills}>
+            <FoodizPill label={`${orders.length} commande(s)`} />
+            <FoodizPill label={mode === 'current' ? 'En cours' : 'Historique'} tone="muted" />
+          </View>
+        </FoodizHero>
+
         <View style={styles.segment}>
           {[
             ['current', 'En cours'],
@@ -174,7 +186,16 @@ export default function PartnerOrdersScreen() {
                   <Text style={styles.kicker}>
                     COMMANDE #{order.id.slice(0, 8)}
                   </Text>
-                  <Text style={foodizText.heading}>{order.status}</Text>
+                  <FoodizPill
+                    label={order.status}
+                    tone={
+                      order.status === 'delivered'
+                        ? 'success'
+                        : order.status === 'cancelled'
+                          ? 'danger'
+                          : 'gold'
+                    }
+                  />
                 </View>
                 <Text style={styles.amount}>
                   {(order.partner_total_cents / 100).toFixed(2)} €
@@ -237,6 +258,11 @@ const styles = StyleSheet.create({
   segmentButtonActive: { backgroundColor: colors.gold },
   segmentText: { color: colors.muted, fontWeight: '800' },
   segmentTextActive: { color: colors.black },
+  heroPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   orderText: { flex: 1, gap: 4 },
   kicker: {

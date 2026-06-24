@@ -8,12 +8,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from 'react-native';
 
 import {
   FoodizButton,
   FoodizCard,
   FoodizScreen,
+  FoodizPill,
   foodizText,
 } from '@/components/foodiz-ui';
 import { foodizApi } from '@/lib/api';
@@ -256,9 +258,24 @@ export default function CurrentDeliveryScreen() {
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Tableau de bord</Text>
       </Pressable>
-      <Text style={styles.kicker}>COURSE #{order.id.slice(0, 8)}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.kicker}>COURSE #{order.id.slice(0, 8)}</Text>
+        <FoodizPill label={`${index + 1}/${steps.length}`} />
+      </View>
       <Text style={foodizText.title}>{steps[index]?.label}</Text>
       <Text style={styles.earnings}>Gain prévu : {(earnings / 100).toFixed(2)} €</Text>
+
+      <View style={styles.timeline}>
+        {steps.map((candidate, stepIndex) => (
+          <View
+            key={candidate.key}
+            style={[
+              styles.timelineDot,
+              stepIndex <= index && styles.timelineDotActive,
+            ]}
+          />
+        ))}
+      </View>
 
       <FoodizCard>
         <Text style={styles.kicker}>RÉCUPÉRATION</Text>
@@ -333,6 +350,12 @@ export default function CurrentDeliveryScreen() {
 
 const styles = StyleSheet.create({
   back: { color: colors.gold, fontWeight: '800', paddingVertical: 8 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   kicker: {
     color: colors.gold,
     fontSize: 11,
@@ -340,6 +363,19 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
   },
   earnings: { color: colors.success, fontSize: 18, fontWeight: '900' },
+  timeline: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  timelineDot: {
+    flex: 1,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(155,150,141,0.25)',
+  },
+  timelineDotActive: {
+    backgroundColor: colors.gold,
+  },
   code: {
     minHeight: 64,
     borderRadius: 16,

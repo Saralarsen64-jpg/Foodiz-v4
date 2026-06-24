@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
@@ -45,12 +45,37 @@ export function FoodizBrand({ subtitle }: { subtitle?: string }) {
   return (
     <View style={styles.brandBlock}>
       <Image
-        source={require('../../assets/images/foodiz-app-icon.png')}
+        source={require('../../assets/images/Logo-Foodiz.PNG')}
         style={styles.brandImage}
         resizeMode="contain"
       />
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
+  );
+}
+
+export function FoodizHero({
+  eyebrow,
+  title,
+  body,
+  children,
+}: PropsWithChildren<{
+  eyebrow?: string;
+  title: string;
+  body?: string;
+}>) {
+  return (
+    <LinearGradient
+      colors={['rgba(216,168,79,0.24)', 'rgba(21,21,21,0.98)', '#0B0B0B']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.hero}>
+      <View style={styles.heroGlow} />
+      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+      <Text style={styles.heroTitle}>{title}</Text>
+      {body ? <Text style={styles.heroBody}>{body}</Text> : null}
+      {children ? <View style={styles.heroChildren}>{children}</View> : null}
+    </LinearGradient>
   );
 }
 
@@ -120,6 +145,116 @@ export function FoodizCard({ children }: PropsWithChildren) {
   );
 }
 
+export function FoodizPill({
+  label,
+  tone = 'gold',
+}: {
+  label: string;
+  tone?: 'gold' | 'success' | 'danger' | 'muted';
+}) {
+  return (
+    <View
+      style={[
+        styles.pill,
+        tone === 'success' && styles.pillSuccess,
+        tone === 'danger' && styles.pillDanger,
+        tone === 'muted' && styles.pillMuted,
+      ]}>
+      <Text
+        style={[
+          styles.pillText,
+          tone === 'success' && styles.pillTextSuccess,
+          tone === 'danger' && styles.pillTextDanger,
+          tone === 'muted' && styles.pillTextMuted,
+        ]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+export function FoodizMetric({
+  label,
+  value,
+  helper,
+  tone = 'gold',
+}: {
+  label: string;
+  value: string | number;
+  helper?: string;
+  tone?: 'gold' | 'success' | 'muted';
+}) {
+  return (
+    <LinearGradient
+      colors={['rgba(216,168,79,0.16)', 'rgba(21,21,21,0.98)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.metricCard}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.metricValue,
+          tone === 'success' && styles.metricValueSuccess,
+          tone === 'muted' && styles.metricValueMuted,
+        ]}>
+        {value}
+      </Text>
+      {helper ? <Text style={styles.metricHelper}>{helper}</Text> : null}
+    </LinearGradient>
+  );
+}
+
+export function FoodizActionCard({
+  title,
+  description,
+  icon,
+  badge,
+  onPress,
+}: {
+  title: string;
+  description: string;
+  icon: string;
+  badge?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+      <LinearGradient
+        colors={['rgba(246,238,220,0.06)', 'rgba(216,168,79,0.08)', '#111111']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.actionCard}>
+        <View style={styles.actionIcon}>
+          <Text style={styles.actionIconText}>{icon}</Text>
+        </View>
+        <View style={styles.actionTextBlock}>
+          <View style={styles.actionTitleRow}>
+            <Text style={styles.actionTitle}>{title}</Text>
+            {badge ? <FoodizPill label={badge} /> : null}
+          </View>
+          <Text style={styles.actionDescription}>{description}</Text>
+        </View>
+        <Text style={styles.actionArrow}>→</Text>
+      </LinearGradient>
+    </Pressable>
+  );
+}
+
+export function FoodizSectionTitle({
+  title,
+  action,
+}: {
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <View style={styles.sectionTitleRow}>
+      <Text style={foodizText.heading}>{title}</Text>
+      {action}
+    </View>
+  );
+}
+
 export function FoodizLegalLinks() {
   const open = (path: string) => {
     void Linking.openURL(`https://www.foodiz.co${path}`);
@@ -143,8 +278,8 @@ export function FoodizLegalLinks() {
 export const foodizText = StyleSheet.create({
   title: {
     color: colors.cream,
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 32,
+    lineHeight: 38,
     fontWeight: '800',
     fontFamily: 'PlayfairDisplay_700Bold',
   },
@@ -182,23 +317,70 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     gap: 18,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   brandBlock: {
     alignItems: 'center',
     gap: 8,
-    marginVertical: 24,
+    marginTop: 12,
+    marginBottom: 8,
   },
   brandImage: {
-    width: 132,
-    height: 132,
-    borderRadius: 30,
+    width: 220,
+    height: 112,
   },
   subtitle: {
     color: colors.cream,
     fontSize: 13,
     letterSpacing: 1.2,
     fontFamily: 'Inter_500Medium',
+    textTransform: 'uppercase',
+  },
+  hero: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 30,
+    overflow: 'hidden',
+    padding: 22,
+    gap: 10,
+    shadowColor: colors.gold,
+    shadowOpacity: 0.24,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+  },
+  heroGlow: {
+    position: 'absolute',
+    right: -54,
+    top: -54,
+    width: 150,
+    height: 150,
+    borderRadius: 999,
+    backgroundColor: 'rgba(216,168,79,0.22)',
+  },
+  eyebrow: {
+    color: colors.gold,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    fontFamily: 'Inter_700Bold',
+  },
+  heroTitle: {
+    color: colors.cream,
+    fontSize: 34,
+    lineHeight: 39,
+    fontWeight: '800',
+    fontFamily: 'PlayfairDisplay_700Bold',
+  },
+  heroBody: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: 'Inter_400Regular',
+  },
+  heroChildren: {
+    gap: 10,
+    marginTop: 8,
   },
   field: {
     minHeight: 54,
@@ -254,6 +436,141 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     overflow: 'hidden',
     padding: 20,
+    shadowColor: colors.black,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+  },
+  pill: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(216,168,79,0.45)',
+    backgroundColor: 'rgba(216,168,79,0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  pillSuccess: {
+    borderColor: 'rgba(79,180,119,0.45)',
+    backgroundColor: 'rgba(79,180,119,0.12)',
+  },
+  pillDanger: {
+    borderColor: 'rgba(228,108,108,0.45)',
+    backgroundColor: 'rgba(228,108,108,0.12)',
+  },
+  pillMuted: {
+    borderColor: 'rgba(155,150,141,0.28)',
+    backgroundColor: 'rgba(155,150,141,0.08)',
+  },
+  pillText: {
+    color: colors.gold,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    fontFamily: 'Inter_700Bold',
+  },
+  pillTextSuccess: {
+    color: colors.success,
+  },
+  pillTextDanger: {
+    color: colors.danger,
+  },
+  pillTextMuted: {
+    color: colors.muted,
+  },
+  metricCard: {
+    flex: 1,
+    minWidth: 145,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 5,
+  },
+  metricLabel: {
+    color: colors.gold,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    fontFamily: 'Inter_700Bold',
+  },
+  metricValue: {
+    color: colors.cream,
+    fontSize: 29,
+    lineHeight: 34,
+    fontWeight: '900',
+    fontFamily: 'Inter_700Bold',
+  },
+  metricValueSuccess: {
+    color: colors.success,
+  },
+  metricValueMuted: {
+    color: colors.muted,
+  },
+  metricHelper: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'Inter_400Regular',
+  },
+  actionCard: {
+    minHeight: 82,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 24,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+  },
+  actionIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(216,168,79,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(216,168,79,0.38)',
+  },
+  actionIconText: {
+    color: colors.gold,
+    fontSize: 20,
+  },
+  actionTextBlock: {
+    flex: 1,
+    gap: 4,
+  },
+  actionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  actionTitle: {
+    color: colors.cream,
+    fontSize: 16,
+    fontWeight: '900',
+    fontFamily: 'Inter_700Bold',
+  },
+  actionDescription: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: 'Inter_400Regular',
+  },
+  actionArrow: {
+    color: colors.gold,
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   legalLinks: {
     flexDirection: 'row',

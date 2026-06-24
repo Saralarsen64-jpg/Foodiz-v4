@@ -13,6 +13,9 @@ import {
   FoodizBrand,
   FoodizButton,
   FoodizCard,
+  FoodizHero,
+  FoodizMetric,
+  FoodizPill,
   foodizText,
 } from '@/components/foodiz-ui';
 import { supabase } from '@/lib/supabase';
@@ -100,10 +103,29 @@ export default function PartnerProductsScreen() {
           />
         }>
         <FoodizBrand subtitle="Carte partenaire" />
-        <FoodizButton
-          label="Ajouter un produit"
-          onPress={() => router.push('/partner/product')}
-        />
+        <FoodizHero
+          eyebrow="Votre carte Foodiz"
+          title="Une carte claire vend mieux"
+          body="Ajoutez vos produits, gardez les prix propres et masquez temporairement ce qui n’est plus disponible.">
+          <View style={styles.metrics}>
+            <FoodizMetric
+              label="Produits"
+              value={products.length}
+              helper="dans votre carte"
+            />
+            <FoodizMetric
+              label="Actifs"
+              value={products.filter((product) => product.is_active).length}
+              helper="visibles client"
+              tone="success"
+            />
+          </View>
+          <FoodizButton
+            label="Ajouter un produit"
+            onPress={() => router.push('/partner/product')}
+          />
+        </FoodizHero>
+
         {products.length === 0 ? (
           <FoodizCard>
             <Text style={foodizText.heading}>Votre carte est vide</Text>
@@ -123,13 +145,10 @@ export default function PartnerProductsScreen() {
                       {(product.partner_price_cents / 100).toFixed(2)} €
                     </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.status,
-                      !product.is_active && styles.statusInactive,
-                    ]}>
-                    {product.is_active ? 'Actif' : 'Masqué'}
-                  </Text>
+                  <FoodizPill
+                    label={product.is_active ? 'Actif' : 'Masqué'}
+                    tone={product.is_active ? 'success' : 'muted'}
+                  />
                 </View>
                 <FoodizButton
                   label="Modifier le produit"
@@ -156,6 +175,11 @@ export default function PartnerProductsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, gap: 18, padding: 24 },
+  metrics: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   productText: { flex: 1, gap: 4 },
   category: {
@@ -164,6 +188,4 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.3,
   },
-  status: { color: colors.success, fontWeight: '900' },
-  statusInactive: { color: colors.muted },
 });

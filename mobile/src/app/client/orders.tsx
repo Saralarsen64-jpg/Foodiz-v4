@@ -5,6 +5,9 @@ import { Pressable, Text } from 'react-native';
 import {
   FoodizBrand,
   FoodizCard,
+  FoodizHero,
+  FoodizMetric,
+  FoodizPill,
   FoodizScreen,
   foodizText,
 } from '@/components/foodiz-ui';
@@ -37,6 +40,18 @@ export default function ClientOrdersScreen() {
   return (
     <FoodizScreen>
       <FoodizBrand subtitle="Mes commandes" />
+      <FoodizHero
+        eyebrow="Suivi Foodiz"
+        title="Vos commandes, sans stress"
+        body="Retrouvez l’historique, le statut et le suivi live dès qu’un livreur prend le relais.">
+        <FoodizMetric
+          label="Commandes"
+          value={orders.length}
+          helper="récentes"
+          tone={orders.length > 0 ? 'success' : 'muted'}
+        />
+      </FoodizHero>
+
       {orders.length === 0 ? (
         <FoodizCard>
           <Text style={foodizText.heading}>Aucune commande</Text>
@@ -53,11 +68,21 @@ export default function ClientOrdersScreen() {
               })
             }>
             <FoodizCard>
+              <FoodizPill
+                label={order.status}
+                tone={
+                  order.status === 'delivered'
+                    ? 'success'
+                    : order.status === 'cancelled'
+                      ? 'danger'
+                      : 'gold'
+                }
+              />
               <Text style={foodizText.heading}>
                 {order.restaurant?.name || 'Commande Foodiz'}
               </Text>
               <Text style={foodizText.body}>
-                #{order.id.slice(0, 8)} · {order.status}
+                #{order.id.slice(0, 8)}
               </Text>
               <Text style={[foodizText.heading, foodizText.gold]}>
                 {(order.final_client_total_cents / 100).toFixed(2)} €

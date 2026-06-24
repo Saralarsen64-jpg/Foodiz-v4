@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { router } from 'expo-router';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
+  FoodizActionCard,
   FoodizBrand,
   FoodizCard,
+  FoodizHero,
+  FoodizMetric,
+  FoodizPill,
   foodizText,
 } from '@/components/foodiz-ui';
 import { supabase } from '@/lib/supabase';
@@ -94,6 +99,9 @@ export default function PartnerDashboardScreen() {
     };
   }, [orders]);
 
+  const activeLabel = restaurant?.is_active ? 'En vente' : 'Non visible';
+  const statusTone = restaurant?.is_active ? 'success' : restaurant ? 'muted' : 'danger';
+
   return (
     <View style={styles.safe}>
       <ScrollView
@@ -106,26 +114,48 @@ export default function PartnerDashboardScreen() {
           />
         }>
         <FoodizBrand subtitle="Espace partenaire" />
-        <Text style={foodizText.title}>
-          Bonjour {profile?.first_name || 'Partenaire'}
-        </Text>
-        <Text style={foodizText.body}>
-          {restaurant?.name || 'Votre établissement Foodiz'}
-          {restaurant?.city ? ` · ${restaurant.city}` : ''}
-        </Text>
+        <FoodizHero
+          eyebrow="Pilotage partenaire"
+          title={`Bonjour ${profile?.first_name || 'Partenaire'}`}
+          body={
+            restaurant
+              ? `${restaurant.name}${restaurant.city ? ` · ${restaurant.city}` : ''}. Gardez votre carte claire, vos commandes rapides et vos clients rassurés.`
+              : 'Créez votre dossier établissement pour préparer votre lancement Foodiz.'
+          }>
+          <View style={styles.metrics}>
+            <FoodizMetric
+              label="À traiter"
+              value={metrics.current}
+              helper="commandes actives"
+              tone={metrics.current > 0 ? 'success' : 'muted'}
+            />
+            <FoodizMetric
+              label="Livrées"
+              value={metrics.deliveredToday}
+              helper="aujourd’hui"
+              tone={metrics.deliveredToday > 0 ? 'success' : 'muted'}
+            />
+          </View>
+        </FoodizHero>
 
-        <View style={styles.metrics}>
-          <FoodizCard>
-            <Text style={styles.kicker}>À TRAITER</Text>
-            <Text style={styles.metric}>{metrics.current}</Text>
-            <Text style={foodizText.body}>commandes en cours</Text>
-          </FoodizCard>
-          <FoodizCard>
-            <Text style={styles.kicker}>AUJOURD’HUI</Text>
-            <Text style={styles.metric}>{metrics.deliveredToday}</Text>
-            <Text style={foodizText.body}>commandes livrées</Text>
-          </FoodizCard>
-        </View>
+        <FoodizCard>
+          <View style={styles.statusRow}>
+            <Text style={styles.kicker}>ÉTABLISSEMENT</Text>
+            <FoodizPill
+              label={restaurant ? activeLabel : 'À créer'}
+              tone={statusTone}
+            />
+          </View>
+          <Text style={foodizText.heading}>
+            {restaurant?.name || 'Votre établissement Foodiz'}
+          </Text>
+          <Text style={foodizText.body}>
+            Statut opérationnel : {restaurant?.status || 'dossier non initialisé'}.
+            {restaurant?.is_active
+              ? ' Les clients pourront commander dès l’ouverture de votre ville.'
+              : ' Vérifiez votre dossier et votre carte avant la mise en vente.'}
+          </Text>
+        </FoodizCard>
 
         <FoodizCard>
           <Text style={styles.kicker}>CHIFFRE PARTENAIRE LIVRÉ</Text>
@@ -136,6 +166,28 @@ export default function PartnerDashboardScreen() {
             Montant partenaire cumulé sur les commandes livrées affichées.
           </Text>
         </FoodizCard>
+
+        <View style={styles.actions}>
+          <FoodizActionCard
+            icon="🔔"
+            title="Commandes"
+            description="Acceptez, préparez et signalez les commandes prêtes."
+            badge={metrics.current > 0 ? String(metrics.current) : undefined}
+            onPress={() => router.push('/partner/orders')}
+          />
+          <FoodizActionCard
+            icon="🍱"
+            title="Carte"
+            description="Ajoutez vos produits, ajustez vos prix et masquez les indisponibles."
+            onPress={() => router.push('/partner/products')}
+          />
+          <FoodizActionCard
+            icon="🛡️"
+            title="Dossier & conformité"
+            description="Suivez la validation de votre établissement et vos justificatifs."
+            onPress={() => router.push('/partner/account')}
+          />
+        </View>
       </ScrollView>
     </View>
   );
@@ -144,7 +196,18 @@ export default function PartnerDashboardScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, gap: 18, padding: 24 },
-  metrics: { gap: 12 },
+  metrics: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  actions: { gap: 10 },
   kicker: {
     color: colors.gold,
     fontSize: 10,

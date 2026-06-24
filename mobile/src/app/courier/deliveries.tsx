@@ -6,6 +6,9 @@ import {
   FoodizBrand,
   FoodizButton,
   FoodizCard,
+  FoodizHero,
+  FoodizMetric,
+  FoodizPill,
   foodizText,
 } from '@/components/foodiz-ui';
 import { foodizApi } from '@/lib/api';
@@ -90,6 +93,20 @@ export default function CourierDeliveriesScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={colors.gold} />
         }>
         <FoodizBrand subtitle="Courses disponibles" />
+        <FoodizHero
+          eyebrow="Dispatch Foodiz"
+          title="Choisissez votre prochaine course"
+          body="Les courses sont proposées selon votre validation, votre position récente et la disponibilité réelle autour de vous.">
+          <View style={styles.metrics}>
+            <FoodizMetric
+              label="Disponibles"
+              value={deliveries.length}
+              helper="à proximité"
+              tone={deliveries.length > 0 ? 'success' : 'muted'}
+            />
+          </View>
+        </FoodizHero>
+
         {deliveries.length === 0 ? (
           <FoodizCard>
             <Text style={foodizText.heading}>Aucune course disponible</Text>
@@ -100,6 +117,17 @@ export default function CourierDeliveriesScreen() {
         ) : (
           deliveries.map((delivery) => (
             <FoodizCard key={delivery.id}>
+              <View style={styles.cardHeader}>
+                <FoodizPill label="Nouvelle course" tone="success" />
+                <Text style={styles.price}>
+                  {(
+                    (delivery.delivery_fee_cents +
+                      delivery.courier_earnings_cents +
+                      delivery.courier_prime_fund_cents) /
+                    100
+                  ).toFixed(2)} €
+                </Text>
+              </View>
               <Text style={foodizText.heading}>
                 {delivery.restaurant.name || 'Établissement Foodiz'}
               </Text>
@@ -123,15 +151,6 @@ export default function CourierDeliveriesScreen() {
                   ? 'livraison à confirmer'
                   : `${delivery.estimated_time_mins} min de livraison`}
               </Text>
-              <Text style={[foodizText.heading, foodizText.gold]}>
-                {(
-                  (delivery.delivery_fee_cents +
-                    delivery.courier_earnings_cents +
-                    delivery.courier_prime_fund_cents) /
-                  100
-                ).toFixed(2)}{' '}
-                €
-              </Text>
               <FoodizButton
                 label="Accepter la course"
                 onPress={() => void claim(delivery.id)}
@@ -153,5 +172,21 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: 18,
     padding: 24,
+  },
+  metrics: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  price: {
+    color: colors.gold,
+    fontSize: 21,
+    fontWeight: '900',
   },
 });

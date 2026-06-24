@@ -3,9 +3,14 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
+  FoodizActionCard,
   FoodizBrand,
   FoodizCard,
+  FoodizHero,
+  FoodizMetric,
+  FoodizPill,
   FoodizScreen,
+  FoodizSectionTitle,
   foodizText,
 } from '@/components/foodiz-ui';
 import { foodizApi } from '@/lib/api';
@@ -20,6 +25,13 @@ type Restaurant = {
   city: string | null;
   address: string | null;
 };
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Bonjour';
+  if (hour < 18) return 'Bel après-midi';
+  return 'Bonsoir';
+}
 
 export default function ClientHomeScreen() {
   const { profile } = useAuth();
@@ -42,15 +54,25 @@ export default function ClientHomeScreen() {
 
   return (
     <FoodizScreen>
-      <FoodizBrand />
-      <View>
-        <Text style={foodizText.title}>
-          Bonjour {profile?.first_name || 'Foodie'} 👋
-        </Text>
-        <Text style={foodizText.body}>
-          Une sélection locale, livrée avec l’exigence Foodiz.
-        </Text>
-      </View>
+      <FoodizBrand subtitle="Votre table locale, livrée avec soin" />
+      <FoodizHero
+        eyebrow="Foodiz sélection locale"
+        title={`${getGreeting()} ${profile?.first_name || 'Foodie'} 👋`}
+        body="Commandez auprès des établissements de votre ville, suivez votre livraison en direct et cumulez vos avantages Foodiz.">
+        <View style={styles.metrics}>
+          <FoodizMetric
+            label="Établissements"
+            value={restaurants.length}
+            helper="actifs autour de vous"
+          />
+          <FoodizMetric
+            label="Panier"
+            value={itemCount}
+            helper={`${(subtotalCents / 100).toFixed(2)} € en cours`}
+            tone={itemCount > 0 ? 'success' : 'muted'}
+          />
+        </View>
+      </FoodizHero>
 
       {itemCount > 0 ? (
         <Pressable onPress={() => router.push('/client/cart')}>
@@ -64,10 +86,44 @@ export default function ClientHomeScreen() {
         </Pressable>
       ) : null}
 
-      <Text style={foodizText.heading}>Établissements</Text>
+      <View style={styles.actions}>
+        <FoodizActionCard
+          icon="🍽️"
+          title="Commander"
+          description="Explorez les cartes disponibles et composez votre envie du moment."
+          onPress={() => {
+            if (!restaurants[0]) return;
+            router.push({
+              pathname: '/client/restaurant/[id]',
+              params: { id: restaurants[0].id },
+            });
+          }}
+        />
+        <FoodizActionCard
+          icon="📍"
+          title="Suivre ma commande"
+          description="Retrouvez le suivi live dès qu’une commande est en cours."
+          onPress={() => router.push('/client/orders')}
+        />
+        <FoodizActionCard
+          icon="✦"
+          title="Foodiz Club"
+          description="Consultez vos points, récompenses et avantages fidélité."
+          onPress={() => router.push('/client/benefits')}
+        />
+      </View>
+
+      <FoodizSectionTitle
+        title="Établissements"
+        action={<FoodizPill label={`${restaurants.length} ouverts`} />}
+      />
       {restaurants.length === 0 ? (
         <FoodizCard>
-          <Text style={foodizText.body}>Aucun établissement actif pour le moment.</Text>
+          <Text style={foodizText.heading}>Ça mijote encore par ici</Text>
+          <Text style={foodizText.body}>
+            Aucun établissement actif pour le moment. Dès l’ouverture de votre
+            ville, les premières adresses apparaîtront ici.
+          </Text>
         </FoodizCard>
       ) : (
         restaurants.map((restaurant) => (
@@ -80,9 +136,16 @@ export default function ClientHomeScreen() {
               })
             }>
             <FoodizCard>
+              <View style={styles.restaurantHeader}>
+                <FoodizPill
+                  label={restaurant.cuisine_type || 'Sélection Foodiz'}
+                  tone="muted"
+                />
+                {restaurant.city ? <FoodizPill label={restaurant.city} /> : null}
+              </View>
               <Text style={foodizText.heading}>{restaurant.name}</Text>
               <Text style={foodizText.body}>
-                {[restaurant.cuisine_type, restaurant.city]
+                {[restaurant.address, restaurant.city]
                   .filter(Boolean)
                   .join(' · ')}
               </Text>
@@ -96,6 +159,19 @@ export default function ClientHomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  metrics: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  actions: {
+    gap: 10,
+  },
+  restaurantHeader: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   kicker: {
     color: colors.gold,
     fontSize: 11,
