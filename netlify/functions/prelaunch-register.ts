@@ -40,6 +40,10 @@ function legacyAvailabilityFromSlots(slots: string[], flexible: boolean, submitt
   return flexible || slots.length > 0 ? "journee" : "";
 }
 
+function normalizeSiret(value: unknown) {
+  return String(value || "").replace(/\D/g, "").slice(0, 32);
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -95,7 +99,7 @@ const handler: Handler = async (event) => {
 
   const establishmentName = cleanText(input.establishmentName, 140);
   const establishmentType = cleanText(input.establishmentType, 30);
-  const siret = cleanText(input.siret, 20).replace(/\s+/g, "");
+  const siret = normalizeSiret(input.siret);
   const vehicleType = cleanText(input.vehicleType, 30);
   const availabilitySlots = cleanStringArray(input.availabilitySlots, validCourierAvailabilitySlots, 6);
   const availabilityDays = cleanStringArray(input.availabilityDays, validCourierAvailabilityDays, 7);
@@ -110,6 +114,15 @@ const handler: Handler = async (event) => {
   const handlesAnimalProducts = input.handlesAnimalProducts === true;
   const sellsAlcohol = input.sellsAlcohol === true;
   const requiresHygieneProof = input.requiresHygieneProof === true;
+
+  if ((role === "partenaire" || role === "livreur") && !/^[0-9]{14}$/.test(siret)) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({
+        error: "Le SIRET doit contenir exactement 14 chiffres. Vous pouvez le saisir sans espace.",
+      }),
+    };
+  }
 
   if (role === "partenaire" && (
     !establishmentName

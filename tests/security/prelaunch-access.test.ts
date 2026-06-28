@@ -34,6 +34,10 @@ const appRoutes = readFileSync(
   new URL("../../src/App.tsx", import.meta.url),
   "utf8",
 );
+const waitlistPage = readFileSync(
+  new URL("../../src/pages/prelaunch/Waitlist.tsx", import.meta.url),
+  "utf8",
+);
 const uniquePhoneMigration = readFileSync(
   new URL("../../supabase/migrations/33_unique_phone_identity_for_clients_and_couriers.sql", import.meta.url),
   "utf8",
@@ -98,6 +102,15 @@ test("le SIRET livreur est stocké et validé sur 14 chiffres", () => {
   assert.match(courierSiretMigration, /\^\[0-9\]\{14\}\$/);
   assert.match(registerApi, /prelaunch_driver_details/);
   assert.match(registerApi, /siret,/);
+});
+
+test("le SIRET de pré-inscription est normalisé avant validation", () => {
+  assert.match(registerApi, /function normalizeSiret/);
+  assert.match(registerApi, /replace\(\/\\D\/g, ""\)/);
+  assert.match(registerApi, /Le SIRET doit contenir exactement 14 chiffres/);
+  assert.match(waitlistPage, /name === "siret"[\s\S]*replace\(\/\\D\/g, ""\)\.slice\(0, 14\)/);
+  assert.match(waitlistPage, /inputMode="numeric"/);
+  assert.match(waitlistPage, /scrollIntoView/);
 });
 
 test("l’envoi de lancement ne cible que les profils encore en attente", () => {

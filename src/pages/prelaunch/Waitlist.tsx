@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Bike,
@@ -152,6 +152,8 @@ function Field({
   placeholder,
   required = true,
   autoComplete,
+  inputMode,
+  maxLength,
   trailing,
 }: {
   icon: ReactNode;
@@ -162,6 +164,8 @@ function Field({
   placeholder: string;
   required?: boolean;
   autoComplete?: string;
+  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+  maxLength?: number;
   trailing?: ReactNode;
 }) {
   return (
@@ -174,6 +178,8 @@ function Field({
         placeholder={placeholder}
         required={required}
         autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
         className="min-w-0 flex-1 bg-transparent text-[15px] text-foodiz-cream outline-none placeholder:text-[#b8b0a2]/60"
       />
       {trailing}
@@ -275,6 +281,7 @@ export default function WaitlistPage() {
     () => window.sessionStorage.getItem("foodiz-partner-upload-token") || "",
   );
   const [submissionStep, setSubmissionStep] = useState("");
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (resumePartnerUpload) {
@@ -296,8 +303,16 @@ export default function WaitlistPage() {
     return "Je réserve ma place sur Foodiz";
   }, [role]);
 
+  useEffect(() => {
+    if (!error) return;
+    errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
+
   const update = (name: string, value: string | boolean) => {
-    setForm((current) => ({ ...current, [name]: value }));
+    const safeValue = name === "siret" && typeof value === "string"
+      ? value.replace(/\D/g, "").slice(0, 14)
+      : value;
+    setForm((current) => ({ ...current, [name]: safeValue }));
     setError("");
   };
 
@@ -469,7 +484,9 @@ export default function WaitlistPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...form, role }),
         });
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({
+          error: "Le serveur n’a pas renvoyé une réponse lisible. Réessayez dans un instant.",
+        }));
         if (!response.ok) throw new Error(payload.error || "Votre pré-inscription a échoué.");
         uploadToken = String(payload.courierDocumentUploadToken || "");
         if (role === "livreur") {
@@ -609,6 +626,16 @@ export default function WaitlistPage() {
               aria-hidden="true"
             />
 
+            {error && (
+              <div
+                ref={errorRef}
+                role="alert"
+                className="rounded-2xl border border-foodiz-red/25 bg-foodiz-red/[.06] px-4 py-3 text-sm leading-relaxed text-foodiz-red"
+              >
+                {error}
+              </div>
+            )}
+
             {role === "partenaire" && (
               <div className="space-y-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[.025] p-3">
                 <Field icon={<Building2 size={18} />} name="establishmentName" value={form.establishmentName} onChange={update} placeholder="Nom de l’établissement" />
@@ -634,7 +661,15 @@ export default function WaitlistPage() {
                       { value: "other", label: "Autre" },
                     ]}
                   />
-                  <Field icon={<Building2 size={17} />} name="siret" value={form.siret} onChange={update} placeholder="SIRET — 14 chiffres" />
+                  <Field
+                    icon={<Building2 size={17} />}
+                    name="siret"
+                    value={form.siret}
+                    onChange={update}
+                    placeholder="SIRET — 14 chiffres"
+                    inputMode="numeric"
+                    maxLength={14}
+                  />
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field icon={<MapPin size={17} />} name="address" value={form.address} onChange={update} placeholder="Adresse de l’établissement" autoComplete="street-address" />
@@ -723,7 +758,12 @@ export default function WaitlistPage() {
                   onChange={update}
                   placeholder="Numéro SIRET — 14 chiffres"
                   autoComplete="off"
+                  inputMode="numeric"
+                  maxLength={14}
                 />
+                <p className="px-1 text-[10px] leading-relaxed text-foodiz-gray/70">
+                  Collez-le même avec espaces ou tirets : Foodiz garde uniquement les 14 chiffres.
+                </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field
                     icon={<MapPin size={17} />}
@@ -899,10 +939,6 @@ export default function WaitlistPage() {
                 , et j’autorise Foodiz à me contacter au sujet de ma pré-inscription et du lancement.
               </span>
             </label>
-
-            {error && (
-              <div className="rounded-2xl border border-foodiz-red/25 bg-foodiz-red/[.06] px-4 py-3 text-sm text-foodiz-red">{error}</div>
-            )}
 
             <button
               type="submit"
