@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bike, MapPinned, RefreshCw, Store } from "lucide-react";
+import { Bike, MapPinned, RefreshCw, Sparkles, Store } from "lucide-react";
 import toast from "react-hot-toast";
 import AdminShell from "../../components/AdminShell";
 import { supabase } from "../../lib/supabase";
@@ -21,6 +21,7 @@ type Area = {
     partnerDocumentsToReview?: number;
     courierDocumentsToReview?: number;
     documentsToReview?: number;
+    expansionRequests?: number;
   };
 };
 
@@ -96,16 +97,18 @@ export default function AdminServiceAreasPage() {
     pilot: areas.filter((area) => area.status === "pilot").length,
     open: areas.filter((area) => area.status === "open").length,
     recruiting: areas.filter((area) => area.status === "recruiting").length,
+    requests: areas.reduce((sum, area) => sum + Number(area.counts.expansionRequests || 0), 0),
   }), [areas]);
 
   return (
     <AdminShell title="Villes Foodiz" subtitle="Déploiement national progressif, ville par ville">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {[
           ["Villes détectées", totals.cities],
           ["En recrutement", totals.recruiting],
           ["Pilotes", totals.pilot],
           ["Ouvertes", totals.open],
+          ["Demandes clients", totals.requests],
         ].map(([label, value]) => (
           <article key={label} className="foodiz-card p-5">
             <MapPinned size={19} className="text-foodiz-gold" />
@@ -162,6 +165,13 @@ export default function AdminServiceAreasPage() {
                   <p className="mt-1 text-[10px] text-foodiz-gray">
                     Partenaires {area.counts.partnerDocumentsToReview || 0} · Livreurs {area.counts.courierDocumentsToReview || 0}
                   </p>
+                </div>
+                <div className="mt-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/5 p-4">
+                  <p className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-foodiz-gold">
+                    <Sparkles size={14} /> Demandes d’ouverture
+                  </p>
+                  <p className="mt-2 text-2xl font-serif italic text-foodiz-cream">{area.counts.expansionRequests || 0}</p>
+                  <p className="mt-1 text-[10px] text-foodiz-gray">Clients souhaitant voir Foodiz arriver dans cette zone.</p>
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_150px_auto]">

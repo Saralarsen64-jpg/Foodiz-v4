@@ -77,11 +77,19 @@ async function eligibleCourier(userId: string) {
       .select("courier_online,courier_latitude,courier_longitude,courier_location_accuracy_meters,courier_location_updated_at")
       .eq("id", userId)
       .maybeSingle(),
-    adminSupabase.from("courier_applications").select("status,document_review_status,dispatch_priority_score").eq("user_id", userId).maybeSingle(),
+    adminSupabase
+      .from("courier_applications")
+      .select("status,document_review_status,dispatch_priority_score,service_area:service_areas!courier_applications_service_area_id_fkey(status)")
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
+  const serviceArea = Array.isArray(application?.service_area)
+    ? application.service_area[0]
+    : application?.service_area;
   if (
     application?.status !== "validated"
     || application.document_review_status !== "approved"
+    || !["pilot", "open"].includes(serviceArea?.status || "")
     || profile?.courier_online !== true
   ) return null;
   const latitude = Number(profile?.courier_latitude);

@@ -88,9 +88,9 @@ export default function PartnerOnboardingScreen() {
       });
       Alert.alert(
         'Dossier partenaire transmis',
-        'Foodiz vérifiera votre établissement avant son activation.',
+        'Ajoutez maintenant les justificatifs nécessaires à sa validation.',
       );
-      router.replace('/partner-status');
+      router.replace('/partner-documents');
     } catch (error) {
       Alert.alert(
         'Envoi impossible',

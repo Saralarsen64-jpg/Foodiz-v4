@@ -97,12 +97,29 @@ export default function CourierOnboarding() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Utilisateur non connecté.");
-      const results = await Promise.all([
-        supabase.from("profiles").update({ full_name: form.name.trim(), phone: form.phone.trim(), city: form.city.trim(), address: form.address.trim(), postal_code: form.postalCode }).eq("id", user.id),
-        supabase.from("courier_applications").update({ city: form.city.trim(), vehicle_type: form.vehicle, legal_name: form.legalName.trim(), siret: form.siret, address: form.address.trim(), postal_code: form.postalCode, updated_at: new Date().toISOString() }).eq("user_id", user.id),
-      ]);
-      const error = results.find((result) => result.error)?.error;
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch("/api/courier-application", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          legalName: form.legalName.trim(),
+          siret: form.siret,
+          address: form.address.trim(),
+          postalCode: form.postalCode,
+          city: form.city.trim(),
+          vehicle: form.vehicle,
+          availabilitySlots: [],
+          availabilityDays: [],
+          availabilityFlexible: true,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Adresse professionnelle invalide.");
       await uploadFiles();
       toast.success("Dossier livreur envoyé pour contrôle.");
       window.setTimeout(() => navigate("/courier/validation-status"), 700);

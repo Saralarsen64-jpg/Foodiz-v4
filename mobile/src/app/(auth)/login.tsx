@@ -48,7 +48,6 @@ function normalizeRole(role: unknown): PublicRole | null {
 }
 
 export default function LoginScreen() {
-  const { launched } = useAuth();
   const params = useLocalSearchParams<{ role?: string }>();
   const selectedRole = normalizeRole(params.role);
   const copy = selectedRole ? ROLE_COPY[selectedRole] : null;
@@ -85,29 +84,6 @@ export default function LoginScreen() {
         return;
       }
     }
-    try {
-      const apiUrl = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
-      const response = await fetch(`${apiUrl}/api/launch-status`, {
-        headers: data.session?.access_token
-          ? { Authorization: `Bearer ${data.session.access_token}` }
-          : undefined,
-      });
-      const status = await response.json();
-      if (!status.launched && status.accessAllowed !== true) {
-        await supabase.auth.signOut();
-        Alert.alert(
-          status.role === 'client' ? 'Encore un peu de patience 🍽️' : 'Accès en cours de validation',
-          status.role === 'client'
-            ? 'Foodiz mijote son arrivée dans votre ville. Vous serez informé par e-mail lors du lancement. Suivez aussi @foodiz_off sur Instagram.'
-            : 'Votre dossier professionnel ou votre ville pilote doit encore être validé par Foodiz avant l’accès à l’application.',
-        );
-        return;
-      }
-    } catch {
-      await supabase.auth.signOut();
-      Alert.alert('Connexion temporairement indisponible', 'Foodiz n’a pas pu vérifier votre autorisation. Réessayez dans quelques instants.');
-      return;
-    }
     router.replace('/');
   }
 
@@ -134,11 +110,14 @@ export default function LoginScreen() {
         textContentType="password"
       />
       <FoodizButton label="Se connecter" onPress={login} loading={loading} />
-      {launched && (!selectedRole || selectedRole === 'client') && (
-        <Link href="/signup" style={styles.link}>
-          Créer un compte Foodiz
-        </Link>
-      )}
+      <Link
+        href={{
+          pathname: '/signup',
+          params: selectedRole ? { role: selectedRole } : {},
+        }}
+        style={styles.link}>
+        Créer un compte Foodiz
+      </Link>
       <Link href="/welcome" style={styles.secondaryLink}>
         Changer d’espace
       </Link>

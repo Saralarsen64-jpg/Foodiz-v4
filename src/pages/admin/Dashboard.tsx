@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowRight, BarChart3, Bike, ClipboardCheck, CreditCard, Euro, FileText, Gauge, Hourglass, LifeBuoy, MapPin, ShoppingBag, Store, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, Bike, ClipboardCheck, CreditCard, Euro, FileText, Gauge, LifeBuoy, MapPin, ShoppingBag, Store, Users } from "lucide-react";
 import AdminShell from "../../components/AdminShell";
 import { supabase } from "../../lib/supabase";
 
@@ -23,6 +23,7 @@ type CityArea = {
     courierApplicationsToReview?: number;
     courierDocumentsToReview?: number;
     documentsToReview?: number;
+    expansionRequests?: number;
   };
 };
 
@@ -51,16 +52,11 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({ users: 0, orders: 0, collected: 0, foodiz: 0, tickets: 0, partners: 0, subscriptions: 0, payable: 0, incidents: 0 });
   const [ledger, setLedger] = useState<any[]>([]);
   const [areas, setAreas] = useState<CityArea[]>([]);
-  const [prelaunch, setPrelaunch] = useState<{
-    counts: { total: number; clients: number; drivers: number; partners: number };
-    cities: { city: string; count: number }[];
-    statuses: Record<string, number>;
-  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { void (async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    const [users, orders, tickets, partners, subscriptions, balances, payables, ledgerRows, prelaunchResponse, serviceAreasResponse] = await Promise.all([
+    const [users, orders, tickets, partners, subscriptions, balances, payables, ledgerRows, serviceAreasResponse] = await Promise.all([
       supabase.from("profiles").select("*", { count: "exact", head: true }).neq("role", "admin"),
       supabase.from("orders").select("*", { count: "exact", head: true }),
       supabase.from("support_tickets").select("*", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
@@ -69,9 +65,6 @@ export default function AdminDashboard() {
       supabase.from("admin_financial_account_balances").select("*").single(),
       supabase.from("admin_weekly_payables").select("amount_cents"),
       supabase.from("order_financial_ledger").select("client_collected_cents,foodiz_revenue_cents,partner_cents,courier_earnings_cents,courier_prime_cents,courier_penalty_cents,delivery_fee_cents,loyalty_fund_cents,created_at").order("created_at", { ascending: false }).limit(200),
-      fetch("/api/admin/prelaunch", {
-        headers: { Authorization: `Bearer ${session?.access_token || ""}` },
-      }),
       fetch("/api/admin/service-areas", {
         headers: { Authorization: `Bearer ${session?.access_token || ""}` },
       }),
@@ -89,14 +82,6 @@ export default function AdminDashboard() {
       incidents: subscriptionRows.filter((row) => ["past_due", "unpaid", "incomplete"].includes(row.status)).length,
     });
     setLedger(ledgerRows.data || []);
-    if (prelaunchResponse.ok) {
-      const payload = await prelaunchResponse.json();
-      setPrelaunch({
-        counts: payload.counts,
-        cities: payload.cities || [],
-        statuses: payload.statuses || {},
-      });
-    }
     if (serviceAreasResponse.ok) {
       const payload = await serviceAreasResponse.json();
       setAreas(payload.areas || []);
@@ -142,18 +127,11 @@ export default function AdminDashboard() {
     ["Incidents abonnements", stats.incidents, AlertTriangle, stats.incidents ? "text-foodiz-red" : "text-foodiz-green", "/admin/subscriptions"],
   ] as const;
 
-  const prelaunchRoles = [
-    { label: "Clients", value: prelaunch?.counts.clients || 0, icon: Users, color: "bg-blue-400" },
-    { label: "Livreurs", value: prelaunch?.counts.drivers || 0, icon: Bike, color: "bg-foodiz-green" },
-    { label: "Partenaires", value: prelaunch?.counts.partners || 0, icon: Store, color: "bg-foodiz-gold" },
-  ];
-  const prelaunchMaxRole = Math.max(1, ...prelaunchRoles.map((item) => item.value));
-  const prelaunchMaxCity = Math.max(1, ...(prelaunch?.cities || []).map((item) => item.count));
   const priorityAreas = useMemo(() => (
     [...areas].sort((a, b) => {
-      const aMont = a.city.toLowerCase().includes("mont-de-marsan") || a.city.toLowerCase().includes("mont de marsan");
-      const bMont = b.city.toLowerCase().includes("mont-de-marsan") || b.city.toLowerCase().includes("mont de marsan");
-      if (aMont !== bMont) return aMont ? -1 : 1;
+      const aRequests = a.counts.expansionRequests || 0;
+      const bRequests = b.counts.expansionRequests || 0;
+      if (aRequests !== bRequests) return bRequests - aRequests;
       const aDocs = a.counts.documentsToReview || 0;
       const bDocs = b.counts.documentsToReview || 0;
       if (aDocs !== bDocs) return bDocs - aDocs;
@@ -166,13 +144,15 @@ export default function AdminDashboard() {
     approvedPartners: acc.approvedPartners + Number(area.counts.approvedPartners || 0),
     approvedCouriers: acc.approvedCouriers + Number(area.counts.approvedCouriers || 0),
     documentsToReview: acc.documentsToReview + Number(area.counts.documentsToReview || 0),
-  }), { cities: 0, openOrPilot: 0, approvedPartners: 0, approvedCouriers: 0, documentsToReview: 0 }), [areas]);
+    expansionRequests: acc.expansionRequests + Number(area.counts.expansionRequests || 0),
+  }), { cities: 0, openOrPilot: 0, approvedPartners: 0, approvedCouriers: 0, documentsToReview: 0, expansionRequests: 0 }), [areas]);
   const areaSummaryCards = [
     { label: "Villes suivies", value: areaTotals.cities, icon: MapPin },
     { label: "Pilotes / ouvertes", value: areaTotals.openOrPilot, icon: Gauge },
     { label: "Partenaires validés", value: areaTotals.approvedPartners, icon: Store },
     { label: "Livreurs validés", value: areaTotals.approvedCouriers, icon: Bike },
     { label: "Documents à traiter", value: areaTotals.documentsToReview, icon: ClipboardCheck },
+    { label: "Demandes de villes", value: areaTotals.expansionRequests, icon: MapPin },
   ];
   const launchChecklist = [
     {
@@ -231,8 +211,8 @@ export default function AdminDashboard() {
     <section className="foodiz-card overflow-hidden border-foodiz-gold/25 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.14),transparent_34%),#080808]">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Recette pré-lancement</p>
-          <h2 className="foodiz-title mt-1 text-2xl">Les 6 points avant App Store & Google Play</h2>
+          <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Qualité opérationnelle</p>
+          <h2 className="foodiz-title mt-1 text-2xl">Les 6 points de contrôle Foodiz</h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-foodiz-gray">
             Cette checklist garde Foodiz disciplinée : beau, utile, sécurisé, testé sur une vraie commande et prêt à être piloté ville par ville.
           </p>
@@ -261,86 +241,6 @@ export default function AdminDashboard() {
       </div>
     </section>
 
-    <section className="foodiz-card overflow-hidden border-foodiz-gold/30 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.16),transparent_38%),#0a0a0a]">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-foodiz-gold/30 bg-foodiz-gold/10 text-foodiz-gold">
-            <Hourglass size={23} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.2em] text-foodiz-gold">Avant lancement</p>
-            <h2 className="foodiz-title mt-1 text-2xl">Pré-inscriptions Foodiz</h2>
-            <p className="mt-1 text-xs text-foodiz-gray">{prelaunch?.counts.total || 0} personne(s) attendent l’ouverture.</p>
-          </div>
-        </div>
-        <button onClick={() => navigate("/admin/prelaunch")} className="foodiz-btn flex items-center gap-2 !px-4 !py-2.5">
-          Gérer les inscriptions <ArrowRight size={16} />
-        </button>
-      </div>
-
-      <div className="grid gap-6 p-5 lg:grid-cols-[.8fr_1.2fr_.7fr] lg:p-6">
-        <article>
-          <div className="mb-4 flex items-center gap-2">
-            <Users size={17} className="text-foodiz-gold" />
-            <h3 className="text-sm font-semibold text-foodiz-cream">Par type d’utilisateur</h3>
-          </div>
-          <div className="space-y-4">
-            {prelaunchRoles.map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-foodiz-gray"><item.icon size={14} />{item.label}</span>
-                  <span className="font-semibold text-foodiz-cream">{item.value}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.value ? Math.max(7, item.value / prelaunchMaxRole * 100) : 0}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="lg:border-x lg:border-foodiz-gold/10 lg:px-6">
-          <div className="mb-4 flex items-center gap-2">
-            <MapPin size={17} className="text-foodiz-gold" />
-            <h3 className="text-sm font-semibold text-foodiz-cream">Répartition par ville</h3>
-          </div>
-          {(prelaunch?.cities || []).length ? (
-            <div className="space-y-3">
-              {prelaunch!.cities.slice(0, 6).map((item) => (
-                <div key={item.city} className="grid grid-cols-[minmax(90px,.8fr)_2fr_32px] items-center gap-3">
-                  <span className="truncate text-xs text-foodiz-gray">{item.city}</span>
-                  <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                    <div className="h-full rounded-full bg-gradient-to-r from-foodiz-gold/50 to-foodiz-gold" style={{ width: `${Math.max(7, item.count / prelaunchMaxCity * 100)}%` }} />
-                  </div>
-                  <span className="text-right text-xs font-semibold text-foodiz-cream">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-sm text-foodiz-gray">Aucune ville enregistrée pour le moment.</p>}
-        </article>
-
-        <article>
-          <div className="mb-4 flex items-center gap-2">
-            <BarChart3 size={17} className="text-foodiz-gold" />
-            <h3 className="text-sm font-semibold text-foodiz-cream">État des accès</h3>
-          </div>
-          <div className="space-y-3">
-            {[
-              ["En attente", prelaunch?.statuses.prelaunch_pending || 0, "text-amber-300"],
-              ["Accès envoyés", prelaunch?.statuses.launch_email_sent || 0, "text-blue-300"],
-              ["Activés", prelaunch?.statuses.activated || 0, "text-foodiz-green"],
-              ["Refusés", prelaunch?.statuses.rejected || 0, "text-foodiz-red"],
-            ].map(([label, value, color]) => (
-              <div key={String(label)} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[.025] px-3 py-2.5">
-                <span className="text-xs text-foodiz-gray">{label}</span>
-                <span className={`text-sm font-semibold ${color}`}>{value}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-      </div>
-    </section>
-
     <section className="foodiz-card overflow-hidden border-foodiz-gold/30 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.16),transparent_36%),#090909]">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
         <div className="flex items-center gap-4">
@@ -358,7 +258,7 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-5 lg:p-6">
+      <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-6 lg:p-6">
         {areaSummaryCards.map(({ label, value, icon: Icon }) => (
           <article key={label} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
             <Icon size={17} className="text-foodiz-gold" />
@@ -370,7 +270,7 @@ export default function AdminDashboard() {
 
       <div className="grid gap-4 px-5 pb-6 xl:grid-cols-3 lg:px-6">
         {priorityAreas.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-sm text-foodiz-gray xl:col-span-3">Aucune ville classée pour le moment. Les villes apparaissent quand une pré-inscription professionnelle contient une ville exploitable.</div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-sm text-foodiz-gray xl:col-span-3">Aucune ville classée pour le moment. Les villes apparaissent dès qu’un professionnel dépose son dossier ou qu’un client demande l’ouverture de sa zone.</div>
         ) : priorityAreas.map((area) => {
           const readiness = areaReadiness(area);
           const documentsToReview = area.counts.documentsToReview || 0;
@@ -387,7 +287,7 @@ export default function AdminDashboard() {
                 </span>
               </div>
 
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+              <div className="mt-5 grid grid-cols-4 gap-2 text-center">
                 <div className="rounded-2xl bg-white/[0.03] p-3">
                   <p className="text-xl font-serif italic text-foodiz-cream">{area.counts.approvedPartners}</p>
                   <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Partenaires</p>
@@ -399,6 +299,10 @@ export default function AdminDashboard() {
                 <div className={`rounded-2xl p-3 ${documentsToReview ? "bg-foodiz-red/10" : "bg-white/[0.03]"}`}>
                   <p className={`text-xl font-serif italic ${documentsToReview ? "text-foodiz-red" : "text-foodiz-cream"}`}>{documentsToReview}</p>
                   <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Docs</p>
+                </div>
+                <div className="rounded-2xl bg-foodiz-gold/[0.07] p-3">
+                  <p className="text-xl font-serif italic text-foodiz-gold">{area.counts.expansionRequests || 0}</p>
+                  <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Demandes</p>
                 </div>
               </div>
 

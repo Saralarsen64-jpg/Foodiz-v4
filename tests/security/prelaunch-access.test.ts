@@ -54,6 +54,10 @@ const adminPartnerApi = readFileSync(
   new URL("../../netlify/functions/admin-partner-applications.ts", import.meta.url),
   "utf8",
 );
+const publicFranceMigration = readFileSync(
+  new URL("../../supabase/migrations/44_public_france_launch_and_city_interest.sql", import.meta.url),
+  "utf8",
+);
 
 test("le statut de lancement démarre fermé", () => {
   assert.match(migration, /'launch_status', '\{"launched": false\}'::jsonb/);
@@ -124,20 +128,25 @@ test("l’activation renvoie la connexion correspondant au rôle", () => {
   assert.match(activateApi, /role === "partenaire" \? "partner"/);
 });
 
-test("la route exacte /admin et ses sous-routes restent accessibles avant lancement", () => {
-  assert.match(launchBoundary, /pathname === "\/admin"/);
-  assert.match(launchBoundary, /pathname\.startsWith\("\/admin\/"\)/);
-  assert.match(launchBoundary, /isAdminPath\(location\.pathname\)/);
+test("la barrière de pré-lancement ne bloque plus les comptes nationaux", () => {
+  assert.match(launchBoundary, /authentication is now open throughout France/);
+  assert.doesNotMatch(launchBoundary, /Navigate to="\/waitlist"/);
+  assert.match(publicFranceMigration, /"launched": true, "mode": "public_france"/);
+  assert.match(publicFranceMigration, /UPDATE public\.prelaunch_profiles[\s\S]*status = 'activated'/);
 });
 
-test("foodiz.co reste toujours la waitlist même avec une session admin", () => {
-  assert.match(appRoutes, /path="\/" element=\{<Navigate to="\/waitlist" replace \/>}/);
-  assert.match(launchBoundary, /location\.pathname === "\/"/);
-  assert.match(launchBoundary, /sessionRole === "admin"\) return <Navigate to="\/waitlist"/);
-  assert.doesNotMatch(
-    launchBoundary,
-    /sessionRole === "admin"\) return <Navigate to="\/admin"/,
-  );
+test("foodiz.co ouvre désormais l’auth et ferme les anciennes pré-inscriptions", () => {
+  assert.match(appRoutes, /path="\/" element=\{<Navigate to="\/auth" replace \/>}/);
+  assert.match(appRoutes, /path="\/waitlist" element=\{<Navigate to="\/auth" replace \/>}/);
+  assert.match(registerApi, /FOODIZ_PUBLIC_REGISTRATION_MODE !== "legacy_prelaunch"/);
+  assert.match(registerApi, /statusCode: 410/);
+});
+
+test("les demandes d’ouverture de ville sont privées et pilotables", () => {
+  assert.match(publicFranceMigration, /CREATE TABLE IF NOT EXISTS public\.city_expansion_requests/);
+  assert.match(publicFranceMigration, /UNIQUE \(user_id, service_area_id\)/);
+  assert.match(publicFranceMigration, /auth\.uid\(\) = user_id/);
+  assert.match(publicFranceMigration, /REVOKE INSERT, DELETE/);
 });
 
 test("les formats français équivalents partagent une identité téléphonique", () => {

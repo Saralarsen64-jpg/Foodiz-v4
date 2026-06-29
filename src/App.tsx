@@ -44,6 +44,7 @@ import PartnerCustomers from "./pages/partner/Customers";
 import PartnerMarketing from "./pages/partner/Marketing";
 import PartnerOnboarding from "./pages/partner/Onboarding";
 import PartnerValidationStatus from "./pages/partner/ValidationStatus";
+import PartnerDocuments from "./pages/partner/Documents";
 import PartnerSupport from "./pages/partner/Support";
 import PartnerSettings from "./pages/partner/Settings";
 
@@ -68,11 +69,6 @@ import LoginPage from "./pages/auth/Login";
 import SignupPage from "./pages/auth/Signup";
 import AuthCallback from "./pages/auth/Callback"; // NOUVEL IMPORT
 import ResetPasswordPage from "./pages/auth/ResetPassword";
-import WaitlistPage from "./pages/prelaunch/Waitlist";
-import PrelaunchConfirmed from "./pages/prelaunch/Confirmed";
-import ActivatePrelaunch from "./pages/prelaunch/Activate";
-import PrelaunchCourierDocuments from "./pages/prelaunch/CourierDocuments";
-import PrelaunchPartnerDocuments from "./pages/prelaunch/PartnerDocuments";
 import {
   CookiesPolicyPage,
   LegalNoticePage,
@@ -95,7 +91,6 @@ import AdminMarketingCampaignsPage from "./pages/admin/MarketingCampaigns";
 import AdminReferralsPage from "./pages/admin/Referrals";
 import AdminSettlementDetail from "./pages/admin/SettlementDetail";
 import AdminPartnerDetail from "./pages/admin/PartnerDetail";
-import AdminPrelaunch from "./pages/admin/Prelaunch";
 import AdminUsers from "./pages/admin/Users";
 import AdminServiceAreas from "./pages/admin/ServiceAreas";
 
@@ -104,14 +99,14 @@ export default function App() {
     <LaunchBoundary>
       <Routes>
       {/* Redirect root */}
-      <Route path="/" element={<Navigate to="/waitlist" replace />} />
+      <Route path="/" element={<Navigate to="/auth" replace />} />
 
       {/* ─── AUTH ROUTES (Publiques) ─────────────────────────────────────── */}
-      <Route path="/waitlist" element={<WaitlistPage />} />
-      <Route path="/prelaunch-confirmed" element={<PrelaunchConfirmed />} />
-      <Route path="/courier-documents" element={<PrelaunchCourierDocuments />} />
-      <Route path="/partner-documents" element={<PrelaunchPartnerDocuments />} />
-      <Route path="/activate" element={<ActivatePrelaunch />} />
+      <Route path="/waitlist" element={<Navigate to="/auth" replace />} />
+      <Route path="/prelaunch-confirmed" element={<Navigate to="/auth" replace />} />
+      <Route path="/courier-documents" element={<Navigate to="/auth" replace />} />
+      <Route path="/partner-documents" element={<Navigate to="/auth" replace />} />
+      <Route path="/activate" element={<Navigate to="/auth" replace />} />
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
@@ -157,6 +152,7 @@ export default function App() {
       <Route element={<ProtectedRoute allowedRoles={["partner"]} />}>
         <Route path="/partner/onboarding" element={<PartnerOnboarding />} />
         <Route path="/partner/validation-status" element={<PartnerValidationStatus />} />
+        <Route path="/partner/documents" element={<PartnerDocuments />} />
       </Route>
       <Route element={<ProtectedRoute allowedRoles={["partner"]} requireValidated />}>
         <Route path="/partner" element={<PartnerDashboard />} />
@@ -208,7 +204,7 @@ export default function App() {
         <Route path="/admin/courier-applications" element={<AdminCourierApplicationsPage />} />
         <Route path="/admin/marketing-campaigns" element={<AdminMarketingCampaignsPage />} />
         <Route path="/admin/referrals" element={<AdminReferralsPage />} />
-        <Route path="/admin/prelaunch" element={<AdminPrelaunch />} />
+        <Route path="/admin/prelaunch" element={<Navigate to="/admin/users" replace />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/service-areas" element={<AdminServiceAreas />} />
       </Route>

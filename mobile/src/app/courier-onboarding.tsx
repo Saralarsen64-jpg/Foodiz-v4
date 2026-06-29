@@ -20,6 +20,7 @@ import {
   loadCourierDocuments,
   uploadCourierDocument,
 } from '@/lib/courier-documents';
+import { foodizApi } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -238,47 +239,22 @@ export default function CourierOnboardingScreen() {
 
     setSaving(true);
     try {
-      const profileResult = await supabase
-        .from('profiles')
-        .update({
-          full_name: form.name.trim(),
+      await foodizApi('courier-application', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: form.name.trim(),
           phone: form.phone.trim(),
+          legalName: form.legalName.trim(),
+          siret,
           address: form.address.trim(),
-          postal_code: form.postalCode,
+          postalCode: form.postalCode,
           city: form.city.trim(),
-        })
-        .eq('id', session.user.id);
-      if (profileResult.error) throw profileResult.error;
-
-      const applicationValues = {
-        city: form.city.trim(),
-        vehicle_type: form.vehicle,
-        legal_name: form.legalName.trim(),
-        siret,
-        address: form.address.trim(),
-        postal_code: form.postalCode,
-        availability_slots: form.availabilitySlots,
-        availability_days: form.availabilityDays,
-        availability_flexible: form.availabilityFlexible,
-        status: 'pending',
-        document_review_status: 'pending_review',
-        updated_at: new Date().toISOString(),
-      };
-      const { data: existing } = await supabase
-        .from('courier_applications')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      const applicationResult = existing
-        ? await supabase
-            .from('courier_applications')
-            .update(applicationValues)
-            .eq('id', existing.id)
-        : await supabase.from('courier_applications').insert({
-            user_id: session.user.id,
-            ...applicationValues,
-          });
-      if (applicationResult.error) throw applicationResult.error;
+          vehicle: form.vehicle,
+          availabilitySlots: form.availabilitySlots,
+          availabilityDays: form.availabilityDays,
+          availabilityFlexible: form.availabilityFlexible,
+        }),
+      });
 
       await refreshProfile();
       Alert.alert(

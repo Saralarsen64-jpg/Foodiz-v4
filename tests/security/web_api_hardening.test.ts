@@ -58,6 +58,8 @@ test("le routeur API applique un pare-feu serveur par rôle", () => {
   assert.match(apiRouter, /"partner-order-action": \["partner"\]/);
   assert.match(apiRouter, /"create-checkout-session": \["client"\]/);
   assert.match(apiRouter, /"address-management": \["client", "partner"\]/);
+  assert.match(apiRouter, /"city-expansion-request": \["client"\]/);
+  assert.match(apiRouter, /"courier-application": \["courier"\]/);
 });
 
 test("les endpoints sensibles ne renvoient pas les messages techniques bruts au client", () => {

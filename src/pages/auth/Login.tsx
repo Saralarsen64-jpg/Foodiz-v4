@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [prelaunchNotice, setPrelaunchNotice] = useState("");
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -32,7 +31,6 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setPrelaunchNotice("");
     
     try {
       // 1. Connexion
@@ -55,22 +53,6 @@ export default function LoginPage() {
       
       if (!session) {
         toast.error("Session non établie");
-        setLoading(false);
-        return;
-      }
-
-      const launchResponse = await fetch("/api/launch-status", {
-        cache: "no-store",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const launchStatus = await launchResponse.json().catch(() => ({}));
-      if (!launchStatus.launched && launchStatus.accessAllowed !== true) {
-        await supabase.auth.signOut();
-        setPrelaunchNotice(
-          launchStatus.role === "client"
-            ? "Foodiz mijote son arrivée dans votre ville 🍽️ Vous serez informé par e-mail dès le lancement. En attendant, retrouvez les coulisses gourmandes sur Instagram @foodiz_off."
-            : "Votre espace professionnel est bien préparé, mais il reste verrouillé jusqu’à la validation de votre dossier et l’ouverture pilote de votre ville par Foodiz.",
-        );
         setLoading(false);
         return;
       }
@@ -104,11 +86,6 @@ export default function LoginPage() {
         <p className="text-foodiz-gray text-sm text-center mb-8">Heureux de vous revoir</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
-          {prelaunchNotice && (
-            <div className="rounded-2xl border border-foodiz-gold/25 bg-foodiz-gold/[0.07] p-4 text-sm leading-relaxed text-foodiz-cream">
-              {prelaunchNotice}
-            </div>
-          )}
           <div className="foodiz-card p-4">
             <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">E-mail</label>
             <div className="flex items-center gap-3 mt-2">

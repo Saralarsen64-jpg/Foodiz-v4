@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Search, Gift, Star, ChevronRight, Flame, Pizza, Wine, ShoppingCart, Sandwich, Salad, Navigation, User, ShoppingBag, Bell, MapPinned, Route, ShieldCheck } from "lucide-react";
 import { FoodizActionCard, FoodizHero, FoodizMetricCard, FoodizPill } from "../../components/FoodizWebUI";
+import CityExpansionCard from "../../components/CityExpansionCard";
 
 const CATEGORIES = [
   { label: "Market", icon: ShoppingCart, path: "/client/market" },
@@ -12,13 +13,6 @@ const CATEGORIES = [
   { label: "Asiatique", icon: Salad, path: "/client/restaurants?category=asian" },
   { label: "Gastro", icon: Wine, path: "/client/restaurants?category=gastronomic" },
 ];
-
-function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  var R = 6371; var dLat = deg2rad(lat2 - lat1); var dLon = deg2rad(lon2 - lon1);
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
-}
-function deg2rad(deg: number) { return deg * (Math.PI / 180) }
 
 export default function ClientHome() {
   const navigate = useNavigate();
@@ -30,6 +24,8 @@ export default function ClientHome() {
   const [loadingRestos, setLoadingRestos] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [firstName, setFirstName] = useState("");
+  const [coverageStatus, setCoverageStatus] = useState<"available" | "coming_soon" | "address_required">("address_required");
+  const [expansionRequested, setExpansionRequested] = useState(false);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -43,35 +39,43 @@ export default function ClientHome() {
         const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false);
         if (count) setUnreadCount(count);
 
-        // 3. Localisation
-        const { data: profile } = await supabase.from('profiles').select('first_name, latitude, longitude, city').eq('id', user.id).single();
+        // 3. Localisation et catalogue filtré côté serveur.
+        const [{ data: profile }, { data: { session } }] = await Promise.all([
+          supabase.from('profiles').select('first_name,city').eq('id', user.id).single(),
+          supabase.auth.getSession(),
+        ]);
         setFirstName(profile?.first_name || "");
-        if (profile?.latitude && profile?.longitude) {
-          setLocationEnabled(true);
-          setCityName(profile.city || "mon adresse");
-          fetchRestaurants(profile.latitude, profile.longitude);
+        try {
+          const response = await fetch("/api/client-catalog", {
+            headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+            cache: "no-store",
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Catalogue indisponible");
+          const coverage = payload.coverage || { status: "address_required" };
+          setCoverageStatus(coverage.status);
+          setLocationEnabled(coverage.status !== "address_required");
+          setCityName(coverage.city || profile?.city || "mon adresse");
+          setExpansionRequested(Boolean(payload.expansionRequest));
+          setRestaurants((payload.restaurants || []).map((restaurant: any) => ({
+            id: restaurant.id,
+            name: restaurant.name,
+            note: "Nouveau",
+            temps: "Délai à confirmer",
+            image: restaurant.cover_image,
+            emoji: "🍽️",
+            cuisine: restaurant.cuisine_type || "Restaurant",
+          })));
+        } catch {
+          setCoverageStatus("address_required");
+          setRestaurants([]);
         }
       }
+      setLoadingRestos(false);
     };
+    setLoadingRestos(true);
     fetchInitialData();
   }, []);
-
-  const fetchRestaurants = async (lat: number, lng: number) => {
-    setLoadingRestos(true);
-    const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
-    if (restos) {
-      const filteredRestos = restos.filter((r: any) => {
-        if (r.latitude && r.longitude) return getDistanceFromLatLonInKm(lat, lng, r.latitude, r.longitude) <= 10;
-        return false;
-      });
-      const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filteredRestos.map((restaurant: any) => restaurant.id));
-      setRestaurants(filteredRestos.map((r: any) => {
-        const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === r.id).map((review: any) => review.restaurant_rating).filter(Boolean);
-        return { id: r.id, name: r.name, note: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau", temps: "Délai à confirmer", image: r.cover_image, emoji: "🍽️", cuisine: r.cuisine_type || "Restaurant" };
-      }));
-    }
-    setLoadingRestos(false);
-  };
 
   const enableLocation = () => navigate("/client/account/addresses");
 
@@ -249,16 +253,16 @@ export default function ClientHome() {
           </div>
           
           {!locationEnabled ? (
-            <div className="foodiz-card p-8 text-center border-foodiz-gold/10 bg-foodiz-gold/5">
-              <p className="text-foodiz-gold text-sm font-medium mb-1">Localisation requise</p>
-              <p className="text-foodiz-gray text-xs">Activez le GPS en haut de page pour voir les restos.</p>
-            </div>
+            <CityExpansionCard status="address_required" city={cityName} />
           ) : loadingRestos ? (
             <div className="text-center py-10 text-foodiz-gray text-sm animate-pulse">Recherche des meilleurs restos...</div>
           ) : restaurants.length === 0 ? (
-            <div className="foodiz-card p-8 text-center border-foodiz-gold/10">
-              <p className="text-foodiz-gray text-sm">Aucun restaurant dans un rayon de 10km.</p>
-            </div>
+            <CityExpansionCard
+              status={coverageStatus}
+              city={cityName}
+              alreadyRequested={expansionRequested}
+              onRequested={() => setExpansionRequested(true)}
+            />
           ) : (
             <div className="space-y-4">
               {restaurants.map((r) => (

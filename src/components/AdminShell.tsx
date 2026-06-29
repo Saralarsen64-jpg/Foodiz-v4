@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   Radio,
   UsersRound,
-  Hourglass,
   MapPinned,
   LogOut,
 } from "lucide-react";
@@ -34,7 +33,6 @@ const ADMIN_ITEMS = [
   { label: "Livreurs", icon: Bike, path: "/admin/courier-applications" },
   { label: "Villes", icon: MapPinned, path: "/admin/service-areas" },
   { label: "Parrainage", icon: UsersRound, path: "/admin/referrals" },
-  { label: "Pré-lancement", icon: Hourglass, path: "/admin/prelaunch" },
 ];
 
 export default function AdminShell({

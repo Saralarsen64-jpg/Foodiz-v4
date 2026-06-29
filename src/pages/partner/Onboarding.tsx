@@ -28,8 +28,8 @@ export default function PartnerOnboarding() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Adresse professionnelle invalide.");
-      toast.success("Dossier partenaire envoyé.");
-      window.setTimeout(() => navigate("/partner/validation-status"), 700);
+      toast.success("Informations enregistrées. Ajoutez maintenant vos justificatifs.");
+      window.setTimeout(() => navigate("/partner/documents"), 700);
     } catch (error: any) { toast.error(error.message || "Impossible d'envoyer le dossier."); }
     setSending(false);
   };

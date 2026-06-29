@@ -50,7 +50,6 @@ type CourierApplicationRow = {
   availability_days?: string[] | null;
   availability_flexible?: boolean | null;
   service_area?: { id: string; city: string; department_code?: string | null; status: string } | null;
-  prelaunch?: { access_enabled: boolean } | null;
   profiles?: { first_name?: string | null; last_name?: string | null; email?: string | null; phone?: string | null } | null;
   documents: CourierDocument[];
 };
@@ -166,23 +165,6 @@ export default function AdminCourierApplicationsPage() {
     });
   };
 
-  const setAccess = async (item: CourierApplicationRow, enabled: boolean) => {
-    setBusy(item.id);
-    try {
-      await adminCourierRequest("POST", {
-        action: "set_access",
-        userId: item.user_id,
-        enabled,
-      });
-      toast.success(enabled ? "Accès pilote livreur autorisé." : "Accès pilote retiré.");
-      await loadItems();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setBusy("");
-    }
-  };
-
   const cities = useMemo(
     () => Array.from(new Set(items.map((item) => item.service_area?.city || item.city).filter(Boolean) as string[])).sort(),
     [items],
@@ -246,6 +228,9 @@ export default function AdminCourierApplicationsPage() {
             const documentsComplete = item.documents.length === 3;
             const legalComplete = Boolean(item.legal_name && item.siret && item.address && item.postal_code);
             const canApprove = documentsComplete && legalComplete;
+            const operationalAccess = item.status === "validated"
+              && item.document_review_status === "approved"
+              && ["pilot", "open"].includes(item.service_area?.status || "");
             return (
               <article key={item.id} className="foodiz-card border-foodiz-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.10),transparent_40%)] p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -274,8 +259,8 @@ export default function AdminCourierApplicationsPage() {
                     <p className="mt-1 text-foodiz-cream">{item.service_area?.status || "non classée"}</p>
                   </div>
                   <div>
-                    <p className="text-foodiz-gray">Accès pilote</p>
-                    <p className={item.prelaunch?.access_enabled ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.prelaunch?.access_enabled ? "Autorisé" : "Bloqué"}</p>
+                    <p className="text-foodiz-gray">Accès aux courses</p>
+                    <p className={operationalAccess ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{operationalAccess ? "Autorisé" : "En attente"}</p>
                   </div>
                 </div>
 
@@ -368,11 +353,6 @@ export default function AdminCourierApplicationsPage() {
                     Refuser
                   </button>
                 </div>
-                {item.status === "validated" && item.document_review_status === "approved" && (
-                  <button disabled={busy === item.id} onClick={() => void setAccess(item, !item.prelaunch?.access_enabled)} className="mt-3 w-full rounded-xl border border-foodiz-gold/20 px-3 py-3 text-xs text-foodiz-gold disabled:opacity-40">
-                    {item.prelaunch?.access_enabled ? "Retirer l’accès pilote" : "Autoriser l’accès pilote aux courses"}
-                  </button>
-                )}
               </article>
             );
           })}

@@ -31,6 +31,19 @@ export default function SignupPage() {
       setStatus({ type: 'error', msg: "Vous devez accepter les conditions générales d'utilisation." });
       return;
     }
+    if (!/^[0-9]{5}$/.test(postalCode)) {
+      setStatus({ type: "error", msg: "Saisissez un code postal français à 5 chiffres." });
+      return;
+    }
+    if (password.length < 10 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+      setStatus({ type: "error", msg: "Le mot de passe doit contenir 10 caractères, une majuscule, une minuscule et un chiffre." });
+      return;
+    }
+    const normalizedSiret = siret.replace(/\D/g, "");
+    if (isPartner && !/^[0-9]{14}$/.test(normalizedSiret)) {
+      setStatus({ type: "error", msg: "Le SIRET doit contenir exactement 14 chiffres." });
+      return;
+    }
     setLoading(true);
     setStatus(null);
 
@@ -50,7 +63,7 @@ export default function SignupPage() {
             address,
             postal_code: postalCode,
             city,
-            siret: role === "partner" ? siret : null,
+            siret: role === "partner" ? normalizedSiret : null,
             business_name: role === "partner" ? `${firstName} ${lastName}`.trim() : null,
             ref_code: role === "client" ? refCode : null,
             cgu_accepted: cguAccepted,
@@ -128,7 +141,7 @@ export default function SignupPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2 px-3 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
               <Hash size={16} className="text-foodiz-gold" />
-              <input type="text" required value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Code Postal" />
+              <input type="text" required inputMode="numeric" maxLength={5} value={postalCode} onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, "").slice(0, 5))} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Code Postal" />
             </div>
             <div className="flex items-center gap-2 px-3 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
               <MapPin size={16} className="text-foodiz-gold" />
@@ -139,13 +152,13 @@ export default function SignupPage() {
           {isPartner && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
               <Briefcase size={18} className="text-foodiz-gold" />
-              <input type="text" required value={siret} onChange={(e) => setSiret(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Numéro SIRET" />
+              <input type="text" required inputMode="numeric" maxLength={14} value={siret} onChange={(e) => setSiret(e.target.value.replace(/\D/g, "").slice(0, 14))} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Numéro SIRET" />
             </div>
           )}
 
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
             <Lock size={18} className="text-foodiz-gold" />
-            <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="Mot de passe" />
+            <input type="password" required minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" placeholder="10 caractères, majuscule, minuscule, chiffre" />
           </div>
 
           <div className="flex items-start gap-3 px-2">

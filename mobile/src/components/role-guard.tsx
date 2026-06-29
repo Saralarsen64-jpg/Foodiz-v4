@@ -12,7 +12,7 @@ export function RoleGuard({
   requireValidated = false,
   children,
 }: PropsWithChildren<{ role: MobileRole; requireValidated?: boolean }>) {
-  const { loading, launched, accessAllowed, session, profile } = useAuth();
+  const { loading, session, profile } = useAuth();
   const [validation, setValidation] = useState<{
     userId: string;
     role: MobileRole;
@@ -26,7 +26,6 @@ export function RoleGuard({
     if (
       !requireValidated
       || loading
-      || (!launched && !accessAllowed)
       || !userId
       || profile?.role !== role
     ) {
@@ -89,8 +88,6 @@ export function RoleGuard({
       active = false;
     };
   }, [
-    accessAllowed,
-    launched,
     loading,
     profile?.role,
     requireValidated,
@@ -105,7 +102,6 @@ export function RoleGuard({
     && (validation?.userId !== userId || validation?.role !== role);
 
   if (loading || checkingValidation) return <LoadingScreen />;
-  if (!launched && !accessAllowed) return <Redirect href="/prelaunch" />;
   if (!session || !profile) return <Redirect href="/login" />;
   if (profile.role !== role) return <Redirect href="/" />;
   if (['suspended', 'rejected'].includes(profile.status || '')) {

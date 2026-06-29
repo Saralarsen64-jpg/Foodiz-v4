@@ -61,7 +61,6 @@ type PartnerApplication = {
     latitude?: number | null;
     longitude?: number | null;
   } | null;
-  prelaunch?: { access_enabled: boolean } | null;
   service_area?: {
     id: string;
     city: string;
@@ -180,23 +179,6 @@ export default function AdminPartnerApplicationsPage() {
     }
   };
 
-  const setAccess = async (item: PartnerApplication, enabled: boolean) => {
-    setBusy(item.id);
-    try {
-      await adminPartnerRequest("POST", {
-        action: "set_access",
-        userId: item.user_id,
-        enabled,
-      });
-      toast.success(enabled ? "Accès pilote partenaire autorisé." : "Accès pilote retiré.");
-      await loadItems();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setBusy("");
-    }
-  };
-
   const setOperationalStatus = async (item: PartnerApplication, status: "active" | "suspended") => {
     const reason = status === "suspended"
       ? window.prompt("Motif obligatoire de suspension :")?.trim() || ""
@@ -299,9 +281,8 @@ export default function AdminPartnerApplicationsPage() {
                   }`}>{item.compliance_status}</span>
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-white/[0.02] p-3 text-[10px]">
+                <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-white/[0.02] p-3 text-[10px]">
                   <div><p className="text-foodiz-gray">Ville</p><p className={areaOperational ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gold"}>{item.service_area?.status || "non classée"}</p></div>
-                  <div><p className="text-foodiz-gray">Accès pilote</p><p className={item.prelaunch?.access_enabled ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.prelaunch?.access_enabled ? "Autorisé" : "Bloqué"}</p></div>
                   <div><p className="text-foodiz-gray">Vente</p><p className={item.restaurant?.is_active ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.restaurant?.is_active ? "Active" : "Inactive"}</p></div>
                 </div>
 
@@ -345,10 +326,7 @@ export default function AdminPartnerApplicationsPage() {
                 </div>
 
                 {item.compliance_status === "approved" && (
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <button disabled={busy === item.id} onClick={() => void setAccess(item, !item.prelaunch?.access_enabled)} className="rounded-xl border border-foodiz-gold/20 px-3 py-3 text-xs text-foodiz-gold disabled:opacity-35">
-                      {item.prelaunch?.access_enabled ? "Retirer l’accès pilote" : "Autoriser l’accès pilote"}
-                    </button>
+                  <div className="mt-3">
                     <button disabled={busy === item.id || (!item.restaurant?.is_active && !areaOperational)} onClick={() => void setOperationalStatus(item, item.restaurant?.is_active ? "suspended" : "active")} className={`rounded-xl border px-3 py-3 text-xs disabled:opacity-35 ${item.restaurant?.is_active ? "border-foodiz-red/20 text-foodiz-red" : "border-foodiz-green/20 text-foodiz-green"}`}>
                       {item.restaurant?.is_active ? "Suspendre la vente" : "Activer dans cette ville"}
                     </button>

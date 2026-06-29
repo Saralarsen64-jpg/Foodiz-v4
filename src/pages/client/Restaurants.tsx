@@ -3,48 +3,35 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { ChevronLeft, Star, Clock, MapPin } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
-
-// Fonction de calcul de distance (Haversine)
-function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  var R = 6371; var dLat = deg2rad(lat2 - lat1); var dLon = deg2rad(lon2 - lon1);
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
-}
-function deg2rad(deg: number) { return deg * (Math.PI / 180) }
+import CityExpansionCard from "../../components/CityExpansionCard";
 
 export default function RestaurantsPage() {
   const navigate = useNavigate();
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [cityName, setCityName] = useState("votre position");
   const [loading, setLoading] = useState(true);
+  const [coverageStatus, setCoverageStatus] = useState<"available" | "coming_soon" | "address_required">("address_required");
+  const [expansionRequested, setExpansionRequested] = useState(false);
+  const [radiusKm, setRadiusKm] = useState(10);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // 1. Récupérer la position GPS enregistrée du client
-        const { data: profile } = await supabase.from('profiles').select('latitude, longitude, city').eq('id', user.id).single();
-        
-        if (profile?.latitude && profile?.longitude) {
-          setCityName(profile.city || "votre adresse");
-
-          // 2. Récupérer les VRAIS restaurants actifs
-          const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
-          if (restos) {
-            // 3. Filtrer à 10km max
-            const filtered = restos.filter((r: any) => {
-              if (r.latitude && r.longitude) {
-                return getDistanceFromLatLonInKm(profile.latitude, profile.longitude, r.latitude, r.longitude) <= 10;
-              }
-              return false;
-            });
-            const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant: any) => restaurant.id));
-            setRestaurants(filtered.map((restaurant: any) => {
-              const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === restaurant.id).map((review: any) => review.restaurant_rating).filter(Boolean);
-              return { ...restaurant, rating: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau" };
-            }));
-          }
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return setLoading(false);
+      const response = await fetch("/api/client-catalog", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setRestaurants((payload.restaurants || []).map((restaurant: any) => ({
+          ...restaurant,
+          rating: "Nouveau",
+        })));
+        setCoverageStatus(payload.coverage?.status || "address_required");
+        setCityName(payload.coverage?.city || "votre adresse");
+        setRadiusKm(Number(payload.coverage?.radiusKm || 10));
+        setExpansionRequested(Boolean(payload.expansionRequest));
       }
       setLoading(false);
     };
@@ -67,17 +54,18 @@ export default function RestaurantsPage() {
       <main className="max-w-lg mx-auto px-4 py-6">
         <div className="flex items-center gap-2 text-foodiz-gray text-xs mb-6">
           <MapPin size={14} className="text-foodiz-gold" />
-          <span>Autour de {cityName} (10km max)</span>
+          <span>Autour de {cityName} ({radiusKm} km max)</span>
         </div>
 
         {loading ? (
           <div className="text-center py-20 text-foodiz-gray animate-pulse">Recherche des restaurants...</div>
         ) : restaurants.length === 0 ? (
-          <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
-            <h3 className="text-foodiz-cream text-lg font-medium mb-2">Aucun restaurant trouvé</h3>
-            <p className="text-foodiz-gray text-sm">Il n'y a pas de restaurants partenaires dans un rayon de 10km autour de {cityName} pour le moment.</p>
-            <button onClick={() => navigate("/client")} className="mt-6 text-foodiz-gold text-xs underline">Retour à l'accueil</button>
-          </div>
+          <CityExpansionCard
+            status={coverageStatus}
+            city={cityName}
+            alreadyRequested={expansionRequested}
+            onRequested={() => setExpansionRequested(true)}
+          />
         ) : (
           <div className="space-y-4">
             {restaurants.map((r) => (

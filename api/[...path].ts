@@ -15,7 +15,9 @@ import { handler as addressManagement } from "../netlify/functions/address-manag
 import { handler as adminSupportTicketAction } from "../netlify/functions/admin-support-ticket-action.js";
 import { handler as cancelSubscription } from "../netlify/functions/cancel-subscription.js";
 import { handler as cancelMobileOrder } from "../netlify/functions/cancel-mobile-order.js";
+import { handler as cityExpansionRequest } from "../netlify/functions/city-expansion-request.js";
 import { handler as clientCatalog } from "../netlify/functions/client-catalog.js";
+import { handler as courierApplication } from "../netlify/functions/courier-application.js";
 import { handler as courierDeliveries } from "../netlify/functions/courier-deliveries.js";
 import { handler as courierDeliveryAction } from "../netlify/functions/courier-delivery-action.js";
 import { handler as courierDocuments } from "../netlify/functions/courier-documents.js";
@@ -53,7 +55,9 @@ const handlers: Record<string, Handler> = {
   "admin/support-ticket-action": adminSupportTicketAction,
   "cancel-subscription": cancelSubscription,
   "cancel-mobile-order": cancelMobileOrder,
+  "city-expansion-request": cityExpansionRequest,
   "client-catalog": clientCatalog,
+  "courier-application": courierApplication,
   "courier-deliveries": courierDeliveries,
   "courier-delivery-action": courierDeliveryAction,
   "courier-documents": courierDocuments,
@@ -123,7 +127,9 @@ const routeRoleAllowlist = {
   "admin/support-ticket-action": ["admin"],
   "cancel-mobile-order": ["client"],
   "cancel-subscription": ["partner"],
+  "city-expansion-request": ["client"],
   "client-catalog": ["client"],
+  "courier-application": ["courier"],
   "courier-deliveries": ["courier"],
   "courier-delivery-action": ["courier"],
   "courier-documents": ["courier"],
@@ -163,6 +169,8 @@ const apiRateLimits: Record<string, ApiRateLimit> = {
   "admin/support-ticket-action": { limit: 40, windowMs: 60 * 1000 },
   "create-checkout-session": { limit: 30, windowMs: 5 * 60 * 1000 },
   "create-payment-intent": { limit: 30, windowMs: 5 * 60 * 1000 },
+  "city-expansion-request": { limit: 6, windowMs: 60 * 60 * 1000 },
+  "courier-application": { limit: 12, windowMs: 10 * 60 * 1000 },
   "prelaunch/activate": { limit: 20, windowMs: 10 * 60 * 1000 },
   "prelaunch/register": { limit: 12, windowMs: 10 * 60 * 1000 },
   "support-diagnostic": { limit: 30, windowMs: 5 * 60 * 1000 },

@@ -1,45 +1,33 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { ChevronLeft, Star, Clock, MapPin, ShoppingCart } from "lucide-react";
-import GoldIcon from "../../components/GoldIcon";
-
-function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  var R = 6371; var dLat = deg2rad(lat2 - lat1); var dLon = deg2rad(lon2 - lon1);
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
-}
-function deg2rad(deg: number) { return deg * (Math.PI / 180) }
+import { ChevronLeft, Star, MapPin, ShoppingCart } from "lucide-react";
+import CityExpansionCard from "../../components/CityExpansionCard";
 
 export default function MarketPage() {
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<any[]>([]);
   const [cityName, setCityName] = useState("votre position");
   const [loading, setLoading] = useState(true);
+  const [coverageStatus, setCoverageStatus] = useState<"available" | "coming_soon" | "address_required">("address_required");
+  const [expansionRequested, setExpansionRequested] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('latitude, longitude, city').eq('id', user.id).single();
-        if (profile?.latitude && profile?.longitude) {
-          setCityName(profile.city || "votre adresse");
-
-          // On récupère les établissements (ici on prend tous les actifs, tu pourras filtrer par catégorie plus tard si besoin)
-          const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true).or('cuisine_type.ilike.%market%,cuisine_type.ilike.%épicerie%');
-          if (restos) {
-            const filtered = restos.filter((r: any) => {
-              if (r.latitude && r.longitude) {
-                return getDistanceFromLatLonInKm(profile.latitude, profile.longitude, r.latitude, r.longitude) <= 10;
-              }
-              return false;
-            });
-            const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant: any) => restaurant.id));
-            setMarkets(filtered.map((market: any) => {
-              const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === market.id).map((review: any) => review.restaurant_rating).filter(Boolean);
-              return { ...market, rating: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau" };
-            }));
-          }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const response = await fetch("/api/client-catalog", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok) {
+          setCoverageStatus(payload.coverage?.status || "address_required");
+          setExpansionRequested(Boolean(payload.expansionRequest));
+          setCityName(payload.coverage?.city || "votre adresse");
+          setMarkets((payload.restaurants || [])
+            .filter((restaurant: any) => /market|épicerie|epicerie|grocery|supermarché/i.test(restaurant.cuisine_type || ""))
+            .map((market: any) => ({ ...market, rating: "Nouveau" })));
         }
       }
       setLoading(false);
@@ -69,11 +57,20 @@ export default function MarketPage() {
         {loading ? (
           <div className="text-center py-20 text-foodiz-gray animate-pulse">Recherche des marchés...</div>
         ) : markets.length === 0 ? (
-          <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
-            <ShoppingCart size={48} className="mx-auto text-foodiz-gray/20 mb-4" />
-            <h3 className="text-foodiz-cream text-lg font-medium mb-2">Aucun market trouvé</h3>
-            <p className="text-foodiz-gray text-sm">Il n'y a pas de marchés partenaires dans un rayon de 10km autour de {cityName} pour le moment.</p>
-          </div>
+          coverageStatus !== "available" ? (
+            <CityExpansionCard
+              status={coverageStatus}
+              city={cityName}
+              alreadyRequested={expansionRequested}
+              onRequested={() => setExpansionRequested(true)}
+            />
+          ) : (
+            <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
+              <ShoppingCart size={48} className="mx-auto text-foodiz-gray/20 mb-4" />
+              <h3 className="text-foodiz-cream text-lg font-medium mb-2">Le Market se prépare</h3>
+              <p className="text-foodiz-gray text-sm">Des restaurants sont déjà disponibles, mais aucun commerce Market n’est encore référencé autour de {cityName}.</p>
+            </div>
+          )
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {markets.map((m) => (

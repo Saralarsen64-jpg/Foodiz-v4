@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Clock3 } from "lucide-react";
+import { ChevronLeft, Clock3, FileCheck2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 export default function PartnerValidationStatus() {
@@ -11,7 +11,11 @@ export default function PartnerValidationStatus() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase.from("partner_applications").select("status").eq("user_id", user.id).single();
+      const { data } = await supabase
+        .from("partner_applications")
+        .select("status,compliance_status,compliance_comment")
+        .eq("user_id", user.id)
+        .single();
       if (data?.status) setStatus(data.status);
     };
     load();
@@ -37,6 +41,20 @@ export default function PartnerValidationStatus() {
         <div className="foodiz-card p-6">
           <div className="flex items-center gap-3 mb-3"><Clock3 size={18} className="text-foodiz-gold" /><h2 className="foodiz-title text-lg">{current.title}</h2></div>
           <p className="text-sm text-foodiz-gray">{current.description}</p>
+          {status !== "validated" && (
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button onClick={() => navigate("/partner/onboarding")} className="foodiz-btn px-5 py-3 text-sm">
+                Compléter ou modifier mes informations
+              </button>
+              <button
+                onClick={() => navigate("/partner/documents")}
+                className="flex items-center justify-center gap-2 rounded-xl border border-foodiz-gold/30 px-5 py-3 text-sm font-semibold text-foodiz-gold"
+              >
+                <FileCheck2 size={17} />
+                Gérer mes justificatifs
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>

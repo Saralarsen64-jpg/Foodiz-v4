@@ -20,6 +20,7 @@ const handler: Handler = async (event) => {
       { data: restaurants, error: restaurantsError },
       { data: partnerDocuments, error: partnerDocumentsError },
       { data: courierDocuments, error: courierDocumentsError },
+      { data: expansionRequests, error: expansionRequestsError },
     ] = await Promise.all([
       adminSupabase
         .from("service_areas")
@@ -40,8 +41,11 @@ const handler: Handler = async (event) => {
       adminSupabase
         .from("courier_documents")
         .select("user_id,status"),
+      adminSupabase
+        .from("city_expansion_requests")
+        .select("id,user_id,service_area_id,status,created_at"),
     ]);
-    const loadError = areasError || partnersError || couriersError || restaurantsError || partnerDocumentsError || courierDocumentsError;
+    const loadError = areasError || partnersError || couriersError || restaurantsError || partnerDocumentsError || courierDocumentsError || expansionRequestsError;
     if (loadError) {
       console.error("Service area dashboard load failed", loadError);
       return reply(500, { error: "Impossible de charger les villes Foodiz." });
@@ -76,6 +80,10 @@ const handler: Handler = async (event) => {
             courierApplicationsToReview: areaCouriers.filter((item) => ["pending", "pending_review", "documents_required", "replacement_requested"].includes(item.document_review_status || item.status || "")).length,
             courierDocumentsToReview,
             documentsToReview: partnerDocumentsToReview + courierDocumentsToReview,
+            expansionRequests: (expansionRequests || []).filter((item) => (
+              item.service_area_id === area.id
+              && ["requested", "reviewing", "planned"].includes(item.status)
+            )).length,
           },
         };
       }),

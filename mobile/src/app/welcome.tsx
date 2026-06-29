@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
   FoodizActionCard,
@@ -91,11 +91,9 @@ export default function WelcomeScreen() {
       </FoodizCard>
 
       <FoodizButton
-        label="Je veux me préinscrire"
+        label="Créer mon compte Foodiz"
         secondary
-        onPress={() => {
-          void Linking.openURL('https://www.foodiz.co');
-        }}
+        onPress={() => router.push('/signup')}
       />
     </FoodizScreen>
   );

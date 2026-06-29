@@ -124,10 +124,17 @@ export default function PartnerStatusScreen() {
             onPress={() => router.replace('/partner')}
           />
         ) : (
-          <FoodizButton
-            label="Modifier mon dossier"
-            onPress={() => router.push('/partner-onboarding')}
-          />
+          <>
+            <FoodizButton
+              label="Gérer mes justificatifs"
+              onPress={() => router.push('/partner-documents')}
+            />
+            <FoodizButton
+              label="Modifier mes informations"
+              onPress={() => router.push('/partner-onboarding')}
+              secondary
+            />
+          </>
         )}
         <FoodizButton
           label="Actualiser le statut"

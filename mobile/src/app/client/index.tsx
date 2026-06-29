@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   FoodizActionCard,
   FoodizBrand,
+  FoodizButton,
   FoodizCard,
   FoodizHero,
   FoodizMetric,
@@ -26,6 +27,13 @@ type Restaurant = {
   address: string | null;
 };
 
+type Coverage = {
+  status: 'available' | 'coming_soon' | 'address_required';
+  city: string | null;
+  postalCode: string | null;
+  radiusKm: number | null;
+};
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return 'Bonjour';
@@ -37,12 +45,28 @@ export default function ClientHomeScreen() {
   const { profile } = useAuth();
   const { itemCount, subtotalCents } = useCart();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [coverage, setCoverage] = useState<Coverage>({
+    status: 'address_required',
+    city: profile?.city || null,
+    postalCode: null,
+    radiusKm: null,
+  });
+  const [expansionRequested, setExpansionRequested] = useState(false);
+  const [requestingExpansion, setRequestingExpansion] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void foodizApi<{ restaurants: Restaurant[] }>('client-catalog')
+    void foodizApi<{
+      restaurants: Restaurant[];
+      coverage: Coverage;
+      expansionRequest: { id: string } | null;
+    }>('client-catalog')
       .then((data) => {
-        if (active) setRestaurants(data.restaurants);
+        if (active) {
+          setRestaurants(data.restaurants);
+          setCoverage(data.coverage);
+          setExpansionRequested(Boolean(data.expansionRequest));
+        }
       })
       .catch(() => {
         if (active) setRestaurants([]);
@@ -51,6 +75,25 @@ export default function ClientHomeScreen() {
       active = false;
     };
   }, []);
+
+  async function requestExpansion() {
+    setRequestingExpansion(true);
+    try {
+      const data = await foodizApi<{ message: string }>('city-expansion-request', {
+        method: 'POST',
+        headers: { 'X-Foodiz-Client': 'mobile' },
+      });
+      setExpansionRequested(true);
+      Alert.alert('Votre ville est dans notre radar ✨', data.message);
+    } catch (error) {
+      Alert.alert(
+        'Demande impossible',
+        error instanceof Error ? error.message : 'Réessayez dans un instant.',
+      );
+    } finally {
+      setRequestingExpansion(false);
+    }
+  }
 
   return (
     <FoodizScreen>
@@ -129,10 +172,35 @@ export default function ClientHomeScreen() {
       />
       {restaurants.length === 0 ? (
         <FoodizCard>
-          <Text style={foodizText.heading}>Ça mijote encore par ici</Text>
+          <Text style={styles.kicker}>DÉPLOIEMENT NATIONAL</Text>
+          <Text style={foodizText.heading}>
+            {coverage.status === 'address_required'
+              ? 'Où doit-on vous régaler ?'
+              : expansionRequested
+                ? `${coverage.city || 'Votre ville'} est dans notre radar`
+                : `Bientôt à ${coverage.city || 'votre adresse'}`}
+          </Text>
           <Text style={foodizText.body}>
-            Aucun établissement actif pour le moment. Dès l’ouverture de votre
-            ville, les premières adresses apparaîtront ici.
+            {coverage.status === 'address_required'
+              ? 'Ajoutez une adresse française vérifiée pour découvrir les partenaires disponibles autour de vous.'
+              : expansionRequested
+                ? 'Votre demande est enregistrée. Nous vous informerons dès que les premières adresses Foodiz seront prêtes.'
+                : 'Aucun partenaire n’est encore disponible autour de vous. Votre demande nous aide à prioriser les prochaines ouvertures.'}
+          </Text>
+          {coverage.status === 'address_required' ? (
+            <FoodizButton
+              label="Ajouter mon adresse"
+              onPress={() => router.push('/client/address')}
+            />
+          ) : !expansionRequested ? (
+            <FoodizButton
+              label="Je veux Foodiz dans ma ville"
+              onPress={() => void requestExpansion()}
+              loading={requestingExpansion}
+            />
+          ) : null}
+          <Text style={styles.coverageNote}>
+            Votre compte reste actif partout en France.
           </Text>
         </FoodizCard>
       ) : (
@@ -205,5 +273,11 @@ const styles = StyleSheet.create({
   discover: {
     color: colors.gold,
     fontWeight: '800',
+  },
+  coverageNote: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 17,
+    textAlign: 'center',
   },
 });

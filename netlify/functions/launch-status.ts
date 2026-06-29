@@ -23,7 +23,9 @@ const handler: Handler = async (event) => {
       "Cache-Control": "no-store, max-age=0",
     },
     body: JSON.stringify({
-      launched,
+      launched: true,
+      rolloutMode: "public_france",
+      configuredLaunchState: launched,
       authenticated: Boolean(user),
       role,
       accessAllowed,

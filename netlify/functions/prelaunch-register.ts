@@ -48,6 +48,17 @@ const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
+  if (process.env.FOODIZ_PUBLIC_REGISTRATION_MODE !== "legacy_prelaunch") {
+    return {
+      statusCode: 410,
+      body: JSON.stringify({
+        error: "Les préinscriptions sont terminées. Créez directement votre compte Foodiz.",
+        signupUrl: "/auth/signup",
+      }),
+    };
+  }
+
+  /* Legacy implementation retained below for migration traceability only. */
   if (await appIsLaunched()) {
     return {
       statusCode: 409,
