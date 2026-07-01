@@ -53,7 +53,26 @@ export default function PartnerDocumentsScreen() {
   }
 
   useEffect(() => {
-    void load();
+    let active = true;
+    void loadPartnerDocuments()
+      .then((result) => {
+        if (!active) return;
+        setDocuments(result.documents || []);
+        setRequiredTypes(result.requiredDocumentTypes || []);
+      })
+      .catch((error) => {
+        if (!active) return;
+        Alert.alert(
+          'Dossier indisponible',
+          error instanceof Error ? error.message : 'Réessayez.',
+        );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const byType = useMemo(

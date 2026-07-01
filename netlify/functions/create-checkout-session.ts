@@ -1,5 +1,6 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
+import { stripeOperationGuard } from "./_lib/stripe-server.js";
 import { createClient } from "@supabase/supabase-js";
 import { sendFinancialDocumentEmail } from "./_lib/financial-documents.js";
 import { calculateRoute } from "./_lib/routingProvider.js";
@@ -255,18 +256,8 @@ const handler: Handler = async (event) => {
       };
     }
 
-    if (
-      process.env.ALLOW_LIVE_PAYMENTS !== "true"
-      && process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
-    ) {
-      return {
-        statusCode: 503,
-        body: JSON.stringify({
-          error: "Les paiements réels sont désactivés pendant la phase de développement.",
-          code: "LIVE_PAYMENTS_DISABLED",
-        }),
-      };
-    }
+    const stripeGuard = stripeOperationGuard();
+    if (stripeGuard) return stripeGuard;
 
     if (
       !Number.isInteger(expectedTotalCents) ||

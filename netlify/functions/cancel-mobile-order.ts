@@ -2,6 +2,7 @@ import type { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 
 import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
+import { stripeOperationGuard } from "./_lib/stripe-server.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
@@ -13,6 +14,8 @@ const reply = (statusCode: number, body: unknown) => ({
 
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") return reply(405, { error: "Method Not Allowed" });
+  const stripeGuard = stripeOperationGuard();
+  if (stripeGuard) return stripeGuard;
 
   try {
     const user = await authenticatedUser(event.headers);

@@ -45,6 +45,8 @@ export function FoodizBrand({ subtitle }: { subtitle?: string }) {
   return (
     <View style={styles.brandBlock}>
       <Image
+        // Metro resolves local bitmap assets through require().
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         source={require('../../assets/images/Logo-Foodiz.PNG')}
         style={styles.brandImage}
         resizeMode="contain"

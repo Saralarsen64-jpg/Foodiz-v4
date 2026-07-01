@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const migration = readFileSync(
@@ -34,9 +34,9 @@ const appRoutes = readFileSync(
   new URL("../../src/App.tsx", import.meta.url),
   "utf8",
 );
-const waitlistPage = readFileSync(
-  new URL("../../src/pages/prelaunch/Waitlist.tsx", import.meta.url),
-  "utf8",
+const legacyWaitlistPage = new URL(
+  "../../src/pages/prelaunch/Waitlist.tsx",
+  import.meta.url,
 );
 const uniquePhoneMigration = readFileSync(
   new URL("../../supabase/migrations/33_unique_phone_identity_for_clients_and_couriers.sql", import.meta.url),
@@ -112,9 +112,7 @@ test("le SIRET de pré-inscription est normalisé avant validation", () => {
   assert.match(registerApi, /function normalizeSiret/);
   assert.match(registerApi, /replace\(\/\\D\/g, ""\)/);
   assert.match(registerApi, /Le SIRET doit contenir exactement 14 chiffres/);
-  assert.match(waitlistPage, /name === "siret"[\s\S]*replace\(\/\\D\/g, ""\)\.slice\(0, 14\)/);
-  assert.match(waitlistPage, /inputMode="numeric"/);
-  assert.match(waitlistPage, /scrollIntoView/);
+  assert.equal(existsSync(legacyWaitlistPage), false);
 });
 
 test("l’envoi de lancement ne cible que les profils encore en attente", () => {

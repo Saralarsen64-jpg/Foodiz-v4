@@ -119,9 +119,8 @@ test("Stripe importe le moteur unique et refuse une divergence avec le prix affi
   assert.match(checkoutSource, /expectedTotalCents !== amountToPayCents/);
   assert.match(checkoutSource, /paymentMode === "mobile"/);
   assert.match(checkoutSource, /amount: amountToPayCents/);
-  assert.match(checkoutSource, /ALLOW_LIVE_PAYMENTS !== "true"/);
-  assert.match(checkoutSource, /startsWith\("sk_live_"\)/);
-  assert.match(checkoutSource, /LIVE_PAYMENTS_DISABLED/);
+  assert.match(checkoutSource, /stripeOperationGuard/);
+  assert.match(checkoutSource, /if \(stripeGuard\) return stripeGuard/);
   assert.doesNotMatch(
     checkoutSource,
     /paymentMode === "mobile"\s*&&\s*process\.env\.ALLOW_LIVE_PAYMENTS/,

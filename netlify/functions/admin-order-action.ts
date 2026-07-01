@@ -2,6 +2,7 @@ import type { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 
 import { adminSupabase, authenticatedUser, userRole } from "./_lib/auth.js";
+import { stripeOperationGuard } from "./_lib/stripe-server.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
@@ -27,15 +28,8 @@ const handler: Handler = async (event) => {
     if (!orderId || action !== "cancel_and_refund" || !cancellationReason) {
       return reply(400, { error: "Commande, action et motif obligatoires." });
     }
-    if (
-      process.env.ALLOW_LIVE_PAYMENTS !== "true"
-      && process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
-    ) {
-      return reply(503, {
-        error: "Les opérations Stripe Live sont désactivées.",
-        code: "LIVE_PAYMENTS_DISABLED",
-      });
-    }
+    const stripeGuard = stripeOperationGuard();
+    if (stripeGuard) return stripeGuard;
 
     const { data: order } = await adminSupabase
       .from("orders")

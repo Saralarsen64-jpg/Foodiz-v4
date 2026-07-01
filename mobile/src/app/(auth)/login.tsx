@@ -1,6 +1,6 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   FoodizBrand,
@@ -11,7 +11,6 @@ import {
   foodizText,
 } from '@/components/foodiz-ui';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
 type PublicRole = 'client' | 'courier' | 'partner';
@@ -87,6 +86,32 @@ export default function LoginScreen() {
     router.replace('/');
   }
 
+  async function resetPassword() {
+    if (!email.trim()) {
+      Alert.alert(
+        'Adresse email requise',
+        'Saisissez votre adresse email avant de demander un nouveau mot de passe.',
+      );
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      {
+        redirectTo: 'https://www.foodiz.co/auth/reset-password',
+      },
+    );
+    setLoading(false);
+    if (error) {
+      Alert.alert('Envoi impossible', error.message);
+      return;
+    }
+    Alert.alert(
+      'Email envoyé',
+      'Consultez votre boîte mail et vos courriers indésirables pour choisir un nouveau mot de passe.',
+    );
+  }
+
   return (
     <FoodizScreen>
       <View style={styles.spacer} />
@@ -110,6 +135,9 @@ export default function LoginScreen() {
         textContentType="password"
       />
       <FoodizButton label="Se connecter" onPress={login} loading={loading} />
+      <Pressable onPress={() => void resetPassword()}>
+        <Text style={styles.forgotten}>Mot de passe oublié ?</Text>
+      </Pressable>
       <Link
         href={{
           pathname: '/signup',
@@ -141,5 +169,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     padding: 8,
+  },
+  forgotten: {
+    color: colors.gold,
+    textAlign: 'right',
+    fontSize: 13,
+    fontWeight: '700',
+    paddingVertical: 4,
   },
 });

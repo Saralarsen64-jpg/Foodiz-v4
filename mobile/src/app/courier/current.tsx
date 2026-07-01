@@ -82,12 +82,6 @@ function formatDuration(seconds: number) {
     .padStart(2, '0')}`;
 }
 
-function formatDistanceMeters(meters?: number | null) {
-  if (typeof meters !== 'number' || !Number.isFinite(meters)) return 'Distance calculée au pickup';
-  if (meters < 1000) return `${Math.round(meters)} m`;
-  return `${(meters / 1000).toFixed(1)} km`;
-}
-
 function delayPenaltyCents(delaySeconds: number) {
   if (delaySeconds > 1200) return 200;
   if (delaySeconds > 900) return 100;

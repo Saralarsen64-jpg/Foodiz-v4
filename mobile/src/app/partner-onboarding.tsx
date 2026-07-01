@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 
@@ -90,7 +90,7 @@ export default function PartnerOnboardingScreen() {
         'Dossier partenaire transmis',
         'Ajoutez maintenant les justificatifs nécessaires à sa validation.',
       );
-      router.replace('/partner-documents');
+      router.replace('/partner-documents' as Href);
     } catch (error) {
       Alert.alert(
         'Envoi impossible',

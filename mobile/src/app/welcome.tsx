@@ -14,13 +14,13 @@ import { colors } from '@/theme/colors';
 
 type PublicRole = 'client' | 'courier' | 'partner';
 
-const ROLE_CARDS: Array<{
+const ROLE_CARDS: {
   role: PublicRole;
   icon: string;
   title: string;
   description: string;
   promise: string;
-}> = [
+}[] = [
   {
     role: 'client',
     icon: '🍽️',

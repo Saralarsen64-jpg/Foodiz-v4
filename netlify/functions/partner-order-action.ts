@@ -1,6 +1,7 @@
 import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 import { adminSupabase, authenticatedUser } from "./_lib/auth.js";
+import { stripeOperationGuard } from "./_lib/stripe-server.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
@@ -50,6 +51,9 @@ const handler: Handler = async (event) => {
       await adminSupabase.from("notifications").insert({ user_id: order.client_id, title: "Commande prête", message: `Votre commande #${orderId.slice(0, 8)} attend maintenant un livreur.`, type: "order", related_order_id: orderId });
       return reply(200, { status: "ready" });
     }
+
+    const stripeGuard = stripeOperationGuard();
+    if (stripeGuard) return stripeGuard;
 
     if (order.status !== "pending" || order.payment_status !== "completed") return reply(409, { error: "ORDER_NOT_REFUSABLE" });
     let paymentIntentId = order.stripe_payment_intent_id;

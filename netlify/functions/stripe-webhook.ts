@@ -2,6 +2,7 @@ import { Handler } from "@netlify/functions";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { sendFinancialDocumentEmail } from "./_lib/financial-documents.js";
+import { stripeOperationGuard } from "./_lib/stripe-server.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const supabase = createClient(
@@ -120,6 +121,18 @@ async function cancelUnpaidOrder(orderId: string, paymentStatus: string) {
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
+  }
+  const stripeGuard = stripeOperationGuard();
+  if (stripeGuard) return stripeGuard;
+  if (!webhookSecret) {
+    return {
+      statusCode: 503,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+      body: JSON.stringify({
+        error: "Le webhook Stripe n’est pas configuré.",
+        code: "STRIPE_WEBHOOK_NOT_CONFIGURED",
+      }),
+    };
   }
 
   const signature = event.headers["stripe-signature"];

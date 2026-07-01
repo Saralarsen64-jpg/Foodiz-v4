@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
@@ -127,7 +127,7 @@ export default function PartnerStatusScreen() {
           <>
             <FoodizButton
               label="Gérer mes justificatifs"
-              onPress={() => router.push('/partner-documents')}
+              onPress={() => router.push('/partner-documents' as Href)}
             />
             <FoodizButton
               label="Modifier mes informations"
