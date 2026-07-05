@@ -17,16 +17,16 @@ const CATEGORIES = [
 
 const FAQ_ITEMS = [
   {
-    title: "Je n’ai pas encore accès à Foodiz",
-    text: "Pendant le pré-lancement, les clients sont prévenus par email lorsque Foodiz ouvre dans leur ville. Suivez aussi @foodiz_off.",
+    title: "Je n’ai pas encore accès à Weello",
+    text: "Vous êtes prévenu par email lorsque Weello ouvre dans votre secteur. Les informations officielles sont publiées sur weello.app.",
   },
   {
     title: "Une commande semble bloquée",
-    text: "Choisissez la commande concernée : Foodiz vérifie le paiement, le statut et la livraison avant de créer une demande.",
+    text: "Choisissez la commande concernée : Weello vérifie le paiement, le statut et la livraison avant de créer une demande.",
   },
   {
     title: "Mes points ou avantages ne s’affichent pas",
-    text: "Le diagnostic contrôle votre solde Foodiz Club et l’avantage verrouillé avant de solliciter le support.",
+    text: "Le diagnostic contrôle votre solde Weello Club et l’avantage verrouillé avant de solliciter le support.",
   },
 ];
 
@@ -77,12 +77,12 @@ export default function HelpCenterPage() {
 
     if (category === "order" && selectedOrder) {
       if (selectedOrder.status === "delivered") result = { resolved: true, title: "Cette commande est indiquée comme livrée", explanation: "Vous pouvez consulter son détail ou signaler un problème précis avec les articles reçus.", action: { label: "Voir la commande", path: `/client/orders/${orderId}` }, priority: "normal", attempted: ["Statut de commande vérifié"] };
-      else if (selectedOrder.status === "cancelled") result = { resolved: false, title: "Cette commande a été annulée", explanation: "Un conseiller doit vérifier la raison de l'annulation si elle ne vous paraît pas normale.", priority: "high", attempted: ["Annulation confirmée dans Foodiz"] };
+      else if (selectedOrder.status === "cancelled") result = { resolved: false, title: "Cette commande a été annulée", explanation: "Un conseiller doit vérifier la raison de l'annulation si elle ne vous paraît pas normale.", priority: "high", attempted: ["Annulation confirmée dans Weello"] };
       else result = { resolved: true, title: `Votre commande est ${statusLabel(selectedOrder.status)}`, explanation: "Son statut est bien actif. Le suivi affiche les prochaines étapes en temps réel.", action: { label: "Ouvrir le suivi", path: `/client/orders/${orderId}/tracking` }, priority: "normal", attempted: ["Statut de commande vérifié"] };
     }
 
     if (category === "payment" && selectedOrder) {
-      if (selectedOrder.payment_status === "completed") result = { resolved: true, title: "Le paiement est confirmé", explanation: "Foodiz a bien enregistré le paiement de cette commande.", action: { label: "Voir la commande", path: `/client/orders/${orderId}` }, priority: "normal", attempted: ["Statut du paiement vérifié"] };
+      if (selectedOrder.payment_status === "completed") result = { resolved: true, title: "Le paiement est confirmé", explanation: "Weello a bien enregistré le paiement de cette commande.", action: { label: "Voir la commande", path: `/client/orders/${orderId}` }, priority: "normal", attempted: ["Statut du paiement vérifié"] };
       else if (selectedOrder.payment_status === "failed") result = { resolved: false, title: "Le paiement a échoué", explanation: "Aucun paiement confirmé n'est enregistré. Ne communiquez jamais vos informations bancaires au support.", priority: "high", attempted: ["Échec du paiement confirmé"] };
       else if (ageMinutes < 15) result = { resolved: true, title: "Le paiement est encore en cours de traitement", explanation: "Patientez quelques minutes puis actualisez la commande. Ne relancez pas plusieurs paiements simultanément.", action: { label: "Actualiser", path: `/client/orders/${orderId}` }, priority: "normal", attempted: ["Délai du paiement contrôlé"] };
       else result = { resolved: false, title: "Le paiement semble bloqué", explanation: "Le délai normal est dépassé. Le support vérifiera la transaction sans vous demander vos données de carte.", priority: "urgent", attempted: ["Statut et ancienneté du paiement vérifiés"] };
@@ -100,8 +100,8 @@ export default function HelpCenterPage() {
         supabase.from("client_locked_advantages").select("title,points_cost").eq("user_id", user.id).maybeSingle(),
       ]);
       result = locked
-        ? { resolved: true, title: `Avantage verrouillé : ${locked.title}`, explanation: `Votre solde est de ${wallet?.points_balance || 0} points. L'avantage coûte ${locked.points_cost} points et sera débité uniquement après paiement confirmé.`, action: { label: "Voir Foodiz Club", path: "/client/advantages" }, priority: "normal", attempted: ["Solde et avantage verrouillé vérifiés"] }
-        : { resolved: true, title: "Aucun avantage n'est verrouillé", explanation: `Votre solde est de ${wallet?.points_balance || 0} points. Choisissez un avantage dans Foodiz Club avant de passer commande.`, action: { label: "Choisir un avantage", path: "/client/advantages" }, priority: "normal", attempted: ["Solde Foodiz Club vérifié"] };
+        ? { resolved: true, title: `Avantage verrouillé : ${locked.title}`, explanation: `Votre solde est de ${wallet?.points_balance || 0} points. L'avantage coûte ${locked.points_cost} points et sera débité uniquement après paiement confirmé.`, action: { label: "Voir Weello Club", path: "/client/advantages" }, priority: "normal", attempted: ["Solde et avantage verrouillé vérifiés"] }
+        : { resolved: true, title: "Aucun avantage n'est verrouillé", explanation: `Votre solde est de ${wallet?.points_balance || 0} points. Choisissez un avantage dans Weello Club avant de passer commande.`, action: { label: "Choisir un avantage", path: "/client/advantages" }, priority: "normal", attempted: ["Solde Weello Club vérifié"] };
     }
 
     if (category === "account") result = { resolved: true, title: "Gérez votre compte directement", explanation: "Vous pouvez modifier vos informations et adresses, ou demander un nouveau mot de passe depuis l'écran de connexion.", action: { label: "Mes informations", path: "/client/account/personal-info" }, priority: "normal", attempted: ["Solutions autonomes du compte proposées"] };
@@ -152,10 +152,10 @@ export default function HelpCenterPage() {
               <Sparkles size={24}/>
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[.25em] text-foodiz-gold">Support Foodiz</p>
+              <p className="text-[10px] font-black uppercase tracking-[.25em] text-foodiz-gold">Support Weello</p>
               <h2 className="foodiz-title mt-2 text-2xl">On vous aide sans vous faire tourner en rond.</h2>
               <p className="mt-3 text-sm leading-relaxed text-foodiz-gray">
-                Foodiz vérifie d'abord les informations disponibles puis crée une demande claire, priorisée et exploitable.
+                Weello vérifie d'abord les informations disponibles puis crée une demande claire, priorisée et exploitable.
               </p>
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function HelpCenterPage() {
 
         <section>
           <h2 className="foodiz-title text-xl">Que se passe-t-il ?</h2>
-          <p className="mt-2 text-sm text-foodiz-gray">Choisissez le sujet : Foodiz vous guide étape par étape.</p>
+          <p className="mt-2 text-sm text-foodiz-gray">Choisissez le sujet : Weello vous guide étape par étape.</p>
           <div className="mt-5 grid grid-cols-2 gap-3">
             {CATEGORIES.map((item) => (
               <button
@@ -267,7 +267,7 @@ export default function HelpCenterPage() {
                   <p className="mt-3 text-xs text-foodiz-gray">{ticket.message}</p>
                   {ticket.admin_response && (
                     <div className="mt-3 rounded-xl border border-foodiz-green/15 bg-foodiz-green/5 p-3">
-                      <p className="mb-1 text-[9px] uppercase text-foodiz-green">Réponse Foodiz</p>
+                      <p className="mb-1 text-[9px] uppercase text-foodiz-green">Réponse Weello</p>
                       <p className="text-xs text-foodiz-cream">{ticket.admin_response}</p>
                     </div>
                   )}

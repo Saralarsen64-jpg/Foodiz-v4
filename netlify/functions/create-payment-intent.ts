@@ -75,7 +75,7 @@ const handler: Handler = async (event) => {
         orderId,
         ...metadata,
       },
-      description: `Foodiz Order #${orderId.slice(0, 8)}`,
+      description: `Weello Order #${orderId.slice(0, 8)}`,
     });
 
     // Sauvegarder dans Supabase

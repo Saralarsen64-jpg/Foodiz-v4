@@ -10,14 +10,14 @@ import {
 } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizHero,
-  FoodizPill,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloHero,
+  WeelloPill,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -94,7 +94,7 @@ export default function PartnerOrdersScreen() {
   ) {
     setBusy(order.id);
     try {
-      await foodizApi('partner-order-action', {
+      await weelloApi('partner-order-action', {
         method: 'POST',
         body: JSON.stringify({ orderId: order.id, action }),
       });
@@ -135,16 +135,16 @@ export default function PartnerOrdersScreen() {
             tintColor={colors.gold}
           />
         }>
-        <FoodizBrand subtitle="Commandes partenaire" />
-        <FoodizHero
+        <WeelloBrand subtitle="Commandes partenaire" />
+        <WeelloHero
           eyebrow="Cuisine & timing"
           title="Commandes à piloter"
           body="Acceptez vite, préparez avec précision, puis signalez la commande prête pour déclencher le relais livreur.">
           <View style={styles.heroPills}>
-            <FoodizPill label={`${orders.length} commande(s)`} />
-            <FoodizPill label={mode === 'current' ? 'En cours' : 'Historique'} tone="muted" />
+            <WeelloPill label={`${orders.length} commande(s)`} />
+            <WeelloPill label={mode === 'current' ? 'En cours' : 'Historique'} tone="muted" />
           </View>
-        </FoodizHero>
+        </WeelloHero>
 
         <View style={styles.segment}>
           {[
@@ -170,23 +170,23 @@ export default function PartnerOrdersScreen() {
         </View>
 
         {orders.length === 0 ? (
-          <FoodizCard>
-            <Text style={foodizText.heading}>Aucune commande</Text>
-            <Text style={foodizText.body}>
+          <WeelloCard>
+            <Text style={weelloText.heading}>Aucune commande</Text>
+            <Text style={weelloText.body}>
               {mode === 'current'
                 ? 'Les nouvelles commandes payées apparaîtront ici.'
                 : 'Aucune commande terminée ou annulée.'}
             </Text>
-          </FoodizCard>
+          </WeelloCard>
         ) : (
           orders.map((order) => (
-            <FoodizCard key={order.id}>
+            <WeelloCard key={order.id}>
               <View style={styles.row}>
                 <View style={styles.orderText}>
                   <Text style={styles.kicker}>
                     COMMANDE #{order.id.slice(0, 8)}
                   </Text>
-                  <FoodizPill
+                  <WeelloPill
                     label={order.status}
                     tone={
                       order.status === 'delivered'
@@ -204,18 +204,18 @@ export default function PartnerOrdersScreen() {
               {order.order_items.map((item, index) => (
                 <Text
                   key={`${order.id}-${index}`}
-                  style={foodizText.body}>
+                  style={weelloText.body}>
                   {item.quantity} × {item.product?.name || 'Article'}
                 </Text>
               ))}
               {order.status === 'pending' ? (
                 <>
-                  <FoodizButton
+                  <WeelloButton
                     label="Accepter et préparer"
                     onPress={() => void runAction(order, 'accept')}
                     loading={busy === order.id}
                   />
-                  <FoodizButton
+                  <WeelloButton
                     label="Refuser et rembourser"
                     onPress={() => refuse(order)}
                     disabled={busy === order.id}
@@ -224,13 +224,13 @@ export default function PartnerOrdersScreen() {
                 </>
               ) : null}
               {order.status === 'preparing' ? (
-                <FoodizButton
+                <WeelloButton
                   label="Commande prête"
                   onPress={() => void runAction(order, 'ready')}
                   loading={busy === order.id}
                 />
               ) : null}
-            </FoodizCard>
+            </WeelloCard>
           ))
         )}
       </ScrollView>

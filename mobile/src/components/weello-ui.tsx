@@ -16,7 +16,7 @@ import {
 
 import { colors } from '@/theme/colors';
 
-export function FoodizScreen({
+export function WeelloScreen({
   children,
   scroll = true,
 }: PropsWithChildren<{ scroll?: boolean }>) {
@@ -41,11 +41,11 @@ export function FoodizScreen({
   );
 }
 
-export function FoodizBrand({ subtitle }: { subtitle?: string }) {
+export function WeelloBrand({ subtitle }: { subtitle?: string }) {
   return (
     <View style={styles.brandBlock}>
       <Image
-        source={require('../../assets/images/Logo-Foodiz.PNG')}
+        source={require('../../assets/images/weello-wordmark.png')}
         style={styles.brandImage}
         resizeMode="contain"
       />
@@ -54,7 +54,7 @@ export function FoodizBrand({ subtitle }: { subtitle?: string }) {
   );
 }
 
-export function FoodizHero({
+export function WeelloHero({
   eyebrow,
   title,
   body,
@@ -79,7 +79,7 @@ export function FoodizHero({
   );
 }
 
-export function FoodizField(props: TextInputProps) {
+export function WeelloField(props: TextInputProps) {
   return (
     <TextInput
       placeholderTextColor={colors.muted}
@@ -90,7 +90,7 @@ export function FoodizField(props: TextInputProps) {
   );
 }
 
-export function FoodizButton({
+export function WeelloButton({
   label,
   onPress,
   loading,
@@ -133,7 +133,7 @@ export function FoodizButton({
   );
 }
 
-export function FoodizCard({ children }: PropsWithChildren) {
+export function WeelloCard({ children }: PropsWithChildren) {
   return (
     <LinearGradient
       colors={['rgba(216,168,79,0.12)', 'rgba(21,21,21,0.98)', '#111111']}
@@ -145,7 +145,7 @@ export function FoodizCard({ children }: PropsWithChildren) {
   );
 }
 
-export function FoodizPill({
+export function WeelloPill({
   label,
   tone = 'gold',
 }: {
@@ -173,7 +173,7 @@ export function FoodizPill({
   );
 }
 
-export function FoodizMetric({
+export function WeelloMetric({
   label,
   value,
   helper,
@@ -204,7 +204,7 @@ export function FoodizMetric({
   );
 }
 
-export function FoodizActionCard({
+export function WeelloActionCard({
   title,
   description,
   icon,
@@ -230,7 +230,7 @@ export function FoodizActionCard({
         <View style={styles.actionTextBlock}>
           <View style={styles.actionTitleRow}>
             <Text style={styles.actionTitle}>{title}</Text>
-            {badge ? <FoodizPill label={badge} /> : null}
+            {badge ? <WeelloPill label={badge} /> : null}
           </View>
           <Text style={styles.actionDescription}>{description}</Text>
         </View>
@@ -240,7 +240,7 @@ export function FoodizActionCard({
   );
 }
 
-export function FoodizSectionTitle({
+export function WeelloSectionTitle({
   title,
   action,
 }: {
@@ -249,15 +249,15 @@ export function FoodizSectionTitle({
 }) {
   return (
     <View style={styles.sectionTitleRow}>
-      <Text style={foodizText.heading}>{title}</Text>
+      <Text style={weelloText.heading}>{title}</Text>
       {action}
     </View>
   );
 }
 
-export function FoodizLegalLinks() {
+export function WeelloLegalLinks() {
   const open = (path: string) => {
-    void Linking.openURL(`https://www.foodiz.co${path}`);
+    void Linking.openURL(`https://weello.app${path}`);
   };
 
   return (
@@ -275,7 +275,7 @@ export function FoodizLegalLinks() {
   );
 }
 
-export const foodizText = StyleSheet.create({
+export const weelloText = StyleSheet.create({
   title: {
     color: colors.cream,
     fontSize: 32,

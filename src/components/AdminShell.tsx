@@ -62,7 +62,7 @@ export default function AdminShell({
           <div className="flex items-center gap-3 mb-8">
             <AdminBrandMark size="md" />
             <div>
-              <p className="text-[10px] uppercase tracking-[.22em] text-foodiz-gold font-bold">Foodiz</p>
+              <p className="text-[10px] uppercase tracking-[.22em] text-foodiz-gold font-bold">Weello</p>
               <p className="text-xs text-foodiz-gray mt-1">Administration</p>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function AdminShell({
           </nav>
 
           <div className="mt-auto foodiz-card p-4 bg-white/[0.02] border-foodiz-gold/10">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold font-bold mb-2">Admin Foodiz</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold font-bold mb-2">Admin Weello</p>
             <p className="text-sm text-foodiz-cream">Direction & exploitation</p>
             <button
               type="button"

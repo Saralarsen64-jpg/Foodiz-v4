@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 import CourierShell from "../../components/CourierShell";
 import { updateCourierPresence } from "../../lib/courierPresence";
 import toast from "react-hot-toast";
-import { FoodizActionCard, FoodizHero, FoodizMetricCard, FoodizPill } from "../../components/FoodizWebUI";
+import { WeelloActionCard, WeelloHero, WeelloMetricCard, WeelloPill } from "../../components/WeelloWebUI";
 
 export default function CourierDashboard() {
   const navigate = useNavigate();
@@ -57,15 +57,15 @@ export default function CourierDashboard() {
   };
 
   return <CourierShell>
-    <FoodizHero
+    <WeelloHero
       eyebrow={`Bonjour ${name}`}
       title="Prêt pour la route ?"
-      description="Votre journée, vos courses, votre rythme. Foodiz privilégie une position précise, des étapes confirmées et une livraison rassurante pour le client."
+      description="Votre journée, vos courses, votre rythme. Weello privilégie une position précise, des étapes confirmées et une livraison rassurante pour le client."
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <FoodizPill tone={online ? "green" : "muted"}>
+        <WeelloPill tone={online ? "green" : "muted"}>
           {online ? "En ligne" : "Hors ligne"}
-        </FoodizPill>
+        </WeelloPill>
         <button
           onClick={toggleOnline}
           className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition-all ${
@@ -77,14 +77,14 @@ export default function CourierDashboard() {
           <Power size={18} /> {online ? "Passer hors ligne" : "Passer en ligne"}
         </button>
       </div>
-    </FoodizHero>
+    </WeelloHero>
 
     {activeOrder && <button onClick={() => navigate(`/courier/deliveries/${activeOrder.id}/tracking`)} className="w-full mt-4 rounded-[1.6rem] border border-foodiz-green/25 bg-foodiz-green/[0.08] p-5 text-left flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-foodiz-green/15 flex items-center justify-center"><Navigation size={20} className="text-foodiz-green" /></div><div className="flex-1"><p className="text-[10px] uppercase tracking-widest text-foodiz-green">Course active</p><p className="text-foodiz-cream font-semibold mt-1">{activeOrder.restaurant?.name || "Restaurant"}</p><p className="text-xs text-foodiz-gray mt-1 truncate">{activeOrder.delivery_address}</p></div><ArrowUpRight size={18} className="text-foodiz-green" /></button>}
 
     <section className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <FoodizMetricCard label="Gains" value={`${todayEarnings.toFixed(2)} €`} helper="aujourd’hui" icon={WalletCards} tone="green" />
-      <FoodizMetricCard label="Courses" value={todayDeliveries} helper="terminées" icon={CheckCircle2} />
-      <FoodizMetricCard label="Disponibles" value={available} helper={online ? "autour de vous" : "passez en ligne"} icon={MapPinned} tone={available ? "green" : "muted"} />
+      <WeelloMetricCard label="Gains" value={`${todayEarnings.toFixed(2)} €`} helper="aujourd’hui" icon={WalletCards} tone="green" />
+      <WeelloMetricCard label="Courses" value={todayDeliveries} helper="terminées" icon={CheckCircle2} />
+      <WeelloMetricCard label="Disponibles" value={available} helper={online ? "autour de vous" : "passez en ligne"} icon={MapPinned} tone={available ? "green" : "muted"} />
     </section>
 
     <button disabled={!online} onClick={() => navigate("/courier/deliveries/available")} className="w-full mt-4 rounded-[1.6rem] bg-foodiz-gold text-foodiz-black p-5 flex items-center gap-4 disabled:opacity-40"><div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center"><MapPinned size={22} /></div><div className="flex-1 text-left"><p className="font-bold">{available} course{available > 1 ? "s" : ""} disponible{available > 1 ? "s" : ""}</p><p className="text-xs text-black/65 mt-1">Voir les missions autour de vous</p></div><ArrowUpRight size={20} /></button>
@@ -95,7 +95,7 @@ export default function CourierDashboard() {
         { label: "Mes gains", icon: WalletCards, path: "/courier/revenues", desc: "Suivez vos revenus, primes et pénalités éventuelles." },
         { label: "Mon profil", icon: Bike, path: "/courier/profile", desc: "Gérez votre profil, vos justificatifs et vos informations livreur." },
       ].map((item) => (
-        <FoodizActionCard
+        <WeelloActionCard
           key={item.path}
           title={item.label}
           description={item.desc}

@@ -45,8 +45,8 @@ export default function AuthPage() {
       {/* ─── Kraft Envelope Header ───────────────────────────────────── */}
       <div className="relative w-full overflow-hidden pb-10">
         <img
-          src="/images/Logo-Foodiz.PNG"
-          alt="Foodiz"
+          src="/images/weello-wordmark.png"
+          alt="Weello"
           className="block w-full h-auto align-top"
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-foodiz-black/35 to-foodiz-black" />
@@ -308,7 +308,7 @@ export default function AuthPage() {
       {/* Footer */}
       <footer className="relative z-10 max-w-md mx-auto px-6 py-6 text-center">
         <p className="text-[10px] text-foodiz-gray/40 tracking-widest">
-          © {new Date().getFullYear()} · FOODIZ
+          © {new Date().getFullYear()} · WEELLO
         </p>
       </footer>
       </section>

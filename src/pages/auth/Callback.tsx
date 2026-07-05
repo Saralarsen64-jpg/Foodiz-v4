@@ -46,7 +46,7 @@ export default function AuthCallback() {
   return (
     <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
       <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
-      <p className="text-sm animate-pulse">Confirmation de votre compte Foodiz en cours...</p>
+      <p className="text-sm animate-pulse">Confirmation de votre compte Weello en cours...</p>
       <p className="text-[10px] text-foodiz-gray mt-2">Ne fermez pas cette page.</p>
     </div>
   );

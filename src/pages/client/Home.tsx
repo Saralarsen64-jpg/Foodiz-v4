@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Search, Gift, Star, ChevronRight, Flame, Pizza, Wine, ShoppingCart, Sandwich, Salad, Navigation, User, ShoppingBag, Bell, MapPinned, Route, ShieldCheck } from "lucide-react";
-import { FoodizActionCard, FoodizHero, FoodizMetricCard, FoodizPill } from "../../components/FoodizWebUI";
+import { WeelloActionCard, WeelloHero, WeelloMetricCard, WeelloPill } from "../../components/WeelloWebUI";
 
 const CATEGORIES = [
   { label: "Market", icon: ShoppingCart, path: "/client/market" },
@@ -89,7 +89,7 @@ export default function ClientHome() {
       {/* HEADER ÉLÉGANT ET AÉRÉ */}
       <header className="px-6 pt-12 pb-8 bg-gradient-to-b from-foodiz-card to-foodiz-black border-b border-foodiz-gold/10">
         <div className="max-w-lg mx-auto flex justify-between items-center mb-8">
-          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="h-10 w-auto" />
+          <img src="/images/weello-wordmark.png" alt="Weello" className="h-10 w-auto" />
           <div className="flex gap-3">
             <button onClick={() => navigate("/client/notifications")} className="relative p-2.5 rounded-full bg-foodiz-black border border-foodiz-gold/20 text-foodiz-gold hover:bg-foodiz-gold/10 transition-colors">
               <Bell size={18} />
@@ -134,26 +134,26 @@ export default function ClientHome() {
           </form>
         </div>
 
-        <FoodizHero
-          eyebrow="Expérience Foodiz"
+        <WeelloHero
+          eyebrow="Expérience Weello"
           title="Votre ville, vos envies, votre livraison suivie."
-          description="Foodiz réunit les bonnes adresses locales, un suivi live rassurant et un programme fidélité gourmand — sans perdre l’esprit premium noir, doré et kraft."
+          description="Weello réunit les bonnes adresses locales, un suivi live rassurant et un programme fidélité gourmand — sans perdre l’esprit premium noir, doré et kraft."
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <FoodizMetricCard
+            <WeelloMetricCard
               label="Points"
               value={points.toLocaleString("fr-FR")}
-              helper="Foodiz Club"
+              helper="Weello Club"
               icon={Gift}
             />
-            <FoodizMetricCard
+            <WeelloMetricCard
               label="Autour"
               value={restaurants.length}
               helper="adresses actives"
               icon={ShoppingBag}
               tone={restaurants.length ? "green" : "muted"}
             />
-            <FoodizMetricCard
+            <WeelloMetricCard
               label="Adresse"
               value={locationEnabled ? "OK" : "À définir"}
               helper={cityName || "livraison précise"}
@@ -162,34 +162,34 @@ export default function ClientHome() {
             />
           </div>
           <div className="mt-4 grid gap-3">
-            <FoodizActionCard
+            <WeelloActionCard
               title="Commander maintenant"
               description="Explorez les restaurants et commerces disponibles autour de votre adresse."
               icon={ShoppingBag}
               badge="Local"
               onClick={() => navigate("/client/restaurants")}
             />
-            <FoodizActionCard
+            <WeelloActionCard
               title="Suivi live de commande"
               description="Dès qu’un livreur prend le relais, retrouvez son avancée et les étapes clés."
               icon={Route}
               badge="Live"
               onClick={() => navigate("/client/orders")}
             />
-            <FoodizActionCard
-              title="Avantages Foodiz Club"
+            <WeelloActionCard
+              title="Avantages Weello Club"
               description="Consultez vos points, récompenses et privilèges disponibles."
               icon={ShieldCheck}
               onClick={() => navigate("/client/advantages")}
             />
           </div>
-        </FoodizHero>
+        </WeelloHero>
 
         {/* CARTE POINTS FIDÉLITÉ */}
         <div onClick={() => navigate("/client/advantages")} className="foodiz-card p-5 bg-gradient-to-r from-foodiz-gold/10 to-foodiz-card border border-foodiz-gold/30 relative overflow-hidden cursor-pointer group rounded-2xl">
           <div className="relative z-10 flex justify-between items-center">
             <div>
-              <div className="mb-2"><FoodizPill>Foodiz Club</FoodizPill></div>
+              <div className="mb-2"><WeelloPill>Weello Club</WeelloPill></div>
               <p className="text-2xl font-serif italic text-foodiz-cream">{points.toLocaleString('fr-FR')} <span className="text-sm text-foodiz-gray not-italic font-sans">pts</span></p>
             </div>
             <div className="w-10 h-10 rounded-full bg-foodiz-gold flex items-center justify-center text-foodiz-black group-hover:scale-110 transition-transform">

@@ -3,14 +3,14 @@ import { router } from 'expo-router';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizActionCard,
-  FoodizBrand,
-  FoodizCard,
-  FoodizHero,
-  FoodizMetric,
-  FoodizPill,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloActionCard,
+  WeelloBrand,
+  WeelloCard,
+  WeelloHero,
+  WeelloMetric,
+  WeelloPill,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -131,74 +131,74 @@ export default function PartnerDashboardScreen() {
             tintColor={colors.gold}
           />
         }>
-        <FoodizBrand subtitle="Espace partenaire" />
-        <FoodizHero
+        <WeelloBrand subtitle="Espace partenaire" />
+        <WeelloHero
           eyebrow="Pilotage partenaire"
           title={`Bonjour ${profile?.first_name || 'Partenaire'}`}
           body={
             restaurant
               ? `${restaurant.name}${restaurant.city ? ` · ${restaurant.city}` : ''}. Gardez votre carte claire, vos commandes rapides et vos clients rassurés.`
-              : 'Créez votre dossier établissement pour préparer votre lancement Foodiz.'
+              : 'Créez votre dossier établissement pour préparer votre lancement Weello.'
           }>
           <View style={styles.metrics}>
-            <FoodizMetric
+            <WeelloMetric
               label="À traiter"
               value={metrics.current}
               helper="commandes actives"
               tone={metrics.current > 0 ? 'success' : 'muted'}
             />
-            <FoodizMetric
+            <WeelloMetric
               label="Livrées"
               value={metrics.deliveredToday}
               helper="aujourd’hui"
               tone={metrics.deliveredToday > 0 ? 'success' : 'muted'}
             />
-            <FoodizMetric
+            <WeelloMetric
               label="Carte"
               value={productsCount}
               helper={productsCount >= 5 ? 'base solide' : 'produits à enrichir'}
               tone={productsCount >= 5 ? 'success' : 'muted'}
             />
           </View>
-        </FoodizHero>
+        </WeelloHero>
 
-        <FoodizCard>
+        <WeelloCard>
           <View style={styles.statusRow}>
             <Text style={styles.kicker}>ÉTABLISSEMENT</Text>
-            <FoodizPill
+            <WeelloPill
               label={restaurant ? activeLabel : 'À créer'}
               tone={statusTone}
             />
           </View>
-          <Text style={foodizText.heading}>
-            {restaurant?.name || 'Votre établissement Foodiz'}
+          <Text style={weelloText.heading}>
+            {restaurant?.name || 'Votre établissement Weello'}
           </Text>
-          <Text style={foodizText.body}>
+          <Text style={weelloText.body}>
             Statut opérationnel : {restaurant?.status || 'dossier non initialisé'}.
             {restaurant?.is_active
               ? ' Les clients pourront commander dès l’ouverture de votre ville.'
               : ' Vérifiez votre dossier et votre carte avant la mise en vente.'}
           </Text>
-        </FoodizCard>
+        </WeelloCard>
 
-        <FoodizCard>
+        <WeelloCard>
           <Text style={styles.kicker}>CHIFFRE PARTENAIRE LIVRÉ</Text>
-          <Text style={foodizText.title}>
+          <Text style={weelloText.title}>
             {(metrics.revenue / 100).toFixed(2)} €
           </Text>
-          <Text style={foodizText.body}>
+          <Text style={weelloText.body}>
             Montant partenaire cumulé sur les commandes livrées affichées.
           </Text>
-        </FoodizCard>
+        </WeelloCard>
 
-        <FoodizCard>
+        <WeelloCard>
           <Text style={styles.kicker}>PLAN D’ACTION</Text>
-          <Text style={foodizText.heading}>Votre vitrine doit donner faim et confiance.</Text>
+          <Text style={weelloText.heading}>Votre vitrine doit donner faim et confiance.</Text>
           <View style={styles.readinessRow}>
             <Text style={styles.readinessValue}>{readinessScore}%</Text>
             <View style={styles.readinessTextBlock}>
               <Text style={styles.readinessLabel}>Préparation partenaire</Text>
-              <Text style={foodizText.body}>
+              <Text style={weelloText.body}>
                 Dossier, carte et fluidité des commandes.
               </Text>
             </View>
@@ -206,25 +206,25 @@ export default function PartnerDashboardScreen() {
           <View style={styles.planList}>
             <Text style={styles.planItem}>• Carte courte, lisible, avec vos produits les plus rentables.</Text>
             <Text style={styles.planItem}>• Photos nettes et descriptions simples pour réduire les questions.</Text>
-            <Text style={styles.planItem}>• Commandes acceptées vite : c’est le premier luxe Foodiz.</Text>
+            <Text style={styles.planItem}>• Commandes acceptées vite : c’est le premier luxe Weello.</Text>
           </View>
-        </FoodizCard>
+        </WeelloCard>
 
         <View style={styles.actions}>
-          <FoodizActionCard
+          <WeelloActionCard
             icon="🔔"
             title="Commandes"
             description="Acceptez, préparez et signalez les commandes prêtes."
             badge={metrics.current > 0 ? String(metrics.current) : undefined}
             onPress={() => router.push('/partner/orders')}
           />
-          <FoodizActionCard
+          <WeelloActionCard
             icon="🍱"
             title="Carte"
             description="Ajoutez vos produits, ajustez vos prix et masquez les indisponibles."
             onPress={() => router.push('/partner/products')}
           />
-          <FoodizActionCard
+          <WeelloActionCard
             icon="🛡️"
             title="Dossier & conformité"
             description="Suivez la validation de votre établissement et vos justificatifs."

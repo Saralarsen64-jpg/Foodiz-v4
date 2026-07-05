@@ -147,7 +147,7 @@ const handler: Handler = async (event) => {
             document_upload_token_expires_at: expiresAt,
           })
           .eq("prelaunch_profile_id", prelaunchProfile.id);
-        const appUrl = (process.env.APP_URL || "https://www.foodiz.co").replace(/\/$/, "");
+        const appUrl = (process.env.APP_URL || "https://weello.app").replace(/\/$/, "");
         replacementUploadUrl = `${appUrl}/partner-documents?token=${encodeURIComponent(replacementToken.raw)}`;
       }
     }
@@ -164,20 +164,20 @@ const handler: Handler = async (event) => {
         const emailResult = await sendPrelaunchEmail({
           to: prelaunchProfile.email,
           subject: approved
-            ? "Votre dossier partenaire Foodiz est validé"
+            ? "Votre dossier partenaire Weello est validé"
             : replacement
-              ? "Document partenaire à remplacer sur Foodiz"
-              : "Votre dossier partenaire Foodiz nécessite une correction",
+              ? "Document partenaire à remplacer sur Weello"
+              : "Votre dossier partenaire Weello nécessite une correction",
           headline: approved
             ? "Votre établissement est validé"
             : replacement
               ? "Un justificatif doit être remplacé"
               : "Votre dossier n’a pas pu être validé",
           body: approved
-            ? "Bonne nouvelle : votre dossier partenaire est validé. Foodiz vous donnera accès aux fonctionnalités commerciales selon l’ouverture de votre ville et les paramètres opérationnels définis par l’administration."
+            ? "Bonne nouvelle : votre dossier partenaire est validé. Weello vous donnera accès aux fonctionnalités commerciales selon l’ouverture de votre ville et les paramètres opérationnels définis par l’administration."
             : replacement
-              ? `Foodiz a besoin d’un ou plusieurs justificatifs plus lisibles ou conformes. Motif : ${comment}`
-              : `Foodiz ne peut pas valider votre dossier en l’état. Motif : ${comment}`,
+              ? `Weello a besoin d’un ou plusieurs justificatifs plus lisibles ou conformes. Motif : ${comment}`
+              : `Weello ne peut pas valider votre dossier en l’état. Motif : ${comment}`,
           actionLabel: replacementUploadUrl ? "Renvoyer mes documents" : undefined,
           actionUrl: replacementUploadUrl || undefined,
           recipientUserId: prelaunchProfile.user_id,

@@ -83,13 +83,13 @@ export default function SignupPage() {
     <div className="min-h-screen bg-foodiz-black flex items-center justify-center p-4">
       <div className="w-full max-w-md foodiz-card p-8 border border-foodiz-gold/20 shadow-2xl">
         <div className="flex justify-center mb-6">
-          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="w-64 max-w-full h-auto rounded-2xl" />
+          <img src="/images/weello-wordmark.png" alt="Weello" className="w-64 max-w-full h-auto rounded-2xl" />
         </div>
         <h1 className="foodiz-title text-2xl text-center mb-2 text-foodiz-cream">
           Inscription {role === 'partner' ? 'Partenaire' : role === 'courier' ? 'Livreur' : 'Client'}
         </h1>
         {refCode && <p className="text-center text-foodiz-gold text-xs mb-4">Code parrain détecté : +500 pts offerts !</p>}
-        <p className="text-center text-foodiz-gray text-sm mb-6">Rejoignez l'écosystème Foodiz</p>
+        <p className="text-center text-foodiz-gray text-sm mb-6">Rejoignez l'écosystème Weello</p>
 
         {status && (
           <div className={`p-4 rounded-xl text-sm mb-6 flex items-start gap-3 border ${status.type === 'error' ? 'bg-foodiz-red/5 text-foodiz-red border-foodiz-red/20' : 'bg-foodiz-green/5 text-foodiz-green border-foodiz-green/20'}`}>

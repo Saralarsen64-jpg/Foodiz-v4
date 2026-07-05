@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Flame, Apple, Pizza, Coffee } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
-import { calculateClientUnitPriceCents } from "../../lib/engines/foodizEconomicEngine";
+import { calculateClientUnitPriceCents } from "../../lib/engines/weelloEconomicEngine";
 
 const CATEGORIES = [
   { label: "Restaurants", icon: Flame, path: "/client/restaurants" },
@@ -90,7 +90,7 @@ export default function SearchPage() {
         <div className="foodiz-card p-8 text-center text-sm text-foodiz-gray">Aucun restaurant ni produit ne correspond à « {search.trim()} ».</div>
       ) : (
         <div className="space-y-7">
-          {restaurants.length > 0 && <section><h2 className="foodiz-title text-sm mb-3 text-foodiz-gold">Restaurants</h2><div className="space-y-3">{restaurants.map((restaurant) => <button key={restaurant.id} onClick={() => navigate(`/client/establishments/${restaurant.id}`)} className="w-full foodiz-card p-3 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"><div className="w-14 h-14 rounded-xl overflow-hidden bg-white/5 shrink-0">{restaurant.cover_image && <img src={restaurant.cover_image} alt="" className="w-full h-full object-cover" />}</div><div><p className="text-sm font-semibold text-foodiz-cream">{restaurant.name}</p><p className="text-xs text-foodiz-gray mt-1">{[restaurant.cuisine_type, restaurant.city].filter(Boolean).join(" · ") || "Restaurant Foodiz"}</p></div></button>)}</div></section>}
+          {restaurants.length > 0 && <section><h2 className="foodiz-title text-sm mb-3 text-foodiz-gold">Restaurants</h2><div className="space-y-3">{restaurants.map((restaurant) => <button key={restaurant.id} onClick={() => navigate(`/client/establishments/${restaurant.id}`)} className="w-full foodiz-card p-3 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"><div className="w-14 h-14 rounded-xl overflow-hidden bg-white/5 shrink-0">{restaurant.cover_image && <img src={restaurant.cover_image} alt="" className="w-full h-full object-cover" />}</div><div><p className="text-sm font-semibold text-foodiz-cream">{restaurant.name}</p><p className="text-xs text-foodiz-gray mt-1">{[restaurant.cuisine_type, restaurant.city].filter(Boolean).join(" · ") || "Restaurant Weello"}</p></div></button>)}</div></section>}
           {products.length > 0 && <section><h2 className="foodiz-title text-sm mb-3 text-foodiz-gold">Plats et produits</h2><div className="space-y-3">{products.map((product) => <button key={product.id} onClick={() => navigate(`/client/establishments/${product.restaurant.id}`)} className="w-full foodiz-card p-3 flex items-center gap-3 text-left hover:border-foodiz-gold/30 transition-all"><div className="w-14 h-14 rounded-xl overflow-hidden bg-white/5 shrink-0">{product.image_url && <img src={product.image_url} alt="" className="w-full h-full object-cover" />}</div><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-foodiz-cream truncate">{product.name}</p><p className="text-xs text-foodiz-gray mt-1 truncate">{product.restaurant.name}</p></div><p className="text-sm font-semibold text-foodiz-gold">{(calculateClientUnitPriceCents(product.partner_price_cents) / 100).toFixed(2).replace(".", ",")} €</p></button>)}</div></section>}
         </div>
       )}

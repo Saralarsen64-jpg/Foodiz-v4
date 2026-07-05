@@ -59,7 +59,7 @@ export default function OrdersPage() {
           <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
             <ShoppingBag size={48} className="mx-auto text-foodiz-gray/20 mb-4" />
             <h3 className="text-foodiz-cream text-lg font-medium mb-2">Aucune commande</h3>
-            <p className="text-foodiz-gray text-sm mb-6">Vous n'avez pas encore commandé sur Foodiz.</p>
+            <p className="text-foodiz-gray text-sm mb-6">Vous n'avez pas encore commandé sur Weello.</p>
             <button onClick={() => navigate("/client/restaurants")} className="foodiz-btn px-6 py-3 text-sm">Découvrir les restaurants</button>
           </div>
         ) : (

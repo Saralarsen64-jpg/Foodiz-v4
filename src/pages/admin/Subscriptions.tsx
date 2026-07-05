@@ -26,7 +26,7 @@ export default function AdminSubscriptions() {
     monthlyRecurring: subscriptions.filter((row) => row.status === "active").reduce((sum, row) => sum + (row.billing_period === "yearly" ? Number(row.plan?.yearly_price_cents || 0) / 12 : Number(row.plan?.monthly_price_cents || 0)), 0),
   }), [subscriptions]);
 
-  return <AdminShell title="Abonnements Foodiz+" subtitle="Souscriptions Stripe, quotas de campagnes et échéances partenaires">
+  return <AdminShell title="Abonnements Weello+" subtitle="Souscriptions Stripe, quotas de campagnes et échéances partenaires">
     <section className="grid gap-4 md:grid-cols-3"><article className="foodiz-card p-5"><p className="text-[10px] uppercase text-foodiz-gray">Abonnements actifs</p><p className="mt-2 text-3xl text-foodiz-cream">{summary.active}</p></article><article className="foodiz-card p-5"><p className="text-[10px] uppercase text-foodiz-gray">MRR théorique</p><p className="mt-2 text-3xl text-foodiz-gold">{euros(summary.monthlyRecurring)}</p></article><article className="foodiz-card p-5"><p className="text-[10px] uppercase text-foodiz-gray">Incidents de paiement</p><p className={`mt-2 text-3xl ${summary.incidents ? "text-foodiz-red" : "text-foodiz-green"}`}>{summary.incidents}</p></article></section>
     <div className="flex justify-end"><button onClick={() => void load()} className="flex items-center gap-2 text-xs text-foodiz-gold"><RefreshCw size={15}/>Actualiser</button></div>
     {loading ? <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement des souscriptions...</div> : subscriptions.length === 0 ? <div className="foodiz-card p-5 text-sm text-foodiz-gray">Aucun abonnement réel enregistré.</div> : <div className="space-y-3">{subscriptions.map((subscription) => {

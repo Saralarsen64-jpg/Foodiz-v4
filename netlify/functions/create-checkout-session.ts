@@ -5,9 +5,10 @@ import { sendFinancialDocumentEmail } from "./_lib/financial-documents.js";
 import { calculateRoute } from "./_lib/routingProvider.js";
 import {
   calculateClientUnitPriceCents,
-  calculateFoodizOrder,
+  calculateWeelloOrder,
   isValidCoordinates,
-} from "../../src/lib/engines/foodizEconomicEngine.js";
+} from "../../src/lib/engines/weelloEconomicEngine.js";
+import { effectivePartnerPriceCents } from "../../src/lib/productOffers.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const supabase = createClient(
@@ -81,7 +82,7 @@ const handler: Handler = async (event) => {
       await Promise.all([
         supabase
           .from("products")
-          .select("id, name, category, partner_price_cents, restaurant_id")
+          .select("id, name, category, partner_price_cents, promotion_partner_price_cents, promotion_starts_at, promotion_ends_at, restaurant_id")
           .in("id", productIds)
           .eq("restaurant_id", restaurantId)
           .eq("is_active", true),
@@ -124,7 +125,7 @@ const handler: Handler = async (event) => {
     const calculationItems = normalizedItems.flatMap((cartItem) => {
       const product = products.find((candidate) => candidate.id === cartItem.productId);
       return Array(cartItem.quantity).fill({
-        partnerPriceCents: product?.partner_price_cents || 0,
+        partnerPriceCents: product ? effectivePartnerPriceCents(product) : 0,
       });
     });
 
@@ -151,7 +152,16 @@ const handler: Handler = async (event) => {
       },
     );
     const distanceKm = route.distanceKm;
-    const totals = calculateFoodizOrder(calculationItems, distanceKm);
+    if (distanceKm > 25) {
+      return {
+        statusCode: 422,
+        body: JSON.stringify({
+          error: "Cet établissement est hors de votre zone de livraison Weello.",
+          code: "OUTSIDE_DELIVERY_AREA",
+        }),
+      };
+    }
+    const totals = calculateWeelloOrder(calculationItems, distanceKm);
     const { data: reservedRows } = await supabase
       .from("order_advantage_redemptions")
       .select("points_cost")
@@ -216,7 +226,9 @@ const handler: Handler = async (event) => {
         }
         advantageDiscountCents = Math.min(
           faceValue,
-          calculateClientUnitPriceCents(eligibleProduct.partner_price_cents),
+          calculateClientUnitPriceCents(
+            effectivePartnerPriceCents(eligibleProduct),
+          ),
         );
       } else {
         advantageDiscountCents = Math.min(faceValue, totals.finalClientTotalCents);
@@ -229,7 +241,9 @@ const handler: Handler = async (event) => {
     if (quoteOnly) {
       const quotedItems = normalizedItems.map((cartItem) => {
         const product = products.find((candidate) => candidate.id === cartItem.productId)!;
-        const unitPriceCents = calculateClientUnitPriceCents(product.partner_price_cents);
+        const unitPriceCents = calculateClientUnitPriceCents(
+          effectivePartnerPriceCents(product),
+        );
         return {
           productId: product.id,
           name: product.name,
@@ -334,7 +348,9 @@ const handler: Handler = async (event) => {
 
     const orderItems = normalizedItems.map((cartItem) => {
       const product = products.find((candidate) => candidate.id === cartItem.productId);
-      const partnerUnitPriceCents = product?.partner_price_cents || 0;
+      const partnerUnitPriceCents = product
+        ? effectivePartnerPriceCents(product)
+        : 0;
       const clientUnitPriceCents = calculateClientUnitPriceCents(partnerUnitPriceCents);
       return {
         order_id: order.id,
@@ -407,7 +423,7 @@ const handler: Handler = async (event) => {
             restaurantId,
             source: "foodiz_mobile",
           },
-          description: `Commande Foodiz #${order.id.slice(0, 8)}`,
+          description: `Commande Weello #${order.id.slice(0, 8)}`,
         },
         { idempotencyKey: `foodiz-mobile-payment-${order.id}` },
       );
@@ -439,7 +455,7 @@ const handler: Handler = async (event) => {
             currency: "eur",
             unit_amount: amountToPayCents,
             product_data: {
-              name: `Commande Foodiz - ${restaurant.name}`,
+              name: `Commande Weello - ${restaurant.name}`,
               description: `${normalizedItems.length} article(s), livraison incluse`,
             },
           },

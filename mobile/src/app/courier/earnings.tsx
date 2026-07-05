@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizCard,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloCard,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -87,25 +87,25 @@ export default function CourierEarningsScreen() {
             tintColor={colors.gold}
           />
         }>
-        <FoodizBrand subtitle="Revenus livreur" />
-        <FoodizCard>
+        <WeelloBrand subtitle="Revenus livreur" />
+        <WeelloCard>
           <Text style={styles.kicker}>SOLDE DES LIVRAISONS AFFICHÉES</Text>
-          <Text style={foodizText.title}>
+          <Text style={weelloText.title}>
             {((totals.gross - totals.penalties) / 100).toFixed(2)} €
           </Text>
-          <Text style={foodizText.body}>
+          <Text style={weelloText.body}>
             Brut {(totals.gross / 100).toFixed(2)} € · pénalités{' '}
             {(totals.penalties / 100).toFixed(2)} €
           </Text>
-        </FoodizCard>
+        </WeelloCard>
 
         {orders.length === 0 ? (
-          <FoodizCard>
-            <Text style={foodizText.heading}>Aucune livraison terminée</Text>
-            <Text style={foodizText.body}>
+          <WeelloCard>
+            <Text style={weelloText.heading}>Aucune livraison terminée</Text>
+            <Text style={weelloText.body}>
               Vos gains apparaîtront ici après vos premières courses.
             </Text>
-          </FoodizCard>
+          </WeelloCard>
         ) : (
           orders.map((order) => {
             const gross =
@@ -113,13 +113,13 @@ export default function CourierEarningsScreen() {
               + order.courier_earnings_cents
               + order.courier_prime_fund_cents;
             return (
-              <FoodizCard key={order.id}>
+              <WeelloCard key={order.id}>
                 <View style={styles.row}>
                   <View style={styles.orderText}>
-                    <Text style={foodizText.heading}>
-                      {order.restaurant?.name || 'Livraison Foodiz'}
+                    <Text style={weelloText.heading}>
+                      {order.restaurant?.name || 'Livraison Weello'}
                     </Text>
-                    <Text style={foodizText.body}>
+                    <Text style={weelloText.body}>
                       {order.delivered_at
                         ? new Date(order.delivered_at).toLocaleDateString('fr-FR')
                         : `#${order.id.slice(0, 8)}`}
@@ -139,7 +139,7 @@ export default function CourierEarningsScreen() {
                     {(order.courier_delay_penalty_cents / 100).toFixed(2)} €
                   </Text>
                 ) : null}
-              </FoodizCard>
+              </WeelloCard>
             );
           })
         )}

@@ -4,14 +4,14 @@ import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 
 import { RoleGuard } from '@/components/role-guard';
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizField,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloField,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -78,7 +78,7 @@ export default function PartnerOnboardingScreen() {
 
     setSaving(true);
     try {
-      await foodizApi('address-management', {
+      await weelloApi('address-management', {
         method: 'POST',
         body: JSON.stringify({
           action: 'save',
@@ -88,7 +88,7 @@ export default function PartnerOnboardingScreen() {
       });
       Alert.alert(
         'Dossier partenaire transmis',
-        'Foodiz vérifiera votre établissement avant son activation.',
+        'Weello vérifiera votre établissement avant son activation.',
       );
       router.replace('/partner-status');
     } catch (error) {
@@ -103,23 +103,23 @@ export default function PartnerOnboardingScreen() {
 
   return (
     <RoleGuard role="partner">
-      <FoodizScreen>
+      <WeelloScreen>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.back}>← Retour</Text>
         </Pressable>
-        <FoodizBrand subtitle="Dossier partenaire" />
-        <Text style={foodizText.title}>Votre établissement</Text>
-        <Text style={foodizText.body}>
+        <WeelloBrand subtitle="Dossier partenaire" />
+        <Text style={weelloText.title}>Votre établissement</Text>
+        <Text style={weelloText.body}>
           L’adresse est vérifiée et géocodée côté serveur avant toute
           activation.
         </Text>
-        <FoodizField
+        <WeelloField
           value={form.name}
           onChangeText={(name) => setForm((current) => ({ ...current, name }))}
           placeholder="Nom de l’établissement"
           autoCapitalize="words"
         />
-        <FoodizField
+        <WeelloField
           value={form.siret}
           onChangeText={(siret) =>
             setForm((current) => ({
@@ -130,13 +130,13 @@ export default function PartnerOnboardingScreen() {
           placeholder="SIRET — 14 chiffres"
           keyboardType="number-pad"
         />
-        <FoodizField
+        <WeelloField
           value={form.phone}
           onChangeText={(phone) => setForm((current) => ({ ...current, phone }))}
           placeholder="Téléphone professionnel"
           keyboardType="phone-pad"
         />
-        <FoodizField
+        <WeelloField
           value={form.address}
           onChangeText={(address) =>
             setForm((current) => ({ ...current, address }))
@@ -144,7 +144,7 @@ export default function PartnerOnboardingScreen() {
           placeholder="Numéro et rue"
           autoCapitalize="words"
         />
-        <FoodizField
+        <WeelloField
           value={form.postalCode}
           onChangeText={(postalCode) =>
             setForm((current) => ({
@@ -155,13 +155,13 @@ export default function PartnerOnboardingScreen() {
           placeholder="Code postal"
           keyboardType="number-pad"
         />
-        <FoodizField
+        <WeelloField
           value={form.city}
           onChangeText={(city) => setForm((current) => ({ ...current, city }))}
           placeholder="Ville"
           autoCapitalize="words"
         />
-        <FoodizField
+        <WeelloField
           value={form.description}
           onChangeText={(description) =>
             setForm((current) => ({ ...current, description }))
@@ -170,19 +170,19 @@ export default function PartnerOnboardingScreen() {
           autoCapitalize="sentences"
           multiline
         />
-        <FoodizCard>
-          <Text style={foodizText.body}>
+        <WeelloCard>
+          <Text style={weelloText.body}>
             Les coordonnées bancaires ne sont jamais demandées dans ce
             formulaire. Elles seront configurées séparément lors de
             l’activation des virements.
           </Text>
-        </FoodizCard>
-        <FoodizButton
+        </WeelloCard>
+        <WeelloButton
           label="Envoyer mon dossier partenaire"
           onPress={() => void submit()}
           loading={saving}
         />
-      </FoodizScreen>
+      </WeelloScreen>
     </RoleGuard>
   );
 }

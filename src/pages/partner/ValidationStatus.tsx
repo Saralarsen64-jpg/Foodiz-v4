@@ -18,8 +18,8 @@ export default function PartnerValidationStatus() {
   }, []);
 
   const labels: Record<string, { title: string; description: string }> = {
-    pending: { title: "En attente d’examen", description: "Votre dossier partenaire est en cours de vérification par Foodiz." },
-    validated: { title: "Dossier validé", description: "Votre établissement a été validé par Foodiz." },
+    pending: { title: "En attente d’examen", description: "Votre dossier partenaire est en cours de vérification par Weello." },
+    validated: { title: "Dossier validé", description: "Votre établissement a été validé par Weello." },
     missing_documents: { title: "Documents manquants", description: "Des informations complémentaires sont nécessaires pour valider votre dossier." },
     rejected: { title: "Dossier refusé", description: "Votre dossier n’a pas été retenu. Contactez le support pour plus d’informations." },
     suspended: { title: "Compte suspendu", description: "Votre accès partenaire est temporairement suspendu." },

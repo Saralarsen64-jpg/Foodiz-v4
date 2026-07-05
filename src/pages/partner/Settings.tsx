@@ -159,7 +159,7 @@ export default function PartnerSettings() {
     { label: "Dashboard", icon: Activity, path: "/partner" },
     { label: "Commandes", icon: UserCheck, path: "/partner/orders/current" },
     { label: "Finances", icon: CreditCard, path: "/partner/payouts" },
-    { label: "Foodiz+", icon: Megaphone, path: "/partner/marketing" },
+    { label: "Weello+", icon: Megaphone, path: "/partner/marketing" },
   ];
 
   return (

@@ -3,15 +3,15 @@ import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react
 import { router } from 'expo-router';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizHero,
-  FoodizMetric,
-  FoodizPill,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloHero,
+  WeelloMetric,
+  WeelloPill,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { colors } from '@/theme/colors';
 import { updateCourierPresence } from '@/lib/courier-presence';
 
@@ -41,7 +41,7 @@ export default function CourierDeliveriesScreen() {
     setRefreshing(true);
     try {
       await updateCourierPresence(true);
-      const data = await foodizApi<{ deliveries: Delivery[] }>('courier-deliveries');
+      const data = await weelloApi<{ deliveries: Delivery[] }>('courier-deliveries');
       setDeliveries(data.deliveries);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Chargement impossible';
@@ -57,7 +57,7 @@ export default function CourierDeliveriesScreen() {
   useEffect(() => {
     let active = true;
     void updateCourierPresence(true)
-      .then(() => foodizApi<{ deliveries: Delivery[] }>('courier-deliveries'))
+      .then(() => weelloApi<{ deliveries: Delivery[] }>('courier-deliveries'))
       .then((data) => {
         if (active) setDeliveries(data.deliveries);
       })
@@ -71,7 +71,7 @@ export default function CourierDeliveriesScreen() {
 
   async function claim(orderId: string) {
     try {
-      await foodizApi<{ orderId: string }>('courier-deliveries', {
+      await weelloApi<{ orderId: string }>('courier-deliveries', {
         method: 'POST',
         body: JSON.stringify({ orderId }),
       });
@@ -92,33 +92,33 @@ export default function CourierDeliveriesScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={load} tintColor={colors.gold} />
         }>
-        <FoodizBrand subtitle="Courses disponibles" />
-        <FoodizHero
-          eyebrow="Dispatch Foodiz"
+        <WeelloBrand subtitle="Courses disponibles" />
+        <WeelloHero
+          eyebrow="Dispatch Weello"
           title="Choisissez votre prochaine course"
           body="Les courses sont proposées selon votre validation, votre position récente et la disponibilité réelle autour de vous.">
           <View style={styles.metrics}>
-            <FoodizMetric
+            <WeelloMetric
               label="Disponibles"
               value={deliveries.length}
               helper="à proximité"
               tone={deliveries.length > 0 ? 'success' : 'muted'}
             />
           </View>
-        </FoodizHero>
+        </WeelloHero>
 
         {deliveries.length === 0 ? (
-          <FoodizCard>
-            <Text style={foodizText.heading}>Aucune course disponible</Text>
-            <Text style={foodizText.body}>
+          <WeelloCard>
+            <Text style={weelloText.heading}>Aucune course disponible</Text>
+            <Text style={weelloText.body}>
               Passez en ligne et tirez vers le bas pour actualiser.
             </Text>
-          </FoodizCard>
+          </WeelloCard>
         ) : (
           deliveries.map((delivery) => (
-            <FoodizCard key={delivery.id}>
+            <WeelloCard key={delivery.id}>
               <View style={styles.cardHeader}>
-                <FoodizPill label="Nouvelle course" tone="success" />
+                <WeelloPill label="Nouvelle course" tone="success" />
                 <Text style={styles.price}>
                   {(
                     (delivery.delivery_fee_cents +
@@ -128,21 +128,21 @@ export default function CourierDeliveriesScreen() {
                   ).toFixed(2)} €
                 </Text>
               </View>
-              <Text style={foodizText.heading}>
-                {delivery.restaurant.name || 'Établissement Foodiz'}
+              <Text style={weelloText.heading}>
+                {delivery.restaurant.name || 'Établissement Weello'}
               </Text>
-              <Text style={foodizText.body}>
+              <Text style={weelloText.body}>
                 {[delivery.restaurant.address, delivery.restaurant.city]
                   .filter(Boolean)
                   .join(' · ')}
               </Text>
-              <Text style={foodizText.body}>
+              <Text style={weelloText.body}>
                 {delivery.item_count} article(s) ·{' '}
                 {delivery.pickup_distance_km === null
                   ? 'distance de retrait à confirmer'
                   : `${delivery.pickup_distance_km.toFixed(1)} km jusqu’au restaurant`}
               </Text>
-              <Text style={foodizText.body}>
+              <Text style={weelloText.body}>
                 {delivery.pickup_time_mins === null
                   ? 'Temps de retrait à confirmer'
                   : `${delivery.pickup_time_mins} min jusqu’au retrait`}
@@ -151,11 +151,11 @@ export default function CourierDeliveriesScreen() {
                   ? 'livraison à confirmer'
                   : `${delivery.estimated_time_mins} min de livraison`}
               </Text>
-              <FoodizButton
+              <WeelloButton
                 label="Accepter la course"
                 onPress={() => void claim(delivery.id)}
               />
-            </FoodizCard>
+            </WeelloCard>
           ))
         )}
       </ScrollView>

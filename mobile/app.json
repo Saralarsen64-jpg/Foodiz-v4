@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Foodiz",
+    "name": "Weello",
     "slug": "foodiz",
     "version": "1.0.0",
     "platforms": [
@@ -8,32 +8,56 @@
       "android"
     ],
     "orientation": "portrait",
-    "icon": "./assets/images/foodiz-app-icon.png",
-    "scheme": "foodiz",
+    "icon": "./assets/images/weello-app-icon-v2.png",
+    "scheme": "weello",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.foodiz.app",
+      "icon": "./assets/images/weello-app-icon-v2.png",
+      "bundleIdentifier": "app.weello",
+      "associatedDomains": [
+        "applinks:weello.app"
+      ],
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Foodiz utilise votre position pour enregistrer votre adresse et calculer les frais de livraison."
+        "NSLocationWhenInUseUsageDescription": "Weello utilise votre position pour enregistrer votre adresse, calculer la livraison et suivre une course en cours.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Pour les livreurs uniquement, Weello partage la position pendant une course active afin que le client puisse suivre sa livraison, même lorsque l’application est en arrière-plan."
       }
     },
     "android": {
-      "package": "com.foodiz.app",
+      "package": "app.weello",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0B",
-        "foregroundImage": "./assets/images/foodiz-app-icon.png"
+        "foregroundImage": "./assets/images/weello-app-icon-v2.png"
       },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "weello.app",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "predictiveBackGestureEnabled": true
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/foodiz-app-icon.png"
+      "favicon": "./assets/images/weello-app-icon-v2.png"
     },
     "plugins": [
       "expo-router",
@@ -41,10 +65,10 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#111111",
-          "image": "./assets/images/foodiz-app-icon.png",
+          "image": "./assets/images/weello-wordmark.png",
           "imageWidth": 180,
           "android": {
-            "image": "./assets/images/foodiz-app-icon.png",
+            "image": "./assets/images/weello-wordmark.png",
             "imageWidth": 180
           }
         }
@@ -53,21 +77,31 @@
         "expo-secure-store",
         {
           "configureAndroidBackup": true,
-          "faceIDPermission": "Autoriser Foodiz à sécuriser votre session."
+          "faceIDPermission": "Autoriser Weello à sécuriser votre session."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Autoriser Foodiz à sélectionner vos justificatifs professionnels.",
-          "cameraPermission": "Autoriser Foodiz à photographier vos justificatifs professionnels.",
+          "photosPermission": "Autoriser Weello à sélectionner vos justificatifs professionnels.",
+          "cameraPermission": "Autoriser Weello à photographier vos justificatifs professionnels.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Weello utilise votre position pour enregistrer votre adresse, calculer la livraison et suivre une course en cours.",
+          "locationAlwaysAndWhenInUsePermission": "Pour les livreurs uniquement, Weello partage la position pendant une course active afin que le client puisse suivre sa livraison, même lorsque l’application est en arrière-plan.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [
         "@stripe/stripe-react-native",
         {
-          "merchantIdentifier": "merchant.com.foodiz.app",
+          "merchantIdentifier": "merchant.app.weello",
           "enableGooglePay": true
         }
       ]

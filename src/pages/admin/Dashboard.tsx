@@ -137,7 +137,7 @@ export default function AdminDashboard() {
     ["Encaissé clients", euros(stats.collected), Euro, "text-foodiz-green", "/admin/economics"],
     ["À reverser", euros(stats.payable), FileText, "text-amber-300", "/admin/payouts"],
     ["Partenaires actifs", stats.partners, Store, "text-foodiz-cream", "/admin/partner-applications"],
-    ["Foodiz+ actifs", stats.subscriptions, CreditCard, "text-foodiz-gold", "/admin/subscriptions"],
+    ["Weello+ actifs", stats.subscriptions, CreditCard, "text-foodiz-gold", "/admin/subscriptions"],
     ["Tickets à traiter", stats.tickets, LifeBuoy, "text-foodiz-red", "/admin/support"],
     ["Incidents abonnements", stats.incidents, AlertTriangle, stats.incidents ? "text-foodiz-red" : "text-foodiz-green", "/admin/subscriptions"],
   ] as const;
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
           <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Recette pré-lancement</p>
           <h2 className="foodiz-title mt-1 text-2xl">Les 6 points avant App Store & Google Play</h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-foodiz-gray">
-            Cette checklist garde Foodiz disciplinée : beau, utile, sécurisé, testé sur une vraie commande et prêt à être piloté ville par ville.
+            Cette checklist garde Weello disciplinée : beau, utile, sécurisé, testé sur une vraie commande et prêt à être piloté ville par ville.
           </p>
         </div>
         <button onClick={() => navigate("/admin/service-areas")} className="rounded-2xl border border-foodiz-gold/25 px-4 py-3 text-xs font-bold text-foodiz-gold transition hover:bg-foodiz-gold hover:text-foodiz-black">
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[.2em] text-foodiz-gold">Avant lancement</p>
-            <h2 className="foodiz-title mt-1 text-2xl">Pré-inscriptions Foodiz</h2>
+            <h2 className="foodiz-title mt-1 text-2xl">Pré-inscriptions Weello</h2>
             <p className="mt-1 text-xs text-foodiz-gray">{prelaunch?.counts.total || 0} personne(s) attendent l’ouverture.</p>
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function AdminDashboard() {
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[.2em] text-foodiz-gold">Déploiement ville par ville</p>
-            <h2 className="foodiz-title mt-1 text-2xl">Cockpit des villes Foodiz</h2>
+            <h2 className="foodiz-title mt-1 text-2xl">Cockpit des villes Weello</h2>
             <p className="mt-1 text-xs text-foodiz-gray">Mont-de-Marsan d’abord, puis chaque ville dès qu’elle a ses partenaires et livreurs validés.</p>
           </div>
         </div>
@@ -432,7 +432,7 @@ export default function AdminDashboard() {
         <div className="mt-6 space-y-4">{[
           ["Partenaires", allocation.totals.partner],
           ["Livreurs", allocation.totals.courier],
-          ["Foodiz", allocation.totals.foodiz],
+          ["Weello", allocation.totals.foodiz],
           ["Fidélité", allocation.totals.loyalty],
         ].map(([label, value]) => <div key={String(label)}><div className="mb-2 flex justify-between text-xs"><span className="text-foodiz-gray">{label}</span><span className="text-foodiz-cream">{euros(Number(value))}</span></div><div className="h-2 overflow-hidden rounded-full bg-white/5"><div className="h-full rounded-full bg-foodiz-gold shadow-[0_0_20px_rgba(216,168,79,0.45)]" style={{ width: `${Math.max(3, (Number(value) / allocation.max) * 100)}%` }}/></div></div>)}</div>
       </article>
@@ -442,7 +442,7 @@ export default function AdminDashboard() {
       ["Comptabilité", "Répartitions, réserves et journal", "/admin/economics"],
       ["Règlements", "Bordereaux hebdomadaires", "/admin/payouts"],
       ["Support", "Tickets et historique traité", "/admin/support"],
-      ["Campagnes", "Foodiz+ et performances", "/admin/marketing-campaigns"],
+      ["Campagnes", "Weello+ et performances", "/admin/marketing-campaigns"],
       ["Diffusion", "Notification globale", "/admin/broadcast"],
     ].map(([title, detail, path]) => <button key={path} onClick={() => navigate(path)} className="foodiz-card p-5 text-left transition-all hover:border-foodiz-gold/35 hover:bg-foodiz-gold/[0.03]"><p className="font-semibold text-foodiz-cream">{title}</p><p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{detail}</p></button>)}</section>
   </AdminShell>;

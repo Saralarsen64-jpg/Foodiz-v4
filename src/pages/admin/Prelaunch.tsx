@@ -137,7 +137,7 @@ export default function AdminPrelaunch() {
   return (
     <AdminShell
       title="Pré-lancement"
-      subtitle="Pré-inscriptions, activation et ouverture contrôlée de Foodiz"
+      subtitle="Pré-inscriptions, activation et ouverture contrôlée de Weello"
     >
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {cards.map((card) => (

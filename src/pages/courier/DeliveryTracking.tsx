@@ -134,7 +134,7 @@ export default function DeliveryTrackingPage() {
         });
         setTracking((current: any) => ({ ...current, current_latitude: position.coords.latitude, current_longitude: position.coords.longitude }));
       } catch {
-        setLocationError("La position n’a pas pu être synchronisée avec Foodiz.");
+        setLocationError("La position n’a pas pu être synchronisée avec Weello.");
       }
     }, () => setLocationError("Activez la localisation pour partager votre progression avec le client."), { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
     return () => navigator.geolocation.clearWatch(watchId);
@@ -153,7 +153,7 @@ export default function DeliveryTrackingPage() {
     : null;
   const currentIndex = STEPS.findIndex((item) => item.key === step);
   const progress = ((currentIndex + 1) / STEPS.length) * 100;
-  const clientName = order?.client?.display_name || order?.client?.first_name || "Client Foodiz";
+  const clientName = order?.client?.display_name || order?.client?.first_name || "Client Weello";
   const restaurantAddress = useMemo(() => [order?.restaurant?.address, order?.restaurant?.postal_code, order?.restaurant?.city].filter(Boolean).join(", "), [order]);
 
   const updateStep = async (next: DeliveryStep) => {
@@ -303,7 +303,7 @@ export default function DeliveryTrackingPage() {
               </p>
             )}
             <p className="mt-3 text-[10px] leading-relaxed text-foodiz-gray">
-              Règles Foodiz : +10 min = -0,50 €, +15 min = -1 €, +20 min = -2 € et priorité réduite.
+              Règles Weello : +10 min = -0,50 €, +15 min = -1 €, +20 min = -2 € et priorité réduite.
             </p>
           </div>
         </section>

@@ -13,7 +13,7 @@ export default function AdminMarketingCampaigns() {
     opens: campaigns.reduce((sum, campaign) => sum + Number(campaign.opened_count || 0), 0),
     conversions: campaigns.reduce((sum, campaign) => sum + Number(campaign.converted_orders_count || 0), 0),
   }), [campaigns]);
-  return <AdminShell title="Campagnes Foodiz+" subtitle="Performance réelle des notifications partenaires et conversions attribuées">
+  return <AdminShell title="Campagnes Weello+" subtitle="Performance réelle des notifications partenaires et conversions attribuées">
     <section className="grid gap-4 md:grid-cols-4">{[
       ["Campagnes", stats.campaigns, Megaphone, "text-foodiz-gold"],
       ["Clients touchés", stats.recipients, Users, "text-foodiz-cream"],

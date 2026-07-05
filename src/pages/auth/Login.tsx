@@ -68,8 +68,8 @@ export default function LoginPage() {
         await supabase.auth.signOut();
         setPrelaunchNotice(
           launchStatus.role === "client"
-            ? "Foodiz mijote son arrivée dans votre ville 🍽️ Vous serez informé par e-mail dès le lancement. En attendant, retrouvez les coulisses gourmandes sur Instagram @foodiz_off."
-            : "Votre espace professionnel est bien préparé, mais il reste verrouillé jusqu’à la validation de votre dossier et l’ouverture pilote de votre ville par Foodiz.",
+            ? "Weello mijote son arrivée dans votre ville 🍽️ Vous serez informé par e-mail dès l’ouverture du service dans votre secteur."
+            : "Votre espace professionnel est bien préparé, mais il reste verrouillé jusqu’à la validation de votre dossier et l’ouverture pilote de votre ville par Weello.",
         );
         setLoading(false);
         return;
@@ -94,7 +94,7 @@ export default function LoginPage() {
           <ChevronLeft size={18} /> Retour
         </button>
         <div className="flex flex-col items-center">
-          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="w-64 max-w-full h-auto rounded-2xl" />
+          <img src="/images/weello-wordmark.png" alt="Weello" className="w-64 max-w-full h-auto rounded-2xl" />
           <p className="text-foodiz-gray text-[10px] mt-3 tracking-widest uppercase">{roleLabel}</p>
         </div>
       </div>

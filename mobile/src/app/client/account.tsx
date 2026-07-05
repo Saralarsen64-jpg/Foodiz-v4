@@ -1,29 +1,29 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { Alert, Text } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizLegalLinks,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloLegalLinks,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { useAuth } from '@/providers/auth-provider';
-import { foodizApi } from '@/lib/api';
+import { weelloApi } from '@/lib/api';
 
 export default function ClientAccountScreen() {
   const { profile, signOut } = useAuth();
   const confirmDeletion = () => {
     Alert.alert(
       'Supprimer définitivement le compte',
-      'Cette action est irréversible et supprimera vos données Foodiz.',
+      'Cette action est irréversible et supprimera vos données Weello.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Supprimer',
           style: 'destructive',
-          onPress: () => void foodizApi('delete-account', { method: 'POST' })
+          onPress: () => void weelloApi('delete-account', { method: 'POST' })
             .then(() => signOut())
             .catch((error) => Alert.alert('Suppression impossible', error instanceof Error ? error.message : 'Réessayez plus tard.')),
         },
@@ -31,22 +31,27 @@ export default function ClientAccountScreen() {
     );
   };
   return (
-    <FoodizScreen>
-      <FoodizBrand subtitle="Mon compte" />
-      <FoodizCard>
-        <Text style={foodizText.heading}>
+    <WeelloScreen>
+      <WeelloBrand subtitle="Mon compte" />
+      <WeelloCard>
+        <Text style={weelloText.heading}>
           {profile?.full_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()}
         </Text>
-        <Text style={foodizText.body}>{profile?.email}</Text>
-        <Text style={foodizText.body}>{profile?.city || 'Ville non renseignée'}</Text>
-      </FoodizCard>
-      <FoodizButton
+        <Text style={weelloText.body}>{profile?.email}</Text>
+        <Text style={weelloText.body}>{profile?.city || 'Ville non renseignée'}</Text>
+      </WeelloCard>
+      <WeelloButton
         label="Gérer mon adresse de livraison"
         onPress={() => router.push('/client/address')}
       />
-      <FoodizButton label="Se déconnecter" onPress={() => void signOut()} secondary />
-      <FoodizButton label="Supprimer définitivement mon compte" onPress={confirmDeletion} secondary />
-      <FoodizLegalLinks />
-    </FoodizScreen>
+      <WeelloButton
+        label="Centre d’aide Weello"
+        onPress={() => router.push('/support' as Href)}
+        secondary
+      />
+      <WeelloButton label="Se déconnecter" onPress={() => void signOut()} secondary />
+      <WeelloButton label="Supprimer définitivement mon compte" onPress={confirmDeletion} secondary />
+      <WeelloLegalLinks />
+    </WeelloScreen>
   );
 }

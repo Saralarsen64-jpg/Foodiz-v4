@@ -152,7 +152,7 @@ const handler: Handler = async (event) => {
     await adminSupabase.from("marketing_campaigns").update({ status: "sent", sent_at: now, recipient_count: delivered }).eq("id", campaign.id);
     return json(200, { campaignId: campaign.id, recipientCount: delivered, usage: { monthly: usage.monthly + 1, weekly: usage.weekly + 1 } });
   } catch (error) {
-    console.error("Foodiz+ campaign error", error);
+    console.error("Weello+ campaign error", error);
     return json(500, { error: "Campaign operation failed" });
   }
 };

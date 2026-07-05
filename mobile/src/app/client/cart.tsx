@@ -2,11 +2,11 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizButton,
-  FoodizCard,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloButton,
+  WeelloCard,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { useCart } from '@/providers/cart-provider';
 import { colors } from '@/theme/colors';
 
@@ -21,25 +21,25 @@ export default function CartScreen() {
   } = useCart();
 
   return (
-    <FoodizScreen>
+    <WeelloScreen>
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Continuer mes achats</Text>
       </Pressable>
-      <Text style={foodizText.title}>Mon panier</Text>
-      <Text style={foodizText.body}>{restaurantName}</Text>
+      <Text style={weelloText.title}>Mon panier</Text>
+      <Text style={weelloText.body}>{restaurantName}</Text>
 
       {items.length === 0 ? (
-        <FoodizCard>
-          <Text style={foodizText.heading}>Votre panier est vide</Text>
-          <Text style={foodizText.body}>Ajoutez des produits pour commencer.</Text>
-        </FoodizCard>
+        <WeelloCard>
+          <Text style={weelloText.heading}>Votre panier est vide</Text>
+          <Text style={weelloText.body}>Ajoutez des produits pour commencer.</Text>
+        </WeelloCard>
       ) : (
         items.map((item) => (
-          <FoodizCard key={item.productId}>
+          <WeelloCard key={item.productId}>
             <View style={styles.row}>
               <View style={styles.name}>
-                <Text style={foodizText.heading}>{item.name}</Text>
-                <Text style={foodizText.body}>
+                <Text style={weelloText.heading}>{item.name}</Text>
+                <Text style={weelloText.body}>
                   {(item.clientPriceCents / 100).toFixed(2)} € l’unité
                 </Text>
               </View>
@@ -60,31 +60,31 @@ export default function CartScreen() {
                 <Text style={styles.quantityLabel}>+</Text>
               </Pressable>
             </View>
-          </FoodizCard>
+          </WeelloCard>
         ))
       )}
 
       {items.length > 0 ? (
         <>
-          <FoodizCard>
+          <WeelloCard>
             <View style={styles.row}>
-              <Text style={foodizText.heading}>
+              <Text style={weelloText.heading}>
                 Sous-total articles ({itemCount})
               </Text>
               <Text style={styles.total}>{(subtotalCents / 100).toFixed(2)} €</Text>
             </View>
-            <Text style={foodizText.body}>
+            <Text style={weelloText.body}>
               Les frais de service et de livraison seront calculés par le serveur à l’étape suivante.
             </Text>
-          </FoodizCard>
-          <FoodizButton
+          </WeelloCard>
+          <WeelloButton
             label="Vérifier et payer"
             onPress={() => router.push('/client/checkout')}
           />
-          <FoodizButton label="Vider le panier" onPress={clear} secondary />
+          <WeelloButton label="Vider le panier" onPress={clear} secondary />
         </>
       ) : null}
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 

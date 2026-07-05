@@ -1,10 +1,10 @@
 import * as Location from 'expo-location';
 
-import { foodizApi } from '@/lib/api';
+import { weelloApi } from '@/lib/api';
 
 export async function updateCourierPresence(online: boolean) {
   if (!online) {
-    return foodizApi<{ online: boolean }>('courier-presence', {
+    return weelloApi<{ online: boolean }>('courier-presence', {
       method: 'POST',
       body: JSON.stringify({ online: false }),
     });
@@ -21,7 +21,7 @@ export async function updateCourierPresence(online: boolean) {
     throw new Error('La précision GPS est insuffisante. Placez-vous à l’extérieur puis réessayez.');
   }
 
-  return foodizApi<{ online: boolean }>('courier-presence', {
+  return weelloApi<{ online: boolean }>('courier-presence', {
     method: 'POST',
     body: JSON.stringify({
       online: true,

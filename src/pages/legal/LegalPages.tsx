@@ -13,9 +13,9 @@ type LegalPageKind = "notice" | "cgu" | "cgv" | "privacy" | "cookies";
 
 const LEGAL_UPDATED_AT = "24 juin 2026";
 
-const FOODIZ_LEGAL_IDENTITY = {
-  brand: "Foodiz",
-  companyName: "Sara Larsen — Foodiz",
+const WEELLO_LEGAL_IDENTITY = {
+  brand: "Weello",
+  companyName: "Sara Larsen — Weello",
   legalForm: "Entrepreneur Individuel (EI)",
   entrepreneur: "Sara Larsen",
   shareCapital: "Non applicable — entrepreneur individuel",
@@ -25,7 +25,7 @@ const FOODIZ_LEGAL_IDENTITY = {
   rcs: "Non renseigné / non applicable selon immatriculation",
   vat: "TVA non applicable, article 293 B du Code général des impôts.",
   publicationDirector: "Sara Larsen",
-  email: "contact@foodiz.co",
+  email: "contact@weello.co",
   host: "Vercel Inc. / Supabase — informations hébergeur exactes à compléter avant lancement",
 };
 
@@ -68,7 +68,7 @@ function LegalShell({
             Retour
           </button>
           <Link to="/waitlist" className="text-sm font-black italic text-foodiz-gold">
-            Foodiz
+            Weello
           </Link>
         </div>
       </header>
@@ -129,7 +129,7 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 function WarningBlock() {
   return (
     <div className="rounded-[1.4rem] border border-amber-300/25 bg-amber-300/[0.06] p-4 text-xs leading-6 text-amber-100/90">
-      Ces documents constituent une base opérationnelle Foodiz. Les informations d’identité de la société, de l’hébergement,
+      Ces documents constituent une base opérationnelle Weello. Les informations d’identité de la société, de l’hébergement,
       de l’hébergement, du médiateur de la consommation et les conditions tarifaires définitives doivent être complétées puis validées avant
       le lancement public.
     </div>
@@ -142,28 +142,28 @@ export function LegalNoticePage() {
       kind="notice"
       eyebrow="Transparence"
       title="Mentions légales"
-      intro="Les informations officielles permettant d’identifier l’éditeur du service Foodiz."
+      intro="Les informations officielles permettant d’identifier l’éditeur du service Weello."
       icon={<Scale size={28} />}
     >
       <WarningBlock />
       <Block title="Éditeur du service">
-        <p>Nom commercial : {FOODIZ_LEGAL_IDENTITY.brand}</p>
-        <p>Identité professionnelle : {FOODIZ_LEGAL_IDENTITY.companyName}</p>
-        <p>Forme juridique : {FOODIZ_LEGAL_IDENTITY.legalForm}</p>
-        <p>Entrepreneur individuel : {FOODIZ_LEGAL_IDENTITY.entrepreneur}</p>
-        <p>Capital social : {FOODIZ_LEGAL_IDENTITY.shareCapital}</p>
-        <p>Adresse professionnelle : {FOODIZ_LEGAL_IDENTITY.registeredOffice}</p>
-        <p>SIRET : {FOODIZ_LEGAL_IDENTITY.siret}</p>
-        <p>SIREN : {FOODIZ_LEGAL_IDENTITY.siren}</p>
-        <p>RCS/RM : {FOODIZ_LEGAL_IDENTITY.rcs}</p>
-        <p>TVA : {FOODIZ_LEGAL_IDENTITY.vat}</p>
+        <p>Nom commercial : {WEELLO_LEGAL_IDENTITY.brand}</p>
+        <p>Identité professionnelle : {WEELLO_LEGAL_IDENTITY.companyName}</p>
+        <p>Forme juridique : {WEELLO_LEGAL_IDENTITY.legalForm}</p>
+        <p>Entrepreneur individuel : {WEELLO_LEGAL_IDENTITY.entrepreneur}</p>
+        <p>Capital social : {WEELLO_LEGAL_IDENTITY.shareCapital}</p>
+        <p>Adresse professionnelle : {WEELLO_LEGAL_IDENTITY.registeredOffice}</p>
+        <p>SIRET : {WEELLO_LEGAL_IDENTITY.siret}</p>
+        <p>SIREN : {WEELLO_LEGAL_IDENTITY.siren}</p>
+        <p>RCS/RM : {WEELLO_LEGAL_IDENTITY.rcs}</p>
+        <p>TVA : {WEELLO_LEGAL_IDENTITY.vat}</p>
       </Block>
       <Block title="Responsable de publication et contact">
-        <p>Directeur ou directrice de la publication : {FOODIZ_LEGAL_IDENTITY.publicationDirector}</p>
-        <p>Contact : <a className="text-foodiz-gold" href={`mailto:${FOODIZ_LEGAL_IDENTITY.email}`}>{FOODIZ_LEGAL_IDENTITY.email}</a></p>
+        <p>Directeur ou directrice de la publication : {WEELLO_LEGAL_IDENTITY.publicationDirector}</p>
+        <p>Contact : <a className="text-foodiz-gold" href={`mailto:${WEELLO_LEGAL_IDENTITY.email}`}>{WEELLO_LEGAL_IDENTITY.email}</a></p>
       </Block>
       <Block title="Hébergement">
-        <p>{FOODIZ_LEGAL_IDENTITY.host}</p>
+        <p>{WEELLO_LEGAL_IDENTITY.host}</p>
         <p>
           L’application utilise également Supabase pour l’authentification, la base de données et le stockage sécurisé de
           certains documents nécessaires à la validation des partenaires et livreurs.
@@ -178,27 +178,27 @@ export function TermsOfUsePage() {
     <LegalShell
       kind="cgu"
       eyebrow="Conditions d’utilisation"
-      title="CGU Foodiz"
+      title="CGU Weello"
       intro="Les règles d’accès et d’utilisation du site, de l’application mobile et des espaces client, partenaire, livreur et administrateur."
       icon={<FileCheck2 size={28} />}
     >
       <WarningBlock />
       <Block title="Objet">
         <p>
-          Foodiz est une plateforme de mise en relation permettant aux clients de commander auprès de commerces locaux,
-          restaurants ou enseignes partenaires, avec une livraison réalisée par des livreurs indépendants validés par Foodiz.
+          Weello est une plateforme de mise en relation permettant aux clients de commander auprès de commerces locaux,
+          restaurants ou enseignes partenaires, avec une livraison réalisée par des livreurs indépendants validés par Weello.
         </p>
       </Block>
       <Block title="Accès avant lancement">
         <p>
-          Tant que Foodiz n’est pas officiellement lancé dans une ville, les clients peuvent se préinscrire et seront informés
+          Tant que Weello n’est pas officiellement lancé dans une ville, les clients peuvent se préinscrire et seront informés
           par email du lancement. Les livreurs et partenaires peuvent déposer un dossier, mais aucun accès opérationnel,
-          aucune course et aucun revenu ne sont ouverts sans validation préalable par Foodiz.
+          aucune course et aucun revenu ne sont ouverts sans validation préalable par Weello.
         </p>
       </Block>
       <Block title="Compte utilisateur">
         <p>
-          Chaque utilisateur doit fournir des informations exactes et maintenir la confidentialité de ses identifiants. Foodiz
+          Chaque utilisateur doit fournir des informations exactes et maintenir la confidentialité de ses identifiants. Weello
           peut suspendre un compte en cas d’usage frauduleux, de fausse déclaration, d’usurpation d’identité ou de non-respect
           des règles de la plateforme.
         </p>
@@ -206,13 +206,13 @@ export function TermsOfUsePage() {
       <Block title="Partenaires et livreurs">
         <p>
           Les partenaires et livreurs restent responsables de leurs obligations professionnelles, fiscales, sociales,
-          assurantielles et réglementaires. Les documents transmis à Foodiz servent à vérifier l’éligibilité opérationnelle
+          assurantielles et réglementaires. Les documents transmis à Weello servent à vérifier l’éligibilité opérationnelle
           avant activation.
         </p>
       </Block>
       <Block title="Support et réclamations">
         <p>
-          Les demandes doivent être transmises via le centre d’aide Foodiz. Les utilisateurs s’engagent à fournir des
+          Les demandes doivent être transmises via le centre d’aide Weello. Les utilisateurs s’engagent à fournir des
           informations utiles, sincères et non abusives afin de faciliter le traitement du dossier.
         </p>
       </Block>
@@ -225,8 +225,8 @@ export function TermsOfSalePage() {
     <LegalShell
       kind="cgv"
       eyebrow="Vente en ligne"
-      title="CGV Foodiz"
-      intro="Les conditions de commande, paiement, livraison, annulation, remboursement et avantages Foodiz applicables aux clients."
+      title="CGV Weello"
+      intro="Les conditions de commande, paiement, livraison, annulation, remboursement et avantages Weello applicables aux clients."
       icon={<ShieldCheck size={28} />}
     >
       <WarningBlock />
@@ -234,12 +234,12 @@ export function TermsOfSalePage() {
         <p>
           Le client sélectionne les produits proposés par un établissement partenaire, vérifie le panier, les frais applicables
           et confirme la commande avec paiement sécurisé. La commande devient ferme après confirmation du paiement et acceptation
-          par les systèmes Foodiz et/ou l’établissement concerné.
+          par les systèmes Weello et/ou l’établissement concerné.
         </p>
       </Block>
       <Block title="Prix et frais">
         <p>
-          Les prix des produits sont indiqués en euros toutes taxes comprises lorsque cela est applicable. Foodiz peut appliquer
+          Les prix des produits sont indiqués en euros toutes taxes comprises lorsque cela est applicable. Weello peut appliquer
           des frais de service et des frais de livraison, notamment selon la distance réelle calculée par le fournisseur de
           routage serveur. Les éventuelles promotions ou points de fidélité sont affichés avant paiement.
         </p>
@@ -253,19 +253,19 @@ export function TermsOfSalePage() {
       </Block>
       <Block title="Annulation, remboursement et avoirs">
         <p>
-          Les conditions d’annulation dépendent de l’avancement de la commande. En cas d’incident confirmé, Foodiz peut proposer
-          un remboursement, un geste commercial ou une compensation en points Foodiz selon le cas traité par le support.
+          Les conditions d’annulation dépendent de l’avancement de la commande. En cas d’incident confirmé, Weello peut proposer
+          un remboursement, un geste commercial ou une compensation en points Weello selon le cas traité par le support.
         </p>
       </Block>
       <Block title="Droit de rétractation">
         <p>
           Les produits alimentaires préparés ou périssables peuvent être exclus du droit de rétractation dans les conditions
-          prévues par le droit applicable. Les cas spécifiques doivent être analysés par le support Foodiz.
+          prévues par le droit applicable. Les cas spécifiques doivent être analysés par le support Weello.
         </p>
       </Block>
       <Block title="Médiation de la consommation">
         <p>
-          Les coordonnées du médiateur de la consommation choisi par Foodiz doivent être ajoutées avant le lancement public.
+          Les coordonnées du médiateur de la consommation choisi par Weello doivent être ajoutées avant le lancement public.
           Cette information est obligatoire pour les litiges non résolus avec un consommateur.
         </p>
       </Block>
@@ -285,7 +285,7 @@ export function PrivacyPolicyPage() {
       <WarningBlock />
       <Block title="Données collectées">
         <p>
-          Foodiz peut collecter les données d’identification, de contact, d’adresse, de commande, de paiement, de support,
+          Weello peut collecter les données d’identification, de contact, d’adresse, de commande, de paiement, de support,
           de localisation nécessaire à la livraison, ainsi que les documents professionnels transmis par les partenaires et
           livreurs pour validation.
         </p>
@@ -294,19 +294,19 @@ export function PrivacyPolicyPage() {
         <p>
           Les données sont utilisées pour créer et sécuriser les comptes, gérer les préinscriptions, traiter les commandes,
           calculer les frais et estimations de livraison, assurer le support, prévenir la fraude, gérer les obligations
-          comptables, administrer les validations professionnelles et informer les utilisateurs du lancement Foodiz.
+          comptables, administrer les validations professionnelles et informer les utilisateurs du lancement Weello.
         </p>
       </Block>
       <Block title="Bases légales">
         <p>
-          Selon le traitement, Foodiz s’appuie sur l’exécution du contrat ou de mesures précontractuelles, le respect
+          Selon le traitement, Weello s’appuie sur l’exécution du contrat ou de mesures précontractuelles, le respect
           d’obligations légales, l’intérêt légitime de sécurité et de prévention de la fraude, et le consentement lorsque
           celui-ci est requis.
         </p>
       </Block>
       <Block title="Destinataires et sous-traitants">
         <p>
-          Les données peuvent être transmises uniquement aux personnes habilitées chez Foodiz, aux prestataires techniques
+          Les données peuvent être transmises uniquement aux personnes habilitées chez Weello, aux prestataires techniques
           nécessaires au service, aux prestataires de paiement, d’emailing, d’hébergement et, lorsque nécessaire, aux partenaires
           ou livreurs strictement concernés par une commande.
         </p>
@@ -322,7 +322,7 @@ export function PrivacyPolicyPage() {
         <p>
           Les utilisateurs peuvent demander l’accès, la rectification, l’effacement, la limitation, l’opposition ou la portabilité
           de leurs données lorsque ces droits s’appliquent. Contact :{" "}
-          <a className="text-foodiz-gold" href={`mailto:${FOODIZ_LEGAL_IDENTITY.email}`}>{FOODIZ_LEGAL_IDENTITY.email}</a>.
+          <a className="text-foodiz-gold" href={`mailto:${WEELLO_LEGAL_IDENTITY.email}`}>{WEELLO_LEGAL_IDENTITY.email}</a>.
         </p>
       </Block>
     </LegalShell>
@@ -341,7 +341,7 @@ export function CookiesPolicyPage() {
       <WarningBlock />
       <Block title="Cookies nécessaires">
         <p>
-          Foodiz peut utiliser des traceurs nécessaires au fonctionnement du service : session, sécurité, authentification,
+          Weello peut utiliser des traceurs nécessaires au fonctionnement du service : session, sécurité, authentification,
           panier, préférences essentielles et prévention de la fraude. Ces traceurs ne nécessitent pas toujours un consentement.
         </p>
       </Block>
@@ -353,7 +353,7 @@ export function CookiesPolicyPage() {
       </Block>
       <Block title="Gestion du consentement">
         <p>
-          Avant d’ajouter des outils marketing ou analytics avancés, Foodiz devra intégrer un bandeau ou panneau de préférences
+          Avant d’ajouter des outils marketing ou analytics avancés, Weello devra intégrer un bandeau ou panneau de préférences
           permettant d’accepter, refuser ou paramétrer les cookies concernés.
         </p>
       </Block>

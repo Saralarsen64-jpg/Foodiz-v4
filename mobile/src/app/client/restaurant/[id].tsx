@@ -3,13 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { useCart } from '@/providers/cart-provider';
 import { colors } from '@/theme/colors';
 
@@ -19,6 +19,9 @@ type Product = {
   description: string | null;
   category: string;
   client_price_cents: number;
+  original_client_price_cents: number | null;
+  promotion_label: string | null;
+  promotion_ends_at: string | null;
 };
 
 type Restaurant = {
@@ -38,7 +41,7 @@ export default function RestaurantScreen() {
   useEffect(() => {
     if (!id) return;
     let active = true;
-    void foodizApi<{ restaurant: Restaurant; products: Product[] }>(
+    void weelloApi<{ restaurant: Restaurant; products: Product[] }>(
       `client-catalog?restaurantId=${encodeURIComponent(id)}`,
     )
       .then((data) => {
@@ -85,13 +88,13 @@ export default function RestaurantScreen() {
   }
 
   return (
-    <FoodizScreen>
+    <WeelloScreen>
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Retour</Text>
       </Pressable>
-      <FoodizBrand subtitle={restaurant?.cuisine_type || 'Carte Foodiz'} />
-      <Text style={foodizText.title}>{restaurant?.name || 'Établissement'}</Text>
-      <Text style={foodizText.body}>
+      <WeelloBrand subtitle={restaurant?.cuisine_type || 'Carte Weello'} />
+      <Text style={weelloText.title}>{restaurant?.name || 'Établissement'}</Text>
+      <Text style={weelloText.body}>
         {[restaurant?.address, restaurant?.city].filter(Boolean).join(' · ')}
       </Text>
 
@@ -99,29 +102,39 @@ export default function RestaurantScreen() {
         <View key={category} style={styles.category}>
           <Text style={styles.categoryTitle}>{category}</Text>
           {categoryProducts.map((product) => (
-            <FoodizCard key={product.id}>
+            <WeelloCard key={product.id}>
               <View style={styles.row}>
                 <View style={styles.productText}>
-                  <Text style={foodizText.heading}>{product.name}</Text>
-                  <Text style={foodizText.body}>{product.description}</Text>
+                  <Text style={weelloText.heading}>{product.name}</Text>
+                  <Text style={weelloText.body}>{product.description}</Text>
                 </View>
                 <Text style={styles.price}>
                   {(product.client_price_cents / 100).toFixed(2)} €
                 </Text>
               </View>
-              <FoodizButton label="Ajouter au panier" onPress={() => add(product)} secondary />
-            </FoodizCard>
+              {product.original_client_price_cents ? (
+                <View style={styles.offerRow}>
+                  <Text style={styles.offerLabel}>
+                    {product.promotion_label || 'Offre partenaire'}
+                  </Text>
+                  <Text style={styles.originalPrice}>
+                    {(product.original_client_price_cents / 100).toFixed(2)} €
+                  </Text>
+                </View>
+              ) : null}
+              <WeelloButton label="Ajouter au panier" onPress={() => add(product)} secondary />
+            </WeelloCard>
           ))}
         </View>
       ))}
 
       {itemCount > 0 ? (
-        <FoodizButton
+        <WeelloButton
           label={`Voir le panier · ${itemCount} article(s)`}
           onPress={() => router.push('/client/cart')}
         />
       ) : null}
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 
@@ -137,4 +150,21 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 14 },
   productText: { flex: 1, gap: 6 },
   price: { color: colors.gold, fontSize: 18, fontWeight: '900' },
+  offerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  offerLabel: {
+    color: colors.gold,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  originalPrice: {
+    color: colors.muted,
+    fontSize: 13,
+    textDecorationLine: 'line-through',
+  },
 });

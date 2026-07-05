@@ -12,7 +12,7 @@ const AUDIENCES = [
   { id: "inactive_customers", label: "Clients inactifs depuis 30 jours" },
 ];
 
-async function foodizPlusRequest(method = "GET", body?: unknown) {
+async function weelloPlusRequest(method = "GET", body?: unknown) {
   const { data: { session } } = await supabase.auth.getSession();
   const response = await fetch("/api/foodiz-plus", {
     method,
@@ -20,7 +20,7 @@ async function foodizPlusRequest(method = "GET", body?: unknown) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(payload.error || "Foodiz+ indisponible"), { code: payload.error });
+  if (!response.ok) throw Object.assign(new Error(payload.error || "Weello+ indisponible"), { code: payload.error });
   return payload;
 }
 
@@ -44,12 +44,12 @@ export default function PartnerMarketing() {
   const load = async () => {
     setLoading(true);
     try {
-      const payload = await foodizPlusRequest();
+      const payload = await weelloPlusRequest();
       setData(payload);
       setProductId((current) => current || payload.products?.[0]?.id || "");
       setCity((current) => current || payload.restaurant?.city || "");
     } catch {
-      toast.error("Impossible de charger Foodiz+.");
+      toast.error("Impossible de charger Weello+.");
     }
     setLoading(false);
   };
@@ -63,7 +63,7 @@ export default function PartnerMarketing() {
       return;
     }
     if (checkout === "success") {
-      toast.success("Paiement reçu. Activation de Foodiz+ en cours...");
+      toast.success("Paiement reçu. Activation de Weello+ en cours...");
       navigate("/partner/marketing", { replace: true });
       let attempts = 0;
       const refresh = async () => {
@@ -106,7 +106,7 @@ export default function PartnerMarketing() {
     if (!productId) return toast.error("Ajoutez ou choisissez un produit actif.");
     setWorking(true);
     try {
-      const payload = await foodizPlusRequest("POST", { action: "generate", productId, city, audience });
+      const payload = await weelloPlusRequest("POST", { action: "generate", productId, city, audience });
       setSuggestions(payload.suggestions || []);
       setEstimatedRecipients(payload.estimatedRecipientCount || 0);
       if (payload.suggestions?.[0]) {
@@ -121,11 +121,11 @@ export default function PartnerMarketing() {
   };
 
   const send = async () => {
-    if (!activePlan) return toast.error("Un abonnement Foodiz+ actif est nécessaire.");
+    if (!activePlan) return toast.error("Un abonnement Weello+ actif est nécessaire.");
     if (!title.trim() || !message.trim()) return toast.error("Choisissez ou rédigez un message.");
     setWorking(true);
     try {
-      const payload = await foodizPlusRequest("POST", { action: "send", productId, city, audience, title, message, templateKey });
+      const payload = await weelloPlusRequest("POST", { action: "send", productId, city, audience, title, message, templateKey });
       toast.success(`Campagne envoyée à ${payload.recipientCount} client(s).`);
       setSuggestions([]); setEstimatedRecipients(null); setTitle(""); setMessage(""); setTemplateKey("");
       await load();
@@ -137,11 +137,11 @@ export default function PartnerMarketing() {
   };
 
   return <div className="min-h-screen bg-foodiz-black pb-24">
-    <header className="sticky top-0 z-30 border-b border-foodiz-gold/10 bg-foodiz-card px-4 py-3"><div className="mx-auto flex max-w-5xl items-center justify-between"><button onClick={() => navigate("/partner")} className="text-foodiz-gold"><ChevronLeft size={24}/></button><h1 className="foodiz-title text-lg">Foodiz+</h1><div className="w-6"/></div></header>
+    <header className="sticky top-0 z-30 border-b border-foodiz-gold/10 bg-foodiz-card px-4 py-3"><div className="mx-auto flex max-w-5xl items-center justify-between"><button onClick={() => navigate("/partner")} className="text-foodiz-gold"><ChevronLeft size={24}/></button><h1 className="foodiz-title text-lg">Weello+</h1><div className="w-6"/></div></header>
     <main className="mx-auto max-w-5xl space-y-8 px-4 py-6">
-      <section className="foodiz-card border-foodiz-gold/20 bg-[linear-gradient(135deg,rgba(216,168,79,0.14),rgba(17,17,17,0.97)_38%,#050505)] p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-foodiz-gold">Marketing local intelligent</p><h2 className="foodiz-title mt-2 text-3xl">Créez l'envie, sans coût d'IA</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-foodiz-gray">Foodiz compose vos messages à partir du produit, de la ville et de votre audience. Une campagne consomme une unité, quel que soit le nombre de clients éligibles.</p></div><Sparkles className="shrink-0 text-foodiz-gold" size={28}/></div></section>
+      <section className="foodiz-card border-foodiz-gold/20 bg-[linear-gradient(135deg,rgba(216,168,79,0.14),rgba(17,17,17,0.97)_38%,#050505)] p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-foodiz-gold">Marketing local intelligent</p><h2 className="foodiz-title mt-2 text-3xl">Créez l'envie, sans coût d'IA</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-foodiz-gray">Weello compose vos messages à partir du produit, de la ville et de votre audience. Une campagne consomme une unité, quel que soit le nombre de clients éligibles.</p></div><Sparkles className="shrink-0 text-foodiz-gold" size={28}/></div></section>
 
-      {loading ? <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement de Foodiz+...</div> : <>
+      {loading ? <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement de Weello+...</div> : <>
         <section><div className="mb-4 flex items-center justify-between"><h2 className="foodiz-title text-xl">Votre forfait</h2>{activePlan && <span className="rounded-full border border-foodiz-green/20 bg-foodiz-green/5 px-3 py-1 text-[10px] uppercase text-foodiz-green">Actif</span>}</div>
           {activePlan ? <div className="foodiz-card border-foodiz-gold/20 p-5"><div className="grid gap-4 md:grid-cols-3"><div><p className="text-xs text-foodiz-gray">Forfait</p><p className="mt-1 font-semibold text-foodiz-cream">{activePlan.name} · {data.subscription.billing_period === "yearly" ? "annuel" : "mensuel"}</p></div><div><p className="text-xs text-foodiz-gray">Ce mois</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.monthly} / {activePlan.monthly_campaign_limit} campagnes</p></div><div><p className="text-xs text-foodiz-gray">Cette semaine</p><p className="mt-1 font-semibold text-foodiz-gold">{data.usage.weekly} / {activePlan.weekly_campaign_limit} campagnes</p></div></div><button onClick={openBillingPortal} disabled={working} className="foodiz-btn-outline mt-5 flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-40"><ExternalLink size={14}/>Gérer mon abonnement</button></div> : <div className="foodiz-card border-foodiz-gold/20 p-5"><p className="text-sm font-semibold text-foodiz-cream">Choisissez votre formule</p><p className="mt-2 text-xs text-foodiz-gray">Le paiement et la gestion de l'abonnement sont sécurisés par Stripe.</p><div className="mt-4 inline-flex rounded-full border border-foodiz-gold/20 bg-foodiz-black p-1"><button onClick={() => setBillingPeriod("monthly")} className={`rounded-full px-4 py-2 text-xs ${billingPeriod === "monthly" ? "bg-foodiz-gold text-foodiz-black" : "text-foodiz-gray"}`}>Mensuel</button><button onClick={() => setBillingPeriod("yearly")} className={`rounded-full px-4 py-2 text-xs ${billingPeriod === "yearly" ? "bg-foodiz-gold text-foodiz-black" : "text-foodiz-gray"}`}>Annuel · -15 %</button></div></div>}
           <div className="mt-4 grid gap-3 md:grid-cols-3">{(data.plans || []).map((plan: any) => { const isCurrent = activePlan?.id === plan.id; const price = billingPeriod === "yearly" ? plan.yearly_price_cents : plan.monthly_price_cents; return <article key={plan.id} className={`foodiz-card p-5 ${plan.id === "boost" ? "border-foodiz-gold/40 bg-foodiz-gold/5" : "border-foodiz-gold/10"}`}><div className="flex items-center justify-between"><p className="font-semibold text-foodiz-cream">{plan.name}</p>{plan.id === "boost" ? <Crown size={17} className="text-foodiz-gold"/> : <Landmark size={17} className="text-foodiz-gold"/>}</div><p className="mt-4 text-2xl font-serif italic text-foodiz-gold">{(price / 100).toFixed(2)} €<span className="text-xs not-italic text-foodiz-gray"> / {billingPeriod === "yearly" ? "an" : "mois"}</span></p><p className="mt-2 text-xs text-foodiz-gray">{plan.monthly_campaign_limit} campagnes/mois · {plan.weekly_campaign_limit}/semaine</p>{billingPeriod === "yearly" && <p className="mt-3 text-[10px] text-foodiz-green">Deux mois environ économisés</p>}<button onClick={() => subscribe(plan.id)} disabled={Boolean(activePlan) || Boolean(subscribingPlan)} className={`${plan.id === "boost" ? "foodiz-btn" : "foodiz-btn-outline"} mt-4 w-full py-2 text-xs disabled:opacity-40`}>{isCurrent ? "Forfait actuel" : subscribingPlan === plan.id ? "Ouverture de Stripe..." : activePlan ? "Gérer pour changer" : "Choisir ce forfait"}</button></article>; })}</div>

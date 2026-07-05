@@ -1,28 +1,28 @@
 import { Text } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { useAuth } from '@/providers/auth-provider';
 
 export default function UnsupportedRoleScreen() {
   const { profile, signOut } = useAuth();
   return (
-    <FoodizScreen>
-      <FoodizBrand subtitle="Application mobile" />
-      <FoodizCard>
-        <Text style={foodizText.heading}>Interface web requise</Text>
-        <Text style={foodizText.body}>
+    <WeelloScreen>
+      <WeelloBrand subtitle="Application mobile" />
+      <WeelloCard>
+        <Text style={weelloText.heading}>Interface web requise</Text>
+        <Text style={weelloText.body}>
           {profile?.role === 'admin'
-            ? 'L’administration Foodiz reste volontairement disponible uniquement sur le portail web sécurisé.'
+            ? 'L’administration Weello reste volontairement disponible uniquement sur le portail web sécurisé.'
             : `Le compte « ${profile?.role || 'inconnu'} » ne peut pas accéder à cet espace mobile.`}
         </Text>
-      </FoodizCard>
-      <FoodizButton label="Se déconnecter" onPress={() => void signOut()} secondary />
-    </FoodizScreen>
+      </WeelloCard>
+      <WeelloButton label="Se déconnecter" onPress={() => void signOut()} secondary />
+    </WeelloScreen>
   );
 }

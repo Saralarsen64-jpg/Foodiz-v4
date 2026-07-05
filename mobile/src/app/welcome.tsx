@@ -1,31 +1,31 @@
 import { router } from 'expo-router';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizActionCard,
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizHero,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloActionCard,
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloHero,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { colors } from '@/theme/colors';
 
 type PublicRole = 'client' | 'courier' | 'partner';
 
-const ROLE_CARDS: Array<{
+const ROLE_CARDS: {
   role: PublicRole;
   icon: string;
   title: string;
   description: string;
   promise: string;
-}> = [
+}[] = [
   {
     role: 'client',
     icon: '🍽️',
     title: 'Client',
-    description: 'Commander, suivre ma livraison et profiter du Foodiz Club.',
+    description: 'Commander, suivre ma livraison et profiter du Weello Club.',
     promise: 'Une expérience simple, gourmande et suivie en direct.',
   },
   {
@@ -33,14 +33,14 @@ const ROLE_CARDS: Array<{
     icon: '🚲',
     title: 'Livreur',
     description: 'Me connecter à mon espace courses, GPS, gains et disponibilités.',
-    promise: 'Accès aux courses après validation du dossier Foodiz.',
+    promise: 'Accès aux courses après validation du dossier Weello.',
   },
   {
     role: 'partner',
     icon: '🏪',
     title: 'Partenaire',
     description: 'Gérer les commandes, la carte, le dossier et les revenus.',
-    promise: 'Un cockpit clair pour vendre localement avec Foodiz.',
+    promise: 'Un cockpit clair pour vendre localement avec Weello.',
   },
 ];
 
@@ -53,22 +53,22 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <FoodizScreen>
-      <FoodizBrand subtitle="Une seule app, trois espaces Foodiz" />
-      <FoodizHero
+    <WeelloScreen>
+      <WeelloBrand subtitle="Une seule app, trois espaces Weello" />
+      <WeelloHero
         eyebrow="Bienvenue"
         title="Vous êtes ?"
-        body="Choisissez votre espace avant de vous connecter. Foodiz adapte l’expérience, les écrans et les permissions à votre rôle.">
+        body="Choisissez votre espace avant de vous connecter. Weello adapte l’expérience, les écrans et les permissions à votre rôle.">
         <View style={styles.heroNote}>
           <Text style={styles.heroNoteText}>
             L’admin reste sur le portail web sécurisé, pas dans l’app mobile.
           </Text>
         </View>
-      </FoodizHero>
+      </WeelloHero>
 
       <View style={styles.roles}>
         {ROLE_CARDS.map((item) => (
-          <FoodizActionCard
+          <WeelloActionCard
             key={item.role}
             icon={item.icon}
             title={item.title}
@@ -78,9 +78,9 @@ export default function WelcomeScreen() {
         ))}
       </View>
 
-      <FoodizCard>
+      <WeelloCard>
         <Text style={styles.kicker}>POURQUOI CE CHOIX ?</Text>
-        <Text style={foodizText.heading}>Plus simple pour vous, plus sécurisé pour Foodiz.</Text>
+        <Text style={weelloText.heading}>Plus simple pour vous, plus sécurisé pour Weello.</Text>
         <View style={styles.promiseList}>
           {ROLE_CARDS.map((item) => (
             <Text key={item.role} style={styles.promise}>
@@ -88,16 +88,14 @@ export default function WelcomeScreen() {
             </Text>
           ))}
         </View>
-      </FoodizCard>
+      </WeelloCard>
 
-      <FoodizButton
-        label="Je veux me préinscrire"
+      <WeelloButton
+        label="Créer mon compte client"
         secondary
-        onPress={() => {
-          void Linking.openURL('https://www.foodiz.co');
-        }}
+        onPress={() => router.push('/signup')}
       />
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 

@@ -72,7 +72,7 @@ export default function PartnerMenu() {
         <div className="foodiz-card p-4 bg-foodiz-gold/5 border-foodiz-gold/20 flex gap-3">
           <GoldIcon icon={Info} size={20} className="shrink-0" />
           <p className="text-xs text-foodiz-cream/80 leading-relaxed">
-            <span className="text-foodiz-gold font-bold">Rappel Foodiz :</span> vos prix affichés doivent rester identiques à ceux de votre carte physique. Le supplément Foodiz est ajouté uniquement côté client.
+            <span className="text-foodiz-gold font-bold">Rappel Weello :</span> vos prix affichés doivent rester identiques à ceux de votre carte physique. Le supplément Weello est ajouté uniquement côté client.
           </p>
         </div>
 

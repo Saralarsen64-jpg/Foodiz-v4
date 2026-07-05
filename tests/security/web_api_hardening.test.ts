@@ -9,7 +9,7 @@ const financialDocumentApi = readFileSync(new URL("../../netlify/functions/finan
 const paymentIntentApi = readFileSync(new URL("../../netlify/functions/create-payment-intent.ts", import.meta.url), "utf8");
 const stripeWebhookApi = readFileSync(new URL("../../netlify/functions/stripe-webhook.ts", import.meta.url), "utf8");
 
-test("le web Foodiz envoie des headers de sécurité essentiels", () => {
+test("le web Weello envoie des headers de sécurité essentiels", () => {
   assert.match(vercelConfig, /Strict-Transport-Security/);
   assert.match(vercelConfig, /X-Content-Type-Options/);
   assert.match(vercelConfig, /X-Frame-Options/);
@@ -31,11 +31,11 @@ test("les routes API sont non indexables, non cachées et limitées en taille", 
 
 test("le routeur API refuse les origines inconnues sans bloquer l'app mobile", () => {
   assert.match(apiRouter, /DEFAULT_TRUSTED_ORIGINS/);
-  assert.match(apiRouter, /FOODIZ_ALLOWED_ORIGINS/);
+  assert.match(apiRouter, /WEELLO_ALLOWED_ORIGINS/);
   assert.match(apiRouter, /requestHasTrustedOrigin/);
   assert.match(apiRouter, /if \(!origin\) return true/);
   assert.match(apiRouter, /ORIGIN_FORBIDDEN/);
-  assert.match(apiRouter, /https:\/\/www\.foodiz\.co/);
+  assert.match(apiRouter, /https:\/\/weello\.app/);
 });
 
 test("le routeur API limite les rafales d'appels sur les routes sensibles", () => {

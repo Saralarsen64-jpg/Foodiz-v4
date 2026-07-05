@@ -9,7 +9,7 @@ export default function PrelaunchConfirmed() {
     <main className="min-h-screen kraft-paper-bg px-5 py-10 flex items-center justify-center text-foodiz-black">
       <section className="w-full max-w-xl rounded-[2rem] border border-black/15 bg-[#f8ead2]/90 shadow-[0_30px_100px_rgba(0,0,0,.28)] backdrop-blur p-7 sm:p-10 text-center">
         <div className="flex justify-center mb-8">
-          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="w-72 max-w-full h-auto rounded-2xl" />
+          <img src="/images/weello-wordmark.png" alt="Weello" className="w-72 max-w-full h-auto rounded-2xl" />
         </div>
         <div className="mx-auto w-20 h-20 rounded-[1.7rem] bg-black text-foodiz-gold flex items-center justify-center shadow-xl">
           <MailCheck size={36} />
@@ -18,10 +18,10 @@ export default function PrelaunchConfirmed() {
         <h1 className="font-serif text-4xl sm:text-5xl leading-tight mt-3">{courier || partner ? "Votre dossier est transmis." : "Votre pré-inscription est enregistrée."}</h1>
         <p className="mt-5 text-black/65 leading-relaxed">
           {courier
-            ? "Foodiz va vérifier votre identité, votre SIRET et votre justificatif d’activité. Aucune course ni aucun revenu ne seront accessibles avant validation."
+            ? "Weello va vérifier votre identité, votre SIRET et votre justificatif d’activité. Aucune course ni aucun revenu ne seront accessibles avant validation."
             : partner
-              ? "Foodiz va vérifier l’activité, l’assurance et les justificatifs réglementaires applicables. Votre établissement ne pourra pas vendre avant validation par l’équipe Foodiz et l’ouverture de sa ville."
-              : "Foodiz mijote son arrivée dans votre ville. Vous serez informé par e-mail lors du lancement, et vous pouvez suivre les nouvelles sur Instagram @foodiz_off."}
+              ? "Weello va vérifier l’activité, l’assurance et les justificatifs réglementaires applicables. Votre établissement ne pourra pas vendre avant validation par l’équipe Weello et l’ouverture de sa ville."
+              : "Weello mijote son arrivée dans votre ville. Vous serez informé par e-mail lors de l’ouverture dans votre secteur."}
         </p>
         <div className="mt-8 rounded-2xl bg-black/[.06] border border-black/10 p-4 flex items-center gap-3 text-left">
           <Clock3 size={20} className="shrink-0" />

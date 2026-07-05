@@ -5,7 +5,7 @@ import {
   cleanText,
   createLaunchToken,
   normalizeEmail,
-  normalizeFoodizPhone,
+  normalizeWeelloPhone,
   requestFingerprint,
   sendPrelaunchEmail,
   sha256,
@@ -47,7 +47,7 @@ const handler: Handler = async (event) => {
   if (await appIsLaunched()) {
     return {
       statusCode: 409,
-      body: JSON.stringify({ error: "Foodiz est lancé. Utilisez désormais l’inscription classique." }),
+      body: JSON.stringify({ error: "Weello est lancé. Utilisez désormais l’inscription classique." }),
     };
   }
 
@@ -68,7 +68,7 @@ const handler: Handler = async (event) => {
   const lastName = cleanText(input.lastName, 80);
   const email = normalizeEmail(input.email);
   const submittedPhone = cleanText(input.phone, 30);
-  const phone = normalizeFoodizPhone(submittedPhone);
+  const phone = normalizeWeelloPhone(submittedPhone);
   const city = cleanText(input.city, 100);
   const password = String(input.password || "");
   const passwordConfirmation = String(input.passwordConfirmation || "");
@@ -180,7 +180,7 @@ const handler: Handler = async (event) => {
     if (existingProfile || existingPrelaunch) {
       return {
         statusCode: 409,
-        body: JSON.stringify({ error: "Ce numéro de téléphone est déjà associé à un compte Foodiz." }),
+        body: JSON.stringify({ error: "Ce numéro de téléphone est déjà associé à un compte Weello." }),
       };
     }
     if (!authRole) {
@@ -232,9 +232,9 @@ const handler: Handler = async (event) => {
       statusCode: duplicate || duplicatePhone ? 409 : 500,
       body: JSON.stringify({
         error: duplicatePhone
-          ? "Ce numéro de téléphone est déjà associé à un compte Foodiz."
+          ? "Ce numéro de téléphone est déjà associé à un compte Weello."
           : duplicate
-            ? "Cette adresse possède déjà un compte Foodiz."
+            ? "Cette adresse possède déjà un compte Weello."
             : "Impossible de créer votre pré-inscription.",
       }),
     };
@@ -393,7 +393,7 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Votre pré-inscription n’a pas pu être enregistrée." }) };
   }
 
-  const appUrl = (process.env.APP_URL || "https://www.foodiz.co").replace(/\/$/, "");
+  const appUrl = (process.env.APP_URL || "https://weello.app").replace(/\/$/, "");
   const documentUrl = role === "livreur" && courierUploadToken?.raw
     ? `${appUrl}/courier-documents?token=${encodeURIComponent(courierUploadToken.raw)}`
     : role === "partenaire" && partnerUploadToken?.raw
@@ -403,17 +403,17 @@ const handler: Handler = async (event) => {
   try {
     const emailResult = await sendPrelaunchEmail({
       to: email,
-      subject: role === "client" ? "Votre pré-inscription Foodiz est confirmée" : "Votre dossier Foodiz est créé",
+      subject: role === "client" ? "Votre pré-inscription Weello est confirmée" : "Votre dossier Weello est créé",
       headline: role === "client"
-        ? `Bienvenue chez Foodiz, ${firstName}`
+        ? `Bienvenue chez Weello, ${firstName}`
         : role === "livreur"
-          ? "Votre dossier livreur Foodiz est prêt"
-          : "Votre établissement Foodiz est prêt à être vérifié",
+          ? "Votre dossier livreur Weello est prêt"
+          : "Votre établissement Weello est prêt à être vérifié",
       body: role === "client"
-        ? "Votre pré-inscription est bien enregistrée. Vous serez informé par email dès que Foodiz ouvrira dans votre ville. En attendant, vous pouvez suivre les coulisses sur Instagram @foodiz_off."
+        ? "Votre pré-inscription est bien enregistrée. Vous serez informé par email dès que Weello ouvrira dans votre ville."
         : role === "livreur"
-          ? "Votre compte est créé. La prochaine étape consiste à transmettre votre pièce d’identité et votre justificatif officiel d’activité. Sans validation Foodiz, aucune course ni aucun revenu ne seront accessibles."
-          : "Votre établissement est pré-inscrit. Transmettez vos justificatifs professionnels afin que Foodiz puisse vérifier votre activité avant toute activation commerciale.",
+          ? "Votre compte est créé. La prochaine étape consiste à transmettre votre pièce d’identité et votre justificatif officiel d’activité. Sans validation Weello, aucune course ni aucun revenu ne seront accessibles."
+          : "Votre établissement est pré-inscrit. Transmettez vos justificatifs professionnels afin que Weello puisse vérifier votre activité avant toute activation commerciale.",
       actionLabel: documentUrl ? "Transmettre mes justificatifs" : undefined,
       actionUrl: documentUrl || undefined,
       recipientUserId: userId,
@@ -439,7 +439,7 @@ const handler: Handler = async (event) => {
         ? "Votre compte est créé. Transmettez maintenant vos trois justificatifs obligatoires."
         : role === "partenaire"
           ? "Votre établissement est pré-inscrit. Transmettez maintenant les justificatifs obligatoires."
-          : "Votre pré-inscription est bien enregistrée. Foodiz vous informera lors du lancement dans votre ville.",
+          : "Votre pré-inscription est bien enregistrée. Weello vous informera lors du lancement dans votre ville.",
     }),
   };
 };

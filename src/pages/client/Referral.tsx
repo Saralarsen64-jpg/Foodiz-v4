@@ -45,7 +45,7 @@ export default function ReferralPage() {
         <Gift size={32} className="text-foodiz-gold" />
       </div>
       
-      <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Parrainage Foodiz</h1>
+      <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Parrainage Weello</h1>
       <p className="text-foodiz-gray text-sm mb-8 max-w-xs mx-auto">
         Partagez votre code. Le parrainage est validé uniquement après la première commande payée et acceptée de votre filleul. Aucun point n'est crédité à la simple inscription.
       </p>

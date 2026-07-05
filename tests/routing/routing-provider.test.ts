@@ -150,7 +150,7 @@ test("checkout, dispatch et ETA utilisent tous le provider serveur partagé", ()
     assert.match(source, /_lib\/routingProvider\.js/);
   }
   assert.match(checkout, /delivery_route_distance_meters: route\.distanceMeters/);
-  assert.match(checkout, /calculateFoodizOrder\(calculationItems, distanceKm\)/);
+  assert.match(checkout, /calculateWeelloOrder\(calculationItems, distanceKm\)/);
   assert.match(dispatch, /await calculateRoute/);
   assert.match(deliveryAction, /await calculateRoute\(pickupCoordinates, clientCoordinates\)/);
   assert.doesNotMatch(deliveryAction, /router\.project-osrm\.org/);

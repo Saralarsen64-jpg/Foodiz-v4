@@ -44,7 +44,7 @@ const handler: Handler = async (event) => {
     const loadError = areasError || partnersError || couriersError || restaurantsError || partnerDocumentsError || courierDocumentsError;
     if (loadError) {
       console.error("Service area dashboard load failed", loadError);
-      return reply(500, { error: "Impossible de charger les villes Foodiz." });
+      return reply(500, { error: "Impossible de charger les villes Weello." });
     }
 
     return reply(200, {

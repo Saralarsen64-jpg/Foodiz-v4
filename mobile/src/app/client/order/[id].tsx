@@ -1,13 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import {
-  FoodizCard,
-  FoodizScreen,
-  FoodizButton,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloCard,
+  WeelloScreen,
+  WeelloButton,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -117,18 +118,6 @@ function distanceMeters(from: Coordinate, to: Coordinate) {
   return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function projectedProgress(start: Coordinate, end: Coordinate, current: Coordinate) {
-  const vectorLatitude = end.latitude - start.latitude;
-  const vectorLongitude = end.longitude - start.longitude;
-  const vectorSize = vectorLatitude ** 2 + vectorLongitude ** 2;
-  if (vectorSize <= 0) return 0;
-  const ratio = (
-    (current.latitude - start.latitude) * vectorLatitude
-    + (current.longitude - start.longitude) * vectorLongitude
-  ) / vectorSize;
-  return Math.max(0, Math.min(1, ratio));
-}
-
 function formatDistance(meters: number | null) {
   if (meters === null || !Number.isFinite(meters)) return 'Distance en cours';
   if (meters < 1_000) return `${Math.max(1, Math.round(meters))} m`;
@@ -229,14 +218,14 @@ export default function ClientOrderDetailScreen() {
 
   if (!order) {
     return (
-      <FoodizScreen>
+      <WeelloScreen>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.back}>← Mes commandes</Text>
         </Pressable>
-        <FoodizCard>
-          <Text style={foodizText.body}>Chargement de la commande…</Text>
-        </FoodizCard>
-      </FoodizScreen>
+        <WeelloCard>
+          <Text style={weelloText.body}>Chargement de la commande…</Text>
+        </WeelloCard>
+      </WeelloScreen>
     );
   }
 
@@ -256,13 +245,6 @@ export default function ClientOrderDetailScreen() {
     tracking?.current_latitude,
     tracking?.current_longitude,
   );
-  const liveProgress = restaurantPosition && clientPosition && courierPosition
-    ? projectedProgress(restaurantPosition, clientPosition, courierPosition)
-    : ['picked_up', 'delivering'].includes(order.status)
-      ? 0.55
-      : order.status === 'delivered'
-        ? 1
-        : 0.08;
   const remainingMeters = courierPosition && clientPosition
     ? distanceMeters(courierPosition, clientPosition)
     : null;
@@ -271,50 +253,84 @@ export default function ClientOrderDetailScreen() {
   const liveTrackingAvailable = Boolean(tracking) && ['pickup', 'picked_up', 'delivering', 'delivered'].includes(order.status);
   const courierPositionLive = Boolean(courierPosition) && ['picked_up', 'delivering'].includes(order.status);
   const staticPreparationStatus = ['pending', 'preparing', 'ready'].includes(order.status);
-  const courierName = courier?.display_name || courier?.first_name || 'Votre livreur Foodiz';
+  const courierName = courier?.display_name || courier?.first_name || 'Votre livreur Weello';
+  const mapCenter = courierPosition || restaurantPosition || clientPosition;
+  const mapCoordinates = [
+    restaurantPosition,
+    courierPosition,
+    clientPosition,
+  ].filter((coordinate): coordinate is Coordinate => Boolean(coordinate));
 
   return (
-    <FoodizScreen>
+    <WeelloScreen>
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Mes commandes</Text>
       </Pressable>
       <Text style={styles.kicker}>COMMANDE #{order.id.slice(0, 8)}</Text>
-      <Text style={foodizText.title}>
-        {order.restaurant?.name || 'Commande Foodiz'}
+      <Text style={weelloText.title}>
+        {order.restaurant?.name || 'Commande Weello'}
       </Text>
-      <Text style={foodizText.body}>
+      <Text style={weelloText.body}>
         {order.delivery_address || 'Adresse de livraison enregistrée'}
       </Text>
 
-      <FoodizCard>
+      <WeelloCard>
         <View style={styles.liveHeader}>
           <View style={styles.livePulse} />
           <View style={styles.liveTitle}>
             <Text style={styles.kicker}>{courierPositionLive ? 'SUIVI LIVE' : 'SUIVI COMMANDE'}</Text>
-            <Text style={foodizText.heading}>{trackingLabel}</Text>
+            <Text style={weelloText.heading}>{trackingLabel}</Text>
           </View>
         </View>
 
         {liveTrackingAvailable ? (
           <>
-            <View style={styles.liveMap}>
-              <View style={styles.routeLine} />
-              <View style={[styles.routePoint, styles.restaurantPoint]}>
-                <Text style={styles.routePointText}>R</Text>
+            {mapCenter ? (
+              <MapView
+                style={styles.liveMap}
+                initialRegion={{
+                  latitude: mapCenter.latitude,
+                  longitude: mapCenter.longitude,
+                  latitudeDelta: 0.035,
+                  longitudeDelta: 0.035,
+                }}>
+                {restaurantPosition ? (
+                  <Marker
+                    coordinate={restaurantPosition}
+                    title={order.restaurant?.name || 'Restaurant'}
+                    pinColor="#D8A84F"
+                  />
+                ) : null}
+                {clientPosition ? (
+                  <Marker
+                    coordinate={clientPosition}
+                    title="Adresse de livraison"
+                    pinColor="#5FAE78"
+                  />
+                ) : null}
+                {courierPosition ? (
+                  <Marker
+                    coordinate={courierPosition}
+                    title={courierName}
+                    description="Position du livreur"
+                    pinColor="#D96F45"
+                  />
+                ) : null}
+                {mapCoordinates.length >= 2 ? (
+                  <Polyline
+                    coordinates={mapCoordinates}
+                    strokeColor="#D8A84F"
+                    strokeWidth={4}
+                  />
+                ) : null}
+              </MapView>
+            ) : (
+              <View style={styles.livePending}>
+                <Text style={weelloText.body}>
+                  Position GPS en cours de réception…
+                </Text>
               </View>
-              <View style={[styles.routePoint, styles.clientPoint]}>
-                <Text style={styles.routePointText}>C</Text>
-              </View>
-              <View
-                style={[
-                  styles.courierDot,
-                  {
-                    left: `${Math.max(8, Math.min(88, liveProgress * 100))}%`,
-                  },
-                ]}>
-                <Text style={styles.courierDotText}>➤</Text>
-              </View>
-            </View>
+            )}
 
             <View style={styles.liveStats}>
               <View style={styles.liveStat}>
@@ -350,26 +366,26 @@ export default function ClientOrderDetailScreen() {
           </>
         ) : staticPreparationStatus ? (
           <View style={styles.livePending}>
-            <Text style={foodizText.heading}>
+            <Text style={weelloText.heading}>
               Votre commande est suivie, sans déplacement pour le moment.
             </Text>
-            <Text style={foodizText.body}>
+            <Text style={weelloText.body}>
               Le restaurant prépare la commande. La carte restera statique
-              jusqu’à l’assignation puis la récupération par un livreur Foodiz.
+              jusqu’à l’assignation puis la récupération par un livreur Weello.
             </Text>
           </View>
         ) : (
           <View style={styles.livePending}>
-            <Text style={foodizText.body}>
+            <Text style={weelloText.body}>
               Le suivi GPS live s’activera dès que le livreur aura récupéré
               votre commande chez le partenaire.
             </Text>
           </View>
         )}
-      </FoodizCard>
+      </WeelloCard>
 
-      <FoodizCard>
-        <Text style={foodizText.heading}>Suivi</Text>
+      <WeelloCard>
+        <Text style={weelloText.heading}>Suivi</Text>
         {progress.map((status, index) => (
           <View key={status} style={styles.step}>
             <View
@@ -387,23 +403,23 @@ export default function ClientOrderDetailScreen() {
             </Text>
           </View>
         ))}
-      </FoodizCard>
+      </WeelloCard>
 
       {deliveryCode && ['pickup', 'picked_up', 'delivering'].includes(order.status) ? (
-        <FoodizCard>
+        <WeelloCard>
           <Text style={styles.kicker}>CODE DE REMISE</Text>
           <Text style={styles.code}>{deliveryCode}</Text>
-          <Text style={foodizText.body}>
+          <Text style={weelloText.body}>
             Communiquez ce code au livreur uniquement lorsque la commande vous
             est remise.
           </Text>
-        </FoodizCard>
+        </WeelloCard>
       ) : null}
 
-      <FoodizCard>
+      <WeelloCard>
         {order.order_items.map((item, index) => (
           <View key={`${order.id}-${index}`} style={styles.row}>
-            <Text style={foodizText.body}>
+            <Text style={weelloText.body}>
               {item.quantity} × {item.product?.name || 'Article'}
             </Text>
             <Text style={styles.value}>
@@ -413,15 +429,15 @@ export default function ClientOrderDetailScreen() {
         ))}
         <View style={styles.divider} />
         <View style={styles.row}>
-          <Text style={foodizText.heading}>Total payé</Text>
+          <Text style={weelloText.heading}>Total payé</Text>
           <Text style={styles.total}>
             {(order.final_client_total_cents / 100).toFixed(2)} €
           </Text>
         </View>
-      </FoodizCard>
+      </WeelloCard>
 
       {['pickup', 'picked_up', 'delivering'].includes(order.status) ? (
-        <FoodizButton
+        <WeelloButton
           label="Actualiser le suivi live"
           onPress={() => {
             if (id) {
@@ -431,7 +447,7 @@ export default function ClientOrderDetailScreen() {
           secondary
         />
       ) : null}
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 

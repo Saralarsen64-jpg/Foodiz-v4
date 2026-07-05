@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
 
-export async function foodizApi<T>(
+export async function weelloApi<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
@@ -22,7 +22,7 @@ export async function foodizApi<T>(
 
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.error || 'Erreur serveur Foodiz');
+    throw new Error(payload.error || 'Erreur serveur Weello');
   }
   return payload as T;
 }

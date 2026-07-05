@@ -42,7 +42,7 @@ export default function PaymentsPage() {
           <div>
             <h2 className="foodiz-title text-xl text-foodiz-cream">Paiement sécurisé par Stripe</h2>
             <p className="mt-2 text-sm leading-relaxed text-foodiz-gray">
-              Foodiz ne collecte pas et ne stocke pas vos numéros de carte. Les paiements sont saisis uniquement dans l’espace sécurisé Stripe au moment de commander.
+              Weello ne collecte pas et ne stocke pas vos numéros de carte. Les paiements sont saisis uniquement dans l’espace sécurisé Stripe au moment de commander.
             </p>
           </div>
         </div>
@@ -53,7 +53,7 @@ export default function PaymentsPage() {
           <CreditCard size={20} className="text-foodiz-gold"/>
           <div>
             <p className="font-semibold text-foodiz-cream">Cartes enregistrées</p>
-            <p className="mt-1 text-xs text-foodiz-gray">Aucune carte n’est enregistrée directement dans Foodiz.</p>
+            <p className="mt-1 text-xs text-foodiz-gray">Aucune carte n’est enregistrée directement dans Weello.</p>
           </div>
         </div>
       </section>
@@ -64,7 +64,7 @@ export default function PaymentsPage() {
           {receipts.map((receipt) => <article key={receipt.id} className="foodiz-card flex items-center justify-between gap-3 p-4">
             <div>
               <p className="font-mono text-sm text-foodiz-cream">{receipt.document_number}</p>
-              <p className="mt-1 text-[10px] text-foodiz-gray">{receipt.payload_snapshot?.restaurant_name || "Commande Foodiz"} · {((receipt.payload_snapshot?.total_paid_cents || 0) / 100).toFixed(2)} €</p>
+              <p className="mt-1 text-[10px] text-foodiz-gray">{receipt.payload_snapshot?.restaurant_name || "Commande Weello"} · {((receipt.payload_snapshot?.total_paid_cents || 0) / 100).toFixed(2)} €</p>
             </div>
             <button onClick={() => void downloadFinancialDocument(receipt.id, receipt.document_number).catch((error) => toast.error(error.message))} className="rounded-xl border border-foodiz-gold/20 p-3 text-foodiz-gold"><Download size={17}/></button>
           </article>)}

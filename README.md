@@ -1,13 +1,13 @@
-# Foodiz
+# Weello
 
 ## Pré-lancement
 
 La checklist de recette avant App Store / Google Play est disponible ici :
-[`docs/foodiz-launch-readiness.md`](docs/foodiz-launch-readiness.md).
+[`docs/weello-launch-readiness.md`](docs/weello-launch-readiness.md).
 
 ## Routage serveur
 
-Foodiz utilise OpenRouteService comme fournisseur principal pour calculer les
+Weello utilise OpenRouteService comme fournisseur principal pour calculer les
 distances routières, les durées et les itinéraires. La clé n'est jamais placée
 dans le frontend web ou mobile.
 
@@ -31,7 +31,7 @@ pour une route automobile. Voir les [restrictions
 OpenRouteService](https://openrouteservice.org/restrictions/) et la
 [documentation Directions](https://giscience.github.io/openrouteservice/api-reference/endpoints/directions/).
 
-En cas d'indisponibilité, Foodiz journalise une erreur serveur et utilise
+En cas d'indisponibilité, Weello journalise une erreur serveur et utilise
 temporairement la distance à vol d'oiseau. Ce secours ne produit aucune ETA
 vérifiée et ne peut donc pas déclencher une pénalité livreur.
 
@@ -42,10 +42,10 @@ modifier le checkout, le dispatch ou les pénalités :
 
 ```env
 ROUTING_PROVIDER=osrm
-OSRM_BASE_URL=https://routing-prive.foodiz.co
+OSRM_BASE_URL=https://routing.weello.app
 ```
 
-`OSRM_BASE_URL` doit pointer vers une instance Foodiz auto-hébergée. Aucun
+`OSRM_BASE_URL` doit pointer vers une instance Weello auto-hébergée. Aucun
 serveur OSRM public n'est utilisé par défaut.
 
 ### Tests
@@ -64,14 +64,14 @@ OPENROUTESERVICE_API_KEY=... npm run test:routing:live
 
 ## Emails automatiques
 
-La suite d'emails transactionnels Foodiz est documentée dans
-[`docs/foodiz-email-automation.md`](docs/foodiz-email-automation.md).
+La suite d'emails transactionnels Weello est documentée dans
+[`docs/weello-email-automation.md`](docs/weello-email-automation.md).
 
 Les variables serveur principales sont :
 
 ```env
 RESEND_API_KEY=...
-FOODIZ_EMAIL_FROM=Foodiz <contact@foodiz.co>
+WEELLO_EMAIL_FROM=Weello <contact@weello.co>
 ```
 
 Les emails de lancement restent manuels : ils ne partent que depuis l'admin

@@ -91,7 +91,7 @@ export default function CourierProfile() {
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.8rem] border border-foodiz-gold/20 bg-foodiz-gold/10 shadow-[0_0_40px_rgba(216,168,79,0.12)]">
           <UserRound size={34} className="text-foodiz-gold" />
         </div>
-        <h2 className="foodiz-title mt-4 text-2xl">{name || "Livreur Foodiz"}</h2>
+        <h2 className="foodiz-title mt-4 text-2xl">{name || "Livreur Weello"}</h2>
         <p className="mt-2 text-xs text-foodiz-gray">Votre identité professionnelle</p>
       </section>
 
@@ -133,7 +133,7 @@ export default function CourierProfile() {
           <div>
             <h2 className="foodiz-title text-xl">Mes disponibilités</h2>
             <p className="mt-1 text-xs leading-relaxed text-foodiz-gray">
-              Ces préférences aideront Foodiz à proposer les courses au bon moment. Vous pourrez toujours vous mettre hors ligne.
+              Ces préférences aideront Weello à proposer les courses au bon moment. Vous pourrez toujours vous mettre hors ligne.
             </p>
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function CourierProfile() {
           <input type="checkbox" checked={flexible} onChange={(event) => setFlexible(event.target.checked)} className="mt-0.5 h-5 w-5 accent-[#D8A84F]" />
           <span>
             <span className="block font-semibold">Je suis flexible</span>
-            <span className="mt-1 block text-xs leading-relaxed text-foodiz-gray">Foodiz peut me proposer des créneaux en dehors de mes préférences si besoin.</span>
+            <span className="mt-1 block text-xs leading-relaxed text-foodiz-gray">Weello peut me proposer des créneaux en dehors de mes préférences si besoin.</span>
           </span>
         </label>
 

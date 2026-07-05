@@ -28,7 +28,7 @@ export async function ensureProfileFromAuthUser(user: AuthUser) {
 
   if (existing) return existing;
   if (error) throw error;
-  throw new Error("Le profil Foodiz n'a pas été provisionné. Contactez le support.");
+  throw new Error("Le profil Weello n'a pas été provisionné. Contactez le support.");
 }
 
 export async function ensurePartnerApplication(user: AuthUser) {

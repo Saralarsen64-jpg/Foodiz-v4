@@ -88,7 +88,7 @@ export default function AdminLogin() {
       setError(
         nextThrottle.locked
           ? `Trop de tentatives. Réessayez dans ${formatLockDuration(nextThrottle.remainingLockMs)}.`
-          : "Accès refusé. Cette zone est strictement réservée aux administrateurs Foodiz.",
+          : "Accès refusé. Cette zone est strictement réservée aux administrateurs Weello.",
       );
     }
     setLoading(false);

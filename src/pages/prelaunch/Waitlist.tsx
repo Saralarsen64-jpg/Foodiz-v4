@@ -26,15 +26,15 @@ import { supabase } from "../../lib/supabase";
 type Role = "client" | "livreur" | "partenaire";
 
 const ROLES = [
-  { value: "client" as const, label: "Client", detail: "Commandez, cumulez des avantages et découvrez Foodiz dès son ouverture.", icon: ShoppingBag },
-  { value: "livreur" as const, label: "Livreur", detail: "Déposez votre dossier, faites valider vos justificatifs et rejoignez le pilote Foodiz.", icon: Bike },
+  { value: "client" as const, label: "Client", detail: "Commandez, cumulez des avantages et découvrez Weello dès son ouverture.", icon: ShoppingBag },
+  { value: "livreur" as const, label: "Livreur", detail: "Déposez votre dossier, faites valider vos justificatifs et rejoignez le pilote Weello.", icon: Bike },
   { value: "partenaire" as const, label: "Partenaire", detail: "Présentez votre établissement, transmettez vos documents et préparez vos futures ventes.", icon: Store },
 ];
 
 const BENEFITS = [
   { title: "Compte prêt dès le lancement", icon: User },
   { title: "Avantages exclusifs réservés aux pré-inscrits", icon: Gift },
-  { title: "Accès prioritaire à Foodiz", icon: Star },
+  { title: "Accès prioritaire à Weello", icon: Star },
 ];
 
 const COURIER_AVAILABILITY_SLOTS = [
@@ -293,7 +293,7 @@ export default function WaitlistPage() {
   const buttonLabel = useMemo(() => {
     if (role === "livreur") return "Pré-inscrire mon profil livreur";
     if (role === "partenaire") return "Pré-inscrire mon établissement";
-    return "Je réserve ma place sur Foodiz";
+    return "Je réserve ma place sur Weello";
   }, [role]);
 
   const update = (name: string, value: string | boolean) => {
@@ -512,8 +512,8 @@ export default function WaitlistPage() {
       <header className="relative mx-auto max-w-[980px] overflow-visible">
         <div className="mx-auto overflow-hidden rounded-b-[2.6rem] border-x border-b border-[#d8a84f]/35 bg-[#050504] shadow-[0_24px_58px_rgba(0,0,0,.78),0_0_0_1px_rgba(245,205,122,.08)_inset]">
           <img
-            src="/images/Logo-Foodiz.PNG"
-            alt="Foodiz"
+            src="/images/weello-wordmark.png"
+            alt="Weello"
             className="mx-auto block h-auto max-h-[330px] w-full object-contain object-center sm:max-h-[405px]"
           />
         </div>
@@ -524,7 +524,7 @@ export default function WaitlistPage() {
           <h1 className="mx-auto max-w-[720px] text-[44px] leading-[.98] tracking-[-.045em] text-white drop-shadow-[0_8px_22px_rgba(0,0,0,.85)] sm:text-[64px]" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
             Rejoignez les premiers
             <span className="mt-1 block bg-[linear-gradient(180deg,#f0d08a_0%,#b98735_72%,#8d6228_100%)] bg-clip-text italic text-transparent">
-              Foodizers.
+              Weelloers.
             </span>
           </h1>
 
@@ -658,7 +658,7 @@ export default function WaitlistPage() {
                 <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/[.04] p-4">
                   <p className="text-xs font-semibold text-foodiz-cream">Justificatifs professionnels</p>
                   <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">
-                    Les pièces sont stockées dans un espace privé. Elles seront examinées par Foodiz avant toute activation commerciale.
+                    Les pièces sont stockées dans un espace privé. Elles seront examinées par Weello avant toute activation commerciale.
                   </p>
                 </div>
                 <DocumentField
@@ -764,7 +764,7 @@ export default function WaitlistPage() {
                     />
                     <span>
                       <span className="block font-semibold text-foodiz-cream">Je suis flexible</span>
-                      <span className="mt-0.5 block text-[10px] text-[#b8b0a2]/70">Foodiz pourra me proposer plusieurs créneaux.</span>
+                      <span className="mt-0.5 block text-[10px] text-[#b8b0a2]/70">Weello pourra me proposer plusieurs créneaux.</span>
                     </span>
                   </label>
                 </div>
@@ -822,7 +822,7 @@ export default function WaitlistPage() {
                 <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/[.04] p-4">
                   <p className="text-xs font-semibold text-foodiz-cream">Justificatifs obligatoires</p>
                   <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">
-                    Prenez des photos nettes, sans reflet et avec les quatre bords visibles. Les fichiers sont conservés dans un espace privé et examinés uniquement par Foodiz.
+                    Prenez des photos nettes, sans reflet et avec les quatre bords visibles. Les fichiers sont conservés dans un espace privé et examinés uniquement par Weello.
                   </p>
                 </div>
                 <DocumentField
@@ -896,7 +896,7 @@ export default function WaitlistPage() {
                 <Link to="/confidentialite" className="font-semibold text-foodiz-gold underline decoration-foodiz-gold/35 underline-offset-4">
                   politique de confidentialité
                 </Link>
-                , et j’autorise Foodiz à me contacter au sujet de ma pré-inscription et du lancement.
+                , et j’autorise Weello à me contacter au sujet de ma pré-inscription et du lancement.
               </span>
             </label>
 
@@ -929,13 +929,13 @@ export default function WaitlistPage() {
 
           <footer className="mt-8 rounded-[1.25rem] border border-foodiz-gold/10 bg-white/[0.018] px-5 py-5 text-center">
             <a
-              href="https://www.instagram.com/foodiz_off/"
+              href="https://weello.app/"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-foodiz-gold/20 px-4 py-2 text-xs font-semibold text-foodiz-gold transition hover:bg-foodiz-gold/10"
             >
               <Star size={15} />
-              Suivre @foodiz_off
+              Découvrir weello.app
             </a>
             <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-foodiz-gray">
               <Link to="/mentions-legales" className="hover:text-foodiz-gold">Mentions légales</Link>

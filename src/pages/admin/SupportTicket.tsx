@@ -57,7 +57,7 @@ export default function SupportTickets() {
     { label: "Dashboard", icon: Activity, path: "/admin" },
     { label: "Validations", icon: UserCheck, path: "/admin/approvals" },
     { label: "Finances", icon: CreditCard, path: "/admin/payouts" },
-    { label: "Foodiz+", icon: Megaphone, path: "/admin/foodiz-stats" },
+    { label: "Weello+", icon: Megaphone, path: "/admin/foodiz-stats" },
   ];
 
   return (

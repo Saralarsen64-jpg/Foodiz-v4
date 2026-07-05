@@ -25,7 +25,7 @@ export default function AdvantagesPage() {
       if (!response.ok) throw new Error(payload.error || "Catalogue indisponible");
       setAdvantages(payload.offers || []);
       setCycleExpiresAt(payload.validUntil ? new Date(payload.validUntil).getTime() : null);
-      setCatalogError(payload.offers?.length === 6 ? "" : "Le catalogue Foodiz Club est en cours de synchronisation.");
+      setCatalogError(payload.offers?.length === 6 ? "" : "Le catalogue Weello Club est en cours de synchronisation.");
     } catch {
       setCatalogError("Impossible d'actualiser les avantages pour le moment.");
     }
@@ -122,7 +122,7 @@ export default function AdvantagesPage() {
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-          <h1 className="foodiz-title text-lg">Foodiz Club</h1>
+          <h1 className="foodiz-title text-lg">Weello Club</h1>
           <div className="w-6" />
         </div>
       </header>
@@ -131,7 +131,7 @@ export default function AdvantagesPage() {
         {/* Wallet Card */}
         <div className="foodiz-card p-8 bg-gradient-to-br from-foodiz-gold/20 to-foodiz-card border border-foodiz-gold/30 text-center relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-foodiz-gold text-xs uppercase tracking-widest font-bold mb-2">Mon Solde Foodiz</p>
+            <p className="text-foodiz-gold text-xs uppercase tracking-widest font-bold mb-2">Mon Solde Weello</p>
             {loading ? <div className="text-4xl font-serif italic text-foodiz-cream animate-pulse">...</div> : <div className="text-5xl font-serif italic text-foodiz-cream mb-2">{points.toLocaleString('fr-FR')}</div>}
             <p className="text-foodiz-gray text-sm">points fidélité disponibles</p>
             <div className={`mt-4 text-sm font-bold flex items-center justify-center gap-2 ${currentTier.color}`}>

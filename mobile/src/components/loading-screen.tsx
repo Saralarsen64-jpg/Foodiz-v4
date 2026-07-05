@@ -5,7 +5,7 @@ import { colors } from '@/theme/colors';
 export function LoadingScreen({ label = 'Chargement…' }: { label?: string }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.brand}>FOODIZ</Text>
+      <Text style={styles.brand}>WEELLO</Text>
       <ActivityIndicator color={colors.gold} size="large" />
       <Text style={styles.label}>{label}</Text>
     </View>

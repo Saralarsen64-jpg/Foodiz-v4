@@ -38,7 +38,7 @@ export default function PartnerProducts() {
     { label: "Dashboard", icon: Activity, path: "/partner" },
     { label: "Commandes", icon: UserCheck, path: "/partner/orders/current" },
     { label: "Finances", icon: CreditCard, path: "/partner/payouts" },
-    { label: "Foodiz+", icon: Megaphone, path: "/partner/marketing" },
+    { label: "Weello+", icon: Megaphone, path: "/partner/marketing" },
   ];
 
   return (
@@ -109,6 +109,11 @@ export default function PartnerProducts() {
                     </h3>
                     <p className="text-foodiz-gray text-xs mb-1">{product.category}</p>
                     <p className="text-foodiz-gold font-serif italic text-lg">{(product.partner_price_cents / 100).toFixed(2)} €</p>
+                    {product.promotion_partner_price_cents && (
+                      <p className="mt-1 text-xs font-semibold text-foodiz-green">
+                        {product.promotion_label || "Offre partenaire"} · {(product.promotion_partner_price_cents / 100).toFixed(2)} €
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

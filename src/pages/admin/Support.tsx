@@ -55,27 +55,27 @@ const QUICK_REPLIES = [
   {
     title: "Demande prise en charge",
     category: "all",
-    body: "Bonjour,\n\nMerci pour votre message. Je prends votre demande en charge et je vérifie les informations disponibles côté Foodiz afin de vous répondre précisément.\n\nL’équipe Foodiz",
+    body: "Bonjour,\n\nMerci pour votre message. Je prends votre demande en charge et je vérifie les informations disponibles côté Weello afin de vous répondre précisément.\n\nL’équipe Weello",
   },
   {
     title: "Retard livraison",
     category: "delivery",
-    body: "Bonjour,\n\nNous avons bien reçu votre signalement concernant la livraison. Foodiz vérifie le statut de la commande, l’estimation de trajet et les dernières mises à jour afin d’appliquer la solution la plus juste.\n\nMerci pour votre patience,\nL’équipe Foodiz",
+    body: "Bonjour,\n\nNous avons bien reçu votre signalement concernant la livraison. Weello vérifie le statut de la commande, l’estimation de trajet et les dernières mises à jour afin d’appliquer la solution la plus juste.\n\nMerci pour votre patience,\nL’équipe Weello",
   },
   {
     title: "Paiement sécurisé",
     category: "payment",
-    body: "Bonjour,\n\nVotre demande liée au paiement est en cours de vérification. Pour votre sécurité, Foodiz ne vous demandera jamais vos informations complètes de carte bancaire par message.\n\nL’équipe Foodiz",
+    body: "Bonjour,\n\nVotre demande liée au paiement est en cours de vérification. Pour votre sécurité, Weello ne vous demandera jamais vos informations complètes de carte bancaire par message.\n\nL’équipe Weello",
   },
   {
     title: "Dossier professionnel",
     category: "partner",
-    body: "Bonjour,\n\nVotre dossier professionnel est en cours d’analyse. Nous vérifions les justificatifs transmis afin de garantir une activation conforme et sécurisée.\n\nL’équipe Foodiz",
+    body: "Bonjour,\n\nVotre dossier professionnel est en cours d’analyse. Nous vérifions les justificatifs transmis afin de garantir une activation conforme et sécurisée.\n\nL’équipe Weello",
   },
   {
     title: "Dossier livreur",
     category: "courier",
-    body: "Bonjour,\n\nVotre dossier livreur est en cours de contrôle. Foodiz vérifie l’identité, le SIRET, le justificatif d’activité et la cohérence des informations avant toute activation opérationnelle.\n\nL’équipe Foodiz",
+    body: "Bonjour,\n\nVotre dossier livreur est en cours de contrôle. Weello vérifie l’identité, le SIRET, le justificatif d’activité et la cohérence des informations avant toute activation opérationnelle.\n\nL’équipe Weello",
   },
 ];
 
@@ -108,11 +108,11 @@ function priorityRank(priority: string) {
 }
 
 function profileName(profile: any) {
-  if (!profile) return "Utilisateur Foodiz";
+  if (!profile) return "Utilisateur Weello";
   return profile.full_name
     || [profile.first_name, profile.last_name].filter(Boolean).join(" ")
     || profile.email
-    || "Utilisateur Foodiz";
+    || "Utilisateur Weello";
 }
 
 export default function AdminSupportPage() {
@@ -271,7 +271,7 @@ export default function AdminSupportPage() {
 
   return (
     <AdminShell
-      title="Foodiz Care Cockpit"
+      title="Weello Care Cockpit"
       subtitle="Pilotage support, satisfaction, SLA et sécurité relationnelle"
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -303,7 +303,7 @@ export default function AdminSupportPage() {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[.25em] text-foodiz-gold">Standard numéro 1</p>
-                <h2 className="foodiz-title mt-1 text-2xl">Promesse Foodiz Care</h2>
+                <h2 className="foodiz-title mt-1 text-2xl">Promesse Weello Care</h2>
                 <p className="mt-2 text-sm leading-relaxed text-foodiz-gray">
                   Chaque ticket doit être lisible, priorisé, contextualisé et traité avec une réponse humaine. L’objectif : moins d’effort pour le client, plus de contrôle côté admin.
                 </p>
@@ -397,7 +397,7 @@ export default function AdminSupportPage() {
       </section>
 
       {loading ? (
-        <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement de Foodiz Care...</div>
+        <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement de Weello Care...</div>
       ) : filteredTickets.length === 0 ? (
         <div className="foodiz-card p-8 text-center text-sm text-foodiz-gray">
           Aucune demande dans cette file. C’est calme — le meilleur bruit possible.
@@ -479,7 +479,7 @@ export default function AdminSupportPage() {
 
                   {ticket.admin_response && (
                     <div className="rounded-2xl border border-foodiz-green/15 bg-foodiz-green/[0.04] p-4">
-                      <p className="mb-1 text-[10px] uppercase text-foodiz-green">Réponse Foodiz</p>
+                      <p className="mb-1 text-[10px] uppercase text-foodiz-green">Réponse Weello</p>
                       <p className="text-sm text-foodiz-cream whitespace-pre-wrap">{ticket.admin_response}</p>
                       {ticket.resolved_at && <p className="mt-2 text-[10px] text-foodiz-gray">Traité le {new Date(ticket.resolved_at).toLocaleString("fr-FR")}</p>}
                     </div>

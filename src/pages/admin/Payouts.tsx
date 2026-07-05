@@ -124,7 +124,7 @@ export default function AdminPayouts() {
   };
 
   return <AdminShell title="Règlements hebdomadaires" subtitle="Préparation des bordereaux et traçabilité des virements manuels">
-    <section className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-4 text-xs leading-relaxed text-foodiz-gray">Foodiz ne déclenche pas encore le virement bancaire. Le bouton « Marquer payé » doit être utilisé uniquement après avoir réellement effectué le virement, avec sa référence bancaire.</section>
+    <section className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-4 text-xs leading-relaxed text-foodiz-gray">Weello ne déclenche pas encore le virement bancaire. Le bouton « Marquer payé » doit être utilisé uniquement après avoir réellement effectué le virement, avec sa référence bancaire.</section>
     {loading ? <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Calcul des montants à payer...</div> : <>
       <section className="grid gap-4 lg:grid-cols-4">
         <article className="foodiz-card p-5"><WalletCards size={20} className="text-foodiz-gold"/><p className="mt-4 text-[10px] uppercase tracking-widest text-foodiz-gray">À virer</p><p className="mt-2 text-3xl font-serif italic text-foodiz-cream">{euros(payableTotal)}</p><p className="mt-2 text-[10px] text-foodiz-gray">{filteredPayables.length} bénéficiaire(s), {totalOrders} commande(s)</p></article>

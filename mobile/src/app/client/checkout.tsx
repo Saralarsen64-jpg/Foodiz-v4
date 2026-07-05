@@ -4,12 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizButton,
-  FoodizCard,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloButton,
+  WeelloCard,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { useCart } from '@/providers/cart-provider';
 import { colors } from '@/theme/colors';
 
@@ -50,7 +50,7 @@ export default function CheckoutScreen() {
   useEffect(() => {
     if (!restaurantId || items.length === 0) return;
     let active = true;
-    void foodizApi<{ quote: Quote }>('create-checkout-session', {
+    void weelloApi<{ quote: Quote }>('create-checkout-session', {
       method: 'POST',
       body: JSON.stringify({ ...cartPayload(), quoteOnly: true }),
     })
@@ -81,14 +81,14 @@ export default function CheckoutScreen() {
     if (__DEV__ && stripeKey.startsWith('pk_live_')) {
       Alert.alert(
         'Paiement réel désactivé',
-        'Foodiz utilise actuellement une clé Stripe Live. Les paiements sont volontairement bloqués pendant le développement.',
+        'Weello utilise actuellement une clé Stripe Live. Les paiements sont volontairement bloqués pendant le développement.',
       );
       return;
     }
 
     setLoading(true);
     try {
-      const payment = await foodizApi<{
+      const payment = await weelloApi<{
         orderId: string;
         clientSecret?: string;
         url?: string;
@@ -108,9 +108,9 @@ export default function CheckoutScreen() {
       }
 
       const initResult = await initPaymentSheet({
-        merchantDisplayName: 'Foodiz',
+        merchantDisplayName: 'Weello',
         paymentIntentClientSecret: payment.clientSecret,
-        returnURL: 'foodiz://stripe-redirect',
+        returnURL: 'weello://stripe-redirect',
         style: 'alwaysDark',
         defaultBillingDetails: {},
         applePay: { merchantCountryCode: 'FR' },
@@ -125,7 +125,7 @@ export default function CheckoutScreen() {
       const result = await presentPaymentSheet();
       if (result.error) {
         if (result.error.code === 'Canceled') {
-          await foodizApi('cancel-mobile-order', {
+          await weelloApi('cancel-mobile-order', {
             method: 'POST',
             body: JSON.stringify({ orderId: payment.orderId }),
           });
@@ -151,25 +151,25 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <FoodizScreen>
+    <WeelloScreen>
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Retour au panier</Text>
       </Pressable>
-      <Text style={foodizText.title}>Paiement sécurisé</Text>
-      <Text style={foodizText.body}>
-        Tous les montants ci-dessous sont recalculés par le serveur Foodiz.
+      <Text style={weelloText.title}>Paiement sécurisé</Text>
+      <Text style={weelloText.body}>
+        Tous les montants ci-dessous sont recalculés par le serveur Weello.
       </Text>
 
       {!quote ? (
-        <FoodizCard>
-          <Text style={foodizText.body}>Calcul de la commande…</Text>
-        </FoodizCard>
+        <WeelloCard>
+          <Text style={weelloText.body}>Calcul de la commande…</Text>
+        </WeelloCard>
       ) : (
         <>
-          <FoodizCard>
+          <WeelloCard>
             {quote.items.map((item) => (
               <View key={item.productId} style={styles.row}>
-                <Text style={foodizText.body}>
+                <Text style={weelloText.body}>
                   {item.quantity} × {item.name}
                 </Text>
                 <Text style={styles.value}>
@@ -177,8 +177,8 @@ export default function CheckoutScreen() {
                 </Text>
               </View>
             ))}
-          </FoodizCard>
-          <FoodizCard>
+          </WeelloCard>
+          <WeelloCard>
             <Line label="Prix des articles" cents={quote.clientItemsTotalCents} />
             <Line label="Frais de service" cents={quote.serviceFeeCents} />
             <Line
@@ -187,15 +187,15 @@ export default function CheckoutScreen() {
             />
             <View style={styles.divider} />
             <Line label="Total à payer" cents={quote.finalClientTotalCents} strong />
-          </FoodizCard>
-          <FoodizButton
+          </WeelloCard>
+          <WeelloButton
             label={`Payer ${(quote.finalClientTotalCents / 100).toFixed(2)} €`}
             onPress={() => void pay()}
             loading={loading}
           />
         </>
       )}
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 
@@ -210,7 +210,7 @@ function Line({
 }) {
   return (
     <View style={styles.row}>
-      <Text style={strong ? foodizText.heading : foodizText.body}>{label}</Text>
+      <Text style={strong ? weelloText.heading : weelloText.body}>{label}</Text>
       <Text style={strong ? styles.total : styles.value}>
         {(cents / 100).toFixed(2)} €
       </Text>

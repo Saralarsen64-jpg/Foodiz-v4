@@ -98,11 +98,16 @@ import AdminPartnerDetail from "./pages/admin/PartnerDetail";
 import AdminPrelaunch from "./pages/admin/Prelaunch";
 import AdminUsers from "./pages/admin/Users";
 import AdminServiceAreas from "./pages/admin/ServiceAreas";
+import InterfaceStudio from "./pages/dev/InterfaceStudio";
 
 export default function App() {
   return (
     <LaunchBoundary>
       <Routes>
+      {import.meta.env.DEV && (
+        <Route path="/design-studio" element={<InterfaceStudio />} />
+      )}
+
       {/* Redirect root */}
       <Route path="/" element={<Navigate to="/waitlist" replace />} />
 

@@ -197,7 +197,7 @@ const handler: Handler = async (event) => {
           await supabase.from("notifications").insert({
             user_id: order.client_id,
             title: "Commande confirmée",
-            message: `Votre commande #${orderId.slice(0, 8)} est payée et attend la confirmation du restaurant. ${pointsEarned || 0} point(s) Foodiz ont été ajoutés à votre compte.`,
+            message: `Votre commande #${orderId.slice(0, 8)} est payée et attend la confirmation du restaurant. ${pointsEarned || 0} point(s) Weello ont été ajoutés à votre compte.`,
             type: "order",
             related_order_id: orderId,
           });

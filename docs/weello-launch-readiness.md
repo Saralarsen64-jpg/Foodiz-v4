@@ -1,4 +1,4 @@
-# Foodiz — recette pré-lancement
+# Weello — recette pré-lancement
 
 Ce document sert de checklist avant une publication App Store / Google Play.
 Il ne déclenche aucun email, aucune migration et aucune action de production.
@@ -73,7 +73,7 @@ Le help center doit toujours privilégier :
 
 ## 6. Builds mobile
 
-Expo Go n’est pas suffisant pour Foodiz si le projet exige un development build.
+Expo Go n’est pas suffisant pour Weello si le projet exige un development build.
 
 Commandes utiles depuis `mobile/` :
 
@@ -106,4 +106,3 @@ npm run mobile:typecheck
 npm run test
 npm run build
 ```
-

@@ -61,7 +61,7 @@ export default function PrelaunchCourierDocuments() {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!requested.length || requested.some((documentType) => !files[documentType])) {
-      setError("Ajoutez chaque document demandé par Foodiz.");
+      setError("Ajoutez chaque document demandé par Weello.");
       return;
     }
     setSubmitting(true);
@@ -115,7 +115,7 @@ export default function PrelaunchCourierDocuments() {
   return (
     <main className="min-h-screen bg-foodiz-black px-5 py-10 text-foodiz-cream">
       <section className="mx-auto max-w-xl rounded-[2rem] border border-foodiz-gold/25 bg-foodiz-card p-6 shadow-[0_30px_100px_rgba(0,0,0,.6)] sm:p-9">
-        <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="mx-auto w-64 max-w-full rounded-2xl" />
+        <img src="/images/weello-wordmark.png" alt="Weello" className="mx-auto w-64 max-w-full rounded-2xl" />
         <div className="mt-7 flex items-center gap-3"><ShieldCheck className="text-foodiz-gold" /><div><p className="text-[10px] uppercase tracking-widest text-foodiz-gold">Lien privé et temporaire</p><h1 className="foodiz-title mt-1 text-2xl">Remplacer mes justificatifs</h1></div></div>
 
         {loading ? <p className="mt-8 animate-pulse text-sm text-foodiz-gray">Vérification du lien…</p> : error && !requested.length ? (
@@ -124,7 +124,7 @@ export default function PrelaunchCourierDocuments() {
           <div className="mt-7 rounded-2xl border border-foodiz-green/25 bg-foodiz-green/10 p-4 text-sm text-foodiz-green">Aucun remplacement n’est demandé.</div>
         ) : (
           <form onSubmit={submit} className="mt-7 space-y-4">
-            {comment && <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-4"><p className="text-[10px] uppercase tracking-widest text-foodiz-gold">Commentaire Foodiz</p><p className="mt-2 text-sm text-foodiz-cream">{comment}</p></div>}
+            {comment && <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-4"><p className="text-[10px] uppercase tracking-widest text-foodiz-gold">Commentaire Weello</p><p className="mt-2 text-sm text-foodiz-cream">{comment}</p></div>}
             {requested.map((documentType) => (
               <label key={documentType} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-foodiz-gold/20 bg-black/30 p-4">
                 <input type="file" required accept={documentType === "activity_proof" ? "image/jpeg,image/png,application/pdf" : "image/jpeg,image/png"} capture={documentType === "activity_proof" ? undefined : "environment"} className="sr-only" onChange={(event) => selectFile(documentType, event.target.files?.[0])} />
@@ -136,7 +136,7 @@ export default function PrelaunchCourierDocuments() {
             <button disabled={submitting} className="foodiz-btn flex w-full items-center justify-center gap-2 py-4 disabled:opacity-50">{submitting && <LoaderCircle size={18} className="animate-spin" />}{submitting ? "Transfert sécurisé…" : "Renvoyer les documents"}</button>
           </form>
         )}
-        <Link to="/waitlist" className="mt-7 block text-center text-xs text-foodiz-gold">Retour à Foodiz</Link>
+        <Link to="/waitlist" className="mt-7 block text-center text-xs text-foodiz-gold">Retour à Weello</Link>
       </section>
     </main>
   );

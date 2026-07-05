@@ -1,4 +1,4 @@
-import { foodizApi } from '@/lib/api';
+import { weelloApi } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 
 export type CourierDocumentType =
@@ -31,7 +31,7 @@ export const courierDocumentLabels: Record<CourierDocumentType, string> = {
 };
 
 export async function loadCourierDocuments() {
-  return foodizApi<{ documents: CourierDocument[] }>('courier-documents');
+  return weelloApi<{ documents: CourierDocument[] }>('courier-documents');
 }
 
 export async function uploadCourierDocument(
@@ -47,7 +47,7 @@ export async function uploadCourierDocument(
     throw new Error('Le justificatif doit peser moins de 8 Mo.');
   }
 
-  const prepared = await foodizApi<{ path: string; token: string }>(
+  const prepared = await weelloApi<{ path: string; token: string }>(
     'courier-documents',
     {
       method: 'POST',
@@ -69,7 +69,7 @@ export async function uploadCourierDocument(
     });
   if (error) throw error;
 
-  return foodizApi<{
+  return weelloApi<{
     submitted: boolean;
     complete: boolean;
     message: string;

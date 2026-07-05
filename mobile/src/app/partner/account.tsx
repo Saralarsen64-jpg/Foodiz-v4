@@ -1,15 +1,15 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { Alert, Text } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizLegalLinks,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloLegalLinks,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { useAuth } from '@/providers/auth-provider';
 
 export default function PartnerAccountScreen() {
@@ -25,7 +25,7 @@ export default function PartnerAccountScreen() {
           text: 'Supprimer',
           style: 'destructive',
           onPress: () =>
-            void foodizApi('delete-account', { method: 'POST' })
+            void weelloApi('delete-account', { method: 'POST' })
               .then(() => signOut())
               .catch((error) =>
                 Alert.alert(
@@ -39,38 +39,43 @@ export default function PartnerAccountScreen() {
   };
 
   return (
-    <FoodizScreen>
-      <FoodizBrand subtitle="Compte partenaire" />
-      <FoodizCard>
-        <Text style={foodizText.heading}>
+    <WeelloScreen>
+      <WeelloBrand subtitle="Compte partenaire" />
+      <WeelloCard>
+        <Text style={weelloText.heading}>
           {profile?.full_name
           || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()}
         </Text>
-        <Text style={foodizText.body}>{profile?.email}</Text>
-        <Text style={foodizText.body}>
+        <Text style={weelloText.body}>{profile?.email}</Text>
+        <Text style={weelloText.body}>
           {profile?.city || 'Ville non renseignée'}
         </Text>
-      </FoodizCard>
-      <FoodizButton
+      </WeelloCard>
+      <WeelloButton
         label="Voir le statut de l’établissement"
         onPress={() => router.push('/partner-status')}
       />
-      <FoodizButton
+      <WeelloButton
         label="Modifier le dossier partenaire"
         onPress={() => router.push('/partner-onboarding')}
         secondary
       />
-      <FoodizButton
+      <WeelloButton
+        label="Centre d’aide Weello"
+        onPress={() => router.push('/support' as Href)}
+        secondary
+      />
+      <WeelloButton
         label="Se déconnecter"
         onPress={() => void signOut()}
         secondary
       />
-      <FoodizButton
+      <WeelloButton
         label="Supprimer définitivement mon compte"
         onPress={confirmDeletion}
         secondary
       />
-      <FoodizLegalLinks />
-    </FoodizScreen>
+      <WeelloLegalLinks />
+    </WeelloScreen>
   );
 }

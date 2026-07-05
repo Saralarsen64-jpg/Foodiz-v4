@@ -11,12 +11,12 @@ import {
 } from 'react-native';
 
 import {
-  FoodizButton,
-  FoodizCard,
-  FoodizField,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloButton,
+  WeelloCard,
+  WeelloField,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -32,6 +32,9 @@ export default function PartnerProductScreen() {
     category: 'Plats',
     imageUrl: '',
     active: true,
+    promotionActive: false,
+    promotionLabel: '',
+    promotionPrice: '',
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -51,7 +54,7 @@ export default function PartnerProductScreen() {
         const { data: product } = await supabase
           .from('products')
           .select(
-            'name,description,partner_price_cents,category,image_url,is_active',
+            'name,description,partner_price_cents,category,image_url,is_active,promotion_label,promotion_partner_price_cents',
           )
           .eq('id', id)
           .eq('restaurant_id', restaurant.id)
@@ -64,6 +67,11 @@ export default function PartnerProductScreen() {
           category: product.category || 'Plats',
           imageUrl: product.image_url || '',
           active: product.is_active,
+          promotionActive: Boolean(product.promotion_partner_price_cents),
+          promotionLabel: product.promotion_label || '',
+          promotionPrice: product.promotion_partner_price_cents
+            ? (product.promotion_partner_price_cents / 100).toFixed(2)
+            : '',
         });
       });
     return () => {
@@ -134,6 +142,9 @@ export default function PartnerProductScreen() {
     if (!restaurantId) return;
     const parsedPrice = Number(form.price.replace(',', '.'));
     const partnerPriceCents = Math.round(parsedPrice * 100);
+    const promotionalPriceCents = form.promotionActive
+      ? Math.round(Number(form.promotionPrice.replace(',', '.')) * 100)
+      : null;
     if (
       !form.name.trim()
       || !form.category.trim()
@@ -143,6 +154,21 @@ export default function PartnerProductScreen() {
       Alert.alert(
         'Produit incomplet',
         'Renseignez un nom, une catégorie et un prix partenaire valide à partir de 0,50 €.',
+      );
+      return;
+    }
+    if (
+      form.promotionActive
+      && (
+        !promotionalPriceCents
+        || promotionalPriceCents < 50
+        || promotionalPriceCents >= partnerPriceCents
+        || form.promotionLabel.trim().length < 2
+      )
+    ) {
+      Alert.alert(
+        'Offre incomplète',
+        'Ajoutez un libellé et un prix offre compris entre 0,50 € et le prix habituel.',
       );
       return;
     }
@@ -156,6 +182,12 @@ export default function PartnerProductScreen() {
       category: form.category.trim(),
       image_url: form.imageUrl || null,
       is_active: form.active,
+      promotion_label: form.promotionActive
+        ? form.promotionLabel.trim()
+        : null,
+      promotion_partner_price_cents: promotionalPriceCents,
+      promotion_starts_at: null,
+      promotion_ends_at: null,
       updated_at: new Date().toISOString(),
     };
     const result = id
@@ -176,35 +208,35 @@ export default function PartnerProductScreen() {
   }
 
   return (
-    <FoodizScreen>
+    <WeelloScreen>
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Retour à la carte</Text>
       </Pressable>
-      <Text style={foodizText.title}>
+      <Text style={weelloText.title}>
         {id ? 'Modifier le produit' : 'Nouveau produit'}
       </Text>
-      <Text style={foodizText.body}>
-        Indiquez uniquement votre prix partenaire. Le prix client Foodiz est
+      <Text style={weelloText.body}>
+        Indiquez uniquement votre prix partenaire. Le prix client Weello est
         calculé par le moteur économique côté serveur.
       </Text>
 
       {form.imageUrl ? (
         <Image source={{ uri: form.imageUrl }} style={styles.image} />
       ) : null}
-      <FoodizButton
+      <WeelloButton
         label={form.imageUrl ? 'Changer la photo' : 'Ajouter une photo'}
         onPress={() => void selectImage()}
         loading={uploading}
         secondary
       />
 
-      <FoodizField
+      <WeelloField
         value={form.name}
         onChangeText={(name) => setForm((current) => ({ ...current, name }))}
         placeholder="Nom du produit"
         autoCapitalize="sentences"
       />
-      <FoodizField
+      <WeelloField
         value={form.description}
         onChangeText={(description) =>
           setForm((current) => ({ ...current, description }))
@@ -213,13 +245,13 @@ export default function PartnerProductScreen() {
         multiline
         autoCapitalize="sentences"
       />
-      <FoodizField
+      <WeelloField
         value={form.price}
         onChangeText={(price) => setForm((current) => ({ ...current, price }))}
         placeholder="Prix partenaire en euros — ex. 8,50"
         keyboardType="decimal-pad"
       />
-      <FoodizField
+      <WeelloField
         value={form.category}
         onChangeText={(category) =>
           setForm((current) => ({ ...current, category }))
@@ -228,8 +260,8 @@ export default function PartnerProductScreen() {
         autoCapitalize="words"
       />
 
-      <FoodizCard>
-        <Text style={foodizText.heading}>Disponibilité</Text>
+      <WeelloCard>
+        <Text style={weelloText.heading}>Disponibilité</Text>
         <View style={styles.availability}>
           <Pressable
             style={[styles.choice, form.active && styles.choiceActive]}
@@ -258,14 +290,82 @@ export default function PartnerProductScreen() {
             </Text>
           </Pressable>
         </View>
-      </FoodizCard>
+      </WeelloCard>
 
-      <FoodizButton
+      <WeelloCard>
+        <Text style={weelloText.heading}>Offre partenaire</Text>
+        <Text style={weelloText.body}>
+          Une offre réduit votre prix partenaire. Weello recalcule ensuite le
+          prix client et toute la répartition financière côté serveur.
+        </Text>
+        <View style={styles.availability}>
+          <Pressable
+            style={[
+              styles.choice,
+              form.promotionActive && styles.choiceActive,
+            ]}
+            onPress={() =>
+              setForm((current) => ({
+                ...current,
+                promotionActive: true,
+              }))
+            }>
+            <Text
+              style={[
+                styles.choiceText,
+                form.promotionActive && styles.choiceTextActive,
+              ]}>
+              Offre active
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.choice,
+              !form.promotionActive && styles.choiceActive,
+            ]}
+            onPress={() =>
+              setForm((current) => ({
+                ...current,
+                promotionActive: false,
+              }))
+            }>
+            <Text
+              style={[
+                styles.choiceText,
+                !form.promotionActive && styles.choiceTextActive,
+              ]}>
+              Sans offre
+            </Text>
+          </Pressable>
+        </View>
+        {form.promotionActive ? (
+          <>
+            <WeelloField
+              value={form.promotionLabel}
+              onChangeText={(promotionLabel) =>
+                setForm((current) => ({ ...current, promotionLabel }))
+              }
+              placeholder="Libellé — ex. Offre découverte"
+              autoCapitalize="sentences"
+            />
+            <WeelloField
+              value={form.promotionPrice}
+              onChangeText={(promotionPrice) =>
+                setForm((current) => ({ ...current, promotionPrice }))
+              }
+              placeholder="Prix partenaire en offre — ex. 6,90"
+              keyboardType="decimal-pad"
+            />
+          </>
+        ) : null}
+      </WeelloCard>
+
+      <WeelloButton
         label="Enregistrer le produit"
         onPress={() => void save()}
         loading={saving}
       />
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 

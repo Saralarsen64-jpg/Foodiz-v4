@@ -12,6 +12,7 @@ import {
 import { AuthProvider } from '@/providers/auth-provider';
 import { CartProvider } from '@/providers/cart-provider';
 import { colors } from '@/theme/colors';
+import '@/lib/delivery-location-task';
 
 export default function RootLayout() {
   const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
@@ -32,8 +33,8 @@ export default function RootLayout() {
   return (
     <StripeProvider
       publishableKey={stripeKey}
-      merchantIdentifier="merchant.com.foodiz.app"
-      urlScheme="foodiz">
+      merchantIdentifier="merchant.app.weello"
+      urlScheme="weello">
       <AuthProvider>
         <CartProvider>
           <StatusBar style="light" />

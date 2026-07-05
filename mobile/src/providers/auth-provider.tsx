@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 
 export type MobileRole = 'client' | 'courier' | 'partner' | 'admin';
 
-export type FoodizProfile = {
+export type WeelloProfile = {
   id: string;
   role: MobileRole;
   status: string | null;
@@ -29,7 +29,7 @@ type AuthContextValue = {
   launched: boolean;
   accessAllowed: boolean;
   session: Session | null;
-  profile: FoodizProfile | null;
+  profile: WeelloProfile | null;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -38,10 +38,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
-  const [launched, setLaunched] = useState(false);
-  const [accessAllowed, setAccessAllowed] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<FoodizProfile | null>(null);
+  const [profile, setProfile] = useState<WeelloProfile | null>(null);
 
   const loadProfile = useCallback(async (activeSession: Session | null) => {
     if (!activeSession?.user) {
@@ -60,48 +58,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
       throw error;
     }
 
-    setProfile(data as FoodizProfile);
+    setProfile(data as WeelloProfile);
   }, []);
 
   const refreshProfile = useCallback(async () => {
     await loadProfile(session);
   }, [loadProfile, session]);
 
-  const loadLaunchStatus = useCallback(async (activeSession: Session | null) => {
-    const apiUrl = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
-    const response = await fetch(`${apiUrl}/api/launch-status`, {
-      headers: activeSession?.access_token
-        ? { Authorization: `Bearer ${activeSession.access_token}` }
-        : undefined,
-    });
-    const launchStatus = await response.json();
-    const launchOpen = launchStatus.launched === true;
-    const allowed = launchStatus.accessAllowed === true;
-    setLaunched(launchOpen);
-    setAccessAllowed(allowed);
-    return { launchOpen, allowed };
-  }, []);
-
   useEffect(() => {
     let mounted = true;
 
     void supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
-      let launchOpen = false;
-      let allowed = false;
-      try {
-        const status = await loadLaunchStatus(data.session);
-        launchOpen = status.launchOpen;
-        allowed = status.allowed;
-      } catch {
-        if (mounted) {
-          setLaunched(false);
-          setAccessAllowed(false);
-        }
-      }
       setSession(data.session);
       try {
-        if ((launchOpen || allowed) && data.session) await loadProfile(data.session);
+        if (data.session) await loadProfile(data.session);
         else setProfile(null);
       } finally {
         if (mounted) setLoading(false);
@@ -113,8 +84,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (!mounted) return;
         setSession(nextSession);
         try {
-          const status = await loadLaunchStatus(nextSession);
-          if ((status.launchOpen || status.allowed) && nextSession) await loadProfile(nextSession);
+          if (nextSession) await loadProfile(nextSession);
           else setProfile(null);
         } finally {
           if (mounted) setLoading(false);
@@ -126,13 +96,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [loadLaunchStatus, loadProfile]);
+  }, [loadProfile]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       loading,
-      launched,
-      accessAllowed,
+      launched: true,
+      accessAllowed: true,
       session,
       profile,
       refreshProfile,
@@ -141,7 +111,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setProfile(null);
       },
     }),
-    [accessAllowed, launched, loading, profile, refreshProfile, session],
+    [loading, profile, refreshProfile, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

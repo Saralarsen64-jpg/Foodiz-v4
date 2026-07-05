@@ -259,7 +259,7 @@ export default function CheckoutPage() {
 
               {useAdvantage && lockedAdvantage && quote.advantageDiscountCents > 0 && (
                 <div className="flex justify-between text-xs text-foodiz-green">
-                  <span>Avantage Foodiz Club</span>
+                  <span>Avantage Weello Club</span>
                   <span>-{(quote.advantageDiscountCents / 100).toFixed(2)}€</span>
                 </div>
               )}

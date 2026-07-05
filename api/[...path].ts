@@ -91,8 +91,8 @@ const API_SECURITY_HEADERS = {
 } as const;
 
 const DEFAULT_TRUSTED_ORIGINS = new Set([
-  "https://foodiz.co",
-  "https://www.foodiz.co",
+  "https://weello.app",
+  "https://www.weello.app",
 ]);
 
 const LARGE_UPLOAD_ROUTES = new Set([
@@ -216,7 +216,10 @@ function routeAllowsRole(functionName: string, role: string | null) {
 }
 
 function configuredTrustedOrigins() {
-  const configuredOrigins = process.env.FOODIZ_ALLOWED_ORIGINS || "";
+  const configuredOrigins =
+    process.env.WEELLO_ALLOWED_ORIGINS
+    || process.env.FOODIZ_ALLOWED_ORIGINS
+    || "";
   return new Set([
     ...DEFAULT_TRUSTED_ORIGINS,
     ...configuredOrigins
@@ -351,8 +354,8 @@ export default {
           return jsonWithSecurityHeaders(
             {
               error: launched
-                ? "Activez votre accès Foodiz avant de continuer."
-                : "Foodiz ouvrira bientôt. Votre espace est temporairement verrouillé.",
+                ? "Activez votre accès Weello avant de continuer."
+                : "Weello ouvrira bientôt. Votre espace est temporairement verrouillé.",
               code: launched ? "PRELAUNCH_ACTIVATION_REQUIRED" : "APP_NOT_LAUNCHED",
             },
             { status: 423 },
@@ -364,9 +367,9 @@ export default {
     try {
       return responseWithSecurityHeaders(await target.fetch(request));
     } catch (error) {
-      console.error("Unhandled Foodiz API error", { functionName, error });
+      console.error("Unhandled Weello API error", { functionName, error });
       return jsonWithSecurityHeaders(
-        { error: "Erreur serveur Foodiz.", code: "INTERNAL_SERVER_ERROR" },
+        { error: "Erreur serveur Weello.", code: "INTERNAL_SERVER_ERROR" },
         { status: 500 },
       );
     }

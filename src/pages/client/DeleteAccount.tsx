@@ -30,7 +30,7 @@ export default function DeleteAccountPage() {
     }
 
     await supabase.auth.signOut();
-    toast.success("Votre compte Foodiz a été supprimé.");
+    toast.success("Votre compte Weello a été supprimé.");
     navigate("/auth", { replace: true });
   };
   return (
@@ -41,7 +41,7 @@ export default function DeleteAccountPage() {
           <AlertTriangle size={24} className="text-foodiz-red" />
           <h1 className="foodiz-title text-xl text-foodiz-red">Zone de danger</h1>
         </div>
-        <p className="text-sm text-foodiz-gray mb-6">La suppression de votre compte est irréversible. Vous perdrez tous vos points Foodiz et votre historique.</p>
+        <p className="text-sm text-foodiz-gray mb-6">La suppression de votre compte est irréversible. Vous perdrez tous vos points Weello et votre historique.</p>
         <label className="block text-xs text-foodiz-gray mb-2">Écrivez <strong className="text-foodiz-cream">SUPPRIMER</strong> pour confirmer.</label>
         <input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="w-full rounded-2xl border border-foodiz-red/20 bg-foodiz-black px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-red/50 mb-4" />
         <button disabled={confirmation !== "SUPPRIMER" || loading} onClick={deleteAccount} className="w-full py-4 rounded-2xl bg-foodiz-red text-foodiz-black font-bold text-sm hover:bg-foodiz-red/80 transition-all disabled:opacity-40 disabled:cursor-not-allowed">{loading ? "Suppression..." : "Supprimer définitivement mon compte"}</button>

@@ -115,7 +115,7 @@ export default function CourierOnboarding() {
   const field = (key: "name" | "phone" | "city" | "legalName" | "siret" | "address" | "postalCode", placeholder: string, Icon: typeof UserRound) => <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><Icon size={17} className="text-foodiz-gold"/><input value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} inputMode={key === "siret" || key === "postalCode" ? "numeric" : undefined} maxLength={key === "siret" ? 14 : key === "postalCode" ? 5 : undefined} className="w-full bg-transparent py-4 text-foodiz-cream outline-none"/></div>;
 
   return <CourierShell title="Rejoindre la flotte" back="/courier">
-    <section className="rounded-[2rem] border border-foodiz-gold/20 bg-foodiz-gold/[0.06] p-6"><FileText size={25} className="text-foodiz-gold"/><h2 className="foodiz-title mt-4 text-2xl">Votre dossier livreur</h2><p className="mt-2 text-sm text-foodiz-gray">Votre accès aux courses reste bloqué tant que Foodiz n’a pas validé votre identité et votre activité.</p></section>
+    <section className="rounded-[2rem] border border-foodiz-gold/20 bg-foodiz-gold/[0.06] p-6"><FileText size={25} className="text-foodiz-gold"/><h2 className="foodiz-title mt-4 text-2xl">Votre dossier livreur</h2><p className="mt-2 text-sm text-foodiz-gray">Votre accès aux courses reste bloqué tant que Weello n’a pas validé votre identité et votre activité.</p></section>
     <section className="foodiz-card mt-4 space-y-4 p-5">
       {field("name", "Nom complet", UserRound)}
       {field("phone", "Téléphone", Phone)}

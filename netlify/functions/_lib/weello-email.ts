@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { adminSupabase } from "./auth.js";
 
-export type FoodizEmailType =
+export type WeelloEmailType =
   | "prelaunch_confirmation"
   | "launch_access"
   | "professional_documents_received"
@@ -13,21 +13,21 @@ export type FoodizEmailType =
   | "financial_document"
   | "security";
 
-type FoodizEmailAction = {
+type WeelloEmailAction = {
   label: string;
   url: string;
 };
 
-type FoodizEmailInput = {
+type WeelloEmailInput = {
   to: string;
   subject: string;
   headline: string;
   body: string | string[];
-  emailType: FoodizEmailType;
+  emailType: WeelloEmailType;
   recipientUserId?: string | null;
   eyebrow?: string;
-  action?: FoodizEmailAction | null;
-  secondaryAction?: FoodizEmailAction | null;
+  action?: WeelloEmailAction | null;
+  secondaryAction?: WeelloEmailAction | null;
   metadata?: Record<string, unknown>;
   required?: boolean;
 };
@@ -49,7 +49,7 @@ function bodyParagraphs(body: string | string[]) {
     .join("");
 }
 
-function actionHtml(action?: FoodizEmailAction | null, secondaryAction?: FoodizEmailAction | null) {
+function actionHtml(action?: WeelloEmailAction | null, secondaryAction?: WeelloEmailAction | null) {
   const primary = action
     ? `<p style="margin:30px 0 12px"><a href="${escapeHtml(action.url)}" style="display:inline-block;background:#d8a84f;color:#050505;text-decoration:none;padding:15px 25px;border-radius:14px;font-weight:800">${escapeHtml(action.label)}</a></p>`
     : "";
@@ -59,14 +59,14 @@ function actionHtml(action?: FoodizEmailAction | null, secondaryAction?: FoodizE
   return primary + secondary;
 }
 
-function emailHtml(input: FoodizEmailInput) {
-  const eyebrow = input.eyebrow || "Foodiz";
+function emailHtml(input: WeelloEmailInput) {
+  const eyebrow = input.eyebrow || "Weello";
   return `
     <div style="margin:0;padding:0;background:#050505;font-family:Arial,Helvetica,sans-serif;color:#fff8ea">
       <div style="padding:38px 18px">
         <div style="max-width:660px;margin:0 auto;border:1px solid rgba(216,168,79,.38);border-radius:28px;overflow:hidden;background:#0b0b0b;box-shadow:0 24px 80px rgba(0,0,0,.45)">
           <div style="background:linear-gradient(135deg,#d8b98f,#b98d45);padding:26px 26px 22px;color:#050505">
-            <p style="margin:0;font-family:Georgia,serif;font-size:36px;font-style:italic;font-weight:700;letter-spacing:-.03em">Foodiz</p>
+            <p style="margin:0;font-family:Georgia,serif;font-size:36px;font-style:italic;font-weight:700;letter-spacing:-.03em">Weello</p>
             <p style="margin:10px 0 0;font-size:11px;letter-spacing:.24em;text-transform:uppercase;font-weight:800">${escapeHtml(eyebrow)}</p>
           </div>
           <div style="padding:34px 28px 30px;background:radial-gradient(circle at top right,rgba(216,168,79,.16),transparent 34%),#0b0b0b">
@@ -74,8 +74,8 @@ function emailHtml(input: FoodizEmailInput) {
             ${bodyParagraphs(input.body)}
             ${actionHtml(input.action, input.secondaryAction)}
             <div style="margin-top:32px;padding-top:18px;border-top:1px solid rgba(216,168,79,.16)">
-              <p style="margin:0;color:#8d877e;font-size:12px;line-height:1.6">Foodiz — l’app qui régale clients, livreurs et partenaires.</p>
-              <p style="margin:8px 0 0;color:#8d877e;font-size:11px;line-height:1.6">Si vous n’êtes pas à l’origine de cette action, contactez Foodiz : contact@foodiz.co.</p>
+              <p style="margin:0;color:#8d877e;font-size:12px;line-height:1.6">Weello — l’app qui régale clients, livreurs et partenaires.</p>
+              <p style="margin:8px 0 0;color:#8d877e;font-size:11px;line-height:1.6">Si vous n’êtes pas à l’origine de cette action, contactez Weello : contact@weello.co.</p>
             </div>
           </div>
         </div>
@@ -84,7 +84,7 @@ function emailHtml(input: FoodizEmailInput) {
   `;
 }
 
-async function logEmailEvent(input: FoodizEmailInput, status: "sent" | "failed" | "skipped", details: {
+async function logEmailEvent(input: WeelloEmailInput, status: "sent" | "failed" | "skipped", details: {
   providerMessageId?: string | null;
   errorMessage?: string | null;
 }) {
@@ -104,13 +104,13 @@ async function logEmailEvent(input: FoodizEmailInput, status: "sent" | "failed" 
     });
   } catch (error) {
     // The email must not fail only because the audit table is not deployed yet.
-    console.error("Foodiz email event logging failed", error);
+    console.error("Weello email event logging failed", error);
   }
 }
 
-export async function sendFoodizEmail(input: FoodizEmailInput) {
+export async function sendWeelloEmail(input: WeelloEmailInput) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.FOODIZ_EMAIL_FROM;
+  const from = process.env.WEELLO_EMAIL_FROM || process.env.FOODIZ_EMAIL_FROM;
   if (!apiKey || !from) {
     await logEmailEvent(input, "skipped", { errorMessage: "Missing Resend environment variables" });
     if (input.required) throw new Error("Missing Resend environment variables");

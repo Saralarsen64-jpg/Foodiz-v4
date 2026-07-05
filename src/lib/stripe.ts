@@ -77,7 +77,7 @@ export async function confirmPayment(stripe: Stripe, clientSecret: string) {
 }
 
 /**
- * Créer une souscription Foodiz+ pour partenaire
+ * Créer une souscription Weello+ pour partenaire
  */
 export async function createSubscription(
   restaurantId: string,

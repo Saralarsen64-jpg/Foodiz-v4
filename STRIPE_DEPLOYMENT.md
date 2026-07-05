@@ -1,4 +1,4 @@
-# 💳 Guide de Déploiement Stripe - Foodiz
+# 💳 Guide de Déploiement Stripe - Weello
 
 ## 1️⃣ Configuration Stripe
 
@@ -13,7 +13,7 @@
    - **Publishable Key** (pk_*) → `VITE_STRIPE_PUBLISHABLE_KEY`
    - **Secret Key** (sk_*) → `STRIPE_SECRET_KEY`
 
-### 1.3 Créer les plans d'abonnement Foodiz+
+### 1.3 Créer les plans d'abonnement Weello+
 1. Allez à https://dashboard.stripe.com/products
 2. Créez 4 prix pour les plans:
 
@@ -42,7 +42,7 @@ Plan Pro (Annuel)
 ### 1.4 Configurer le Webhook
 1. Allez à https://dashboard.stripe.com/webhooks
 2. Cliquez sur "Add endpoint"
-3. URL: `https://www.foodiz.co/api/stripe-webhook`
+3. URL: `https://weello.app/api/stripe-webhook`
 4. Sélectionnez les événements:
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
@@ -131,7 +131,7 @@ Stripe Connect doit être configuré avec un compte connecté vérifié pour cha
 partenaire et livreur avant d'activer `create-payout`.
 ```
 
-### 4.3 Souscription Foodiz+
+### 4.3 Souscription Weello+
 ```
 1. Partenaire va aux settings
 2. Choisit un plan (Basic/Pro, Mensuel/Annuel)

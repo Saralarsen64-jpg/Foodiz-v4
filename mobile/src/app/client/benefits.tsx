@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizCard,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloCard,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -83,38 +83,38 @@ export default function ClientBenefitsScreen() {
             tintColor={colors.gold}
           />
         }>
-        <FoodizBrand subtitle="Foodiz Club" />
-        <FoodizCard>
+        <WeelloBrand subtitle="Weello Club" />
+        <WeelloCard>
           <Text style={styles.kicker}>VOTRE SOLDE</Text>
           <Text style={styles.points}>{points} points</Text>
-          <Text style={foodizText.body}>
-            Niveau {tier}. Vos points donnent accès à des avantages Foodiz ;
+          <Text style={weelloText.body}>
+            Niveau {tier}. Vos points donnent accès à des avantages Weello ;
             ils ne sont jamais présentés comme une réduction monétaire directe.
           </Text>
-        </FoodizCard>
+        </WeelloCard>
 
-        <Text style={foodizText.heading}>Mes avantages</Text>
+        <Text style={weelloText.heading}>Mes avantages</Text>
         {rewards.length === 0 ? (
-          <FoodizCard>
-            <Text style={foodizText.heading}>Aucun avantage disponible</Text>
-            <Text style={foodizText.body}>
+          <WeelloCard>
+            <Text style={weelloText.heading}>Aucun avantage disponible</Text>
+            <Text style={weelloText.body}>
               Continuez à commander pour faire progresser votre fidélité.
             </Text>
-          </FoodizCard>
+          </WeelloCard>
         ) : (
           rewards.map((reward) => (
-            <FoodizCard key={reward.id}>
+            <WeelloCard key={reward.id}>
               <View style={styles.row}>
-                <Text style={foodizText.heading}>{reward.title}</Text>
+                <Text style={weelloText.heading}>{reward.title}</Text>
                 <Text style={styles.status}>{reward.status}</Text>
               </View>
-              <Text style={foodizText.body}>{reward.description}</Text>
+              <Text style={weelloText.body}>{reward.description}</Text>
               <Text style={styles.code}>{reward.reward_code}</Text>
-              <Text style={foodizText.body}>
+              <Text style={weelloText.body}>
                 Expire le{' '}
                 {new Date(reward.expires_at).toLocaleDateString('fr-FR')}
               </Text>
-            </FoodizCard>
+            </WeelloCard>
           ))
         )}
       </ScrollView>

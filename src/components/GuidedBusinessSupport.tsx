@@ -8,14 +8,14 @@ type Role = "partner" | "courier";
 type Category = { key: string; label: string; icon: typeof Package; needsOrder?: boolean };
 
 const CONFIG: Record<Role, { title: string; home: string; intro: string; promise: string; categories: Category[]; faq: { title: string; text: string }[] }> = {
-  partner: { title: "Support partenaire", home: "/partner", intro: "Foodiz vérifie votre établissement avant de transmettre une demande à l'équipe.", promise: "Objectif : moins d'attente, moins de flou, plus de ventes sereines.", categories: [
+  partner: { title: "Support partenaire", home: "/partner", intro: "Weello vérifie votre établissement avant de transmettre une demande à l'équipe.", promise: "Objectif : moins d'attente, moins de flou, plus de ventes sereines.", categories: [
     { key: "order", label: "Une commande", icon: Package, needsOrder: true }, { key: "menu", label: "Ma carte", icon: UtensilsCrossed }, { key: "payout", label: "Revenus & versements", icon: Landmark }, { key: "account", label: "Établissement", icon: Store },
   ], faq: [
-    { title: "Une commande n’apparaît pas", text: "Vérifiez d’abord le statut de votre établissement et les commandes actives. Si le diagnostic détecte un blocage, Foodiz reçoit le contexte complet." },
+    { title: "Une commande n’apparaît pas", text: "Vérifiez d’abord le statut de votre établissement et les commandes actives. Si le diagnostic détecte un blocage, Weello reçoit le contexte complet." },
     { title: "Un produit n’est pas visible", text: "Assurez-vous que le produit est actif, rattaché à une catégorie et correctement illustré. Une carte claire inspire plus confiance." },
-    { title: "Un règlement semble incomplet", text: "Les virements restent suivis depuis l’admin. Foodiz conserve l’historique des montants partenaire, frais et ajustements éventuels." },
+    { title: "Un règlement semble incomplet", text: "Les virements restent suivis depuis l’admin. Weello conserve l’historique des montants partenaire, frais et ajustements éventuels." },
   ] },
-  courier: { title: "Support livreur", home: "/courier", intro: "Foodiz analyse votre course et votre compte pour vous orienter immédiatement.", promise: "Objectif : une course claire, sécurisée, traçable et rémunérée correctement.", categories: [
+  courier: { title: "Support livreur", home: "/courier", intro: "Weello analyse votre course et votre compte pour vous orienter immédiatement.", promise: "Objectif : une course claire, sécurisée, traçable et rémunérée correctement.", categories: [
     { key: "delivery", label: "Livraison en cours", icon: Package, needsOrder: true }, { key: "availability", label: "Disponibilité", icon: Wifi }, { key: "payout", label: "Gains & versements", icon: Landmark }, { key: "account", label: "Mon compte", icon: CircleUserRound },
   ], faq: [
     { title: "Je ne reçois pas de courses", text: "Votre dossier doit être validé, votre position récente et votre statut en ligne. Le dispatch privilégie la proximité et la fiabilité." },
@@ -106,7 +106,7 @@ export default function GuidedBusinessSupport({ role }: { role: Role }) {
         <p className="mt-2 text-xs font-semibold text-foodiz-gold">{config.promise}</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {[
-            { label: "Diagnostic", icon: RefreshCw, text: "Foodiz vérifie les données avant le ticket." },
+            { label: "Diagnostic", icon: RefreshCw, text: "Weello vérifie les données avant le ticket." },
             { label: "Priorité", icon: AlertCircle, text: "Les urgences sont clairement identifiées." },
             { label: "Traçabilité", icon: Clock3, text: "Chaque demande garde son historique." },
           ].map(({ label, icon: Icon, text }) => (
@@ -132,7 +132,7 @@ export default function GuidedBusinessSupport({ role }: { role: Role }) {
           ))}
         </div>
       </section>
-      <section><h2 className="foodiz-title mb-4 flex items-center gap-2 text-lg"><Clock3 size={18} className="text-foodiz-gold"/>Mes demandes</h2>{loading ? <p className="text-sm text-foodiz-gray animate-pulse">Chargement...</p> : tickets.length === 0 ? <div className="foodiz-card p-5 text-center text-xs text-foodiz-gray">Aucune demande en cours.</div> : <div className="space-y-3">{tickets.map((ticket) => <article key={ticket.id} className="foodiz-card p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-foodiz-cream">{ticket.subject}</p><p className="mt-1 text-[10px] text-foodiz-gray">{new Date(ticket.created_at).toLocaleString("fr-FR")}</p></div><span className={`rounded-full border px-2 py-1 text-[9px] uppercase ${["closed", "resolved"].includes(ticket.status) ? "border-foodiz-green/20 text-foodiz-green" : "border-foodiz-gold/20 text-foodiz-gold"}`}>{ticket.status}</span></div><p className="mt-3 text-xs text-foodiz-gray">{ticket.message}</p>{ticket.admin_response && <div className="mt-3 rounded-xl border border-foodiz-green/15 bg-foodiz-green/5 p-3"><p className="mb-1 text-[9px] uppercase text-foodiz-green">Réponse Foodiz</p><p className="text-xs text-foodiz-cream">{ticket.admin_response}</p></div>}</article>)}</div>}</section>
+      <section><h2 className="foodiz-title mb-4 flex items-center gap-2 text-lg"><Clock3 size={18} className="text-foodiz-gold"/>Mes demandes</h2>{loading ? <p className="text-sm text-foodiz-gray animate-pulse">Chargement...</p> : tickets.length === 0 ? <div className="foodiz-card p-5 text-center text-xs text-foodiz-gray">Aucune demande en cours.</div> : <div className="space-y-3">{tickets.map((ticket) => <article key={ticket.id} className="foodiz-card p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-foodiz-cream">{ticket.subject}</p><p className="mt-1 text-[10px] text-foodiz-gray">{new Date(ticket.created_at).toLocaleString("fr-FR")}</p></div><span className={`rounded-full border px-2 py-1 text-[9px] uppercase ${["closed", "resolved"].includes(ticket.status) ? "border-foodiz-green/20 text-foodiz-green" : "border-foodiz-gold/20 text-foodiz-gold"}`}>{ticket.status}</span></div><p className="mt-3 text-xs text-foodiz-gray">{ticket.message}</p>{ticket.admin_response && <div className="mt-3 rounded-xl border border-foodiz-green/15 bg-foodiz-green/5 p-3"><p className="mb-1 text-[9px] uppercase text-foodiz-green">Réponse Weello</p><p className="text-xs text-foodiz-cream">{ticket.admin_response}</p></div>}</article>)}</div>}</section>
     </main>
   </div>;
 }

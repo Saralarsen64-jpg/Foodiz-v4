@@ -246,7 +246,7 @@ export default function DeliveryTrackingPage() {
               <h2 className="foodiz-title mt-3 text-2xl text-foodiz-cream">La commande se prépare</h2>
               <p className="mt-3 text-sm leading-relaxed text-foodiz-gray">
                 La carte GPS s’activera après récupération par le livreur.
-                Pour l’instant, Foodiz suit l’état restaurant.
+                Pour l’instant, Weello suit l’état restaurant.
               </p>
             </div>
           </div>

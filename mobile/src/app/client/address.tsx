@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 
 import {
-  FoodizButton,
-  FoodizCard,
-  FoodizField,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloButton,
+  WeelloCard,
+  WeelloField,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
-import { foodizApi } from '@/lib/api';
+import { weelloApi } from '@/lib/api';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
@@ -80,7 +80,7 @@ export default function AddressScreen() {
     }
     setLoading(true);
     try {
-      const result = await foodizApi<{
+      const result = await weelloApi<{
         coordinates: { latitude: number; longitude: number };
       }>('address-management', {
         method: 'POST',
@@ -108,48 +108,48 @@ export default function AddressScreen() {
   }
 
   return (
-    <FoodizScreen>
+    <WeelloScreen>
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Retour au compte</Text>
       </Pressable>
-      <Text style={foodizText.title}>Adresse de livraison</Text>
-      <Text style={foodizText.body}>
-        Foodiz ne valide aucune commande sans coordonnées réelles.
+      <Text style={weelloText.title}>Adresse de livraison</Text>
+      <Text style={weelloText.body}>
+        Weello ne valide aucune commande sans coordonnées réelles.
       </Text>
-      <FoodizCard>
-        <Text style={foodizText.heading}>Localisation précise</Text>
-        <Text style={foodizText.body}>
+      <WeelloCard>
+        <Text style={weelloText.heading}>Localisation précise</Text>
+        <Text style={weelloText.body}>
           {latitude === null
             ? 'Aucune coordonnée enregistrée.'
             : `Coordonnées enregistrées : ${latitude.toFixed(5)}, ${longitude?.toFixed(5)}`}
         </Text>
-        <FoodizButton
+        <WeelloButton
           label="Utiliser ma position actuelle"
           onPress={() => void locateCurrentPosition()}
           loading={loading}
           secondary
         />
-      </FoodizCard>
-      <FoodizField
+      </WeelloCard>
+      <WeelloField
         value={address}
         onChangeText={setAddress}
         placeholder="Numéro et rue"
         autoCapitalize="words"
       />
-      <FoodizField
+      <WeelloField
         value={postalCode}
         onChangeText={setPostalCode}
         placeholder="Code postal"
         keyboardType="number-pad"
       />
-      <FoodizField
+      <WeelloField
         value={city}
         onChangeText={setCity}
         placeholder="Ville"
         autoCapitalize="words"
       />
-      <FoodizButton label="Enregistrer l’adresse" onPress={() => void save()} loading={loading} />
-    </FoodizScreen>
+      <WeelloButton label="Enregistrer l’adresse" onPress={() => void save()} loading={loading} />
+    </WeelloScreen>
   );
 }
 

@@ -38,7 +38,7 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Impossible de préparer les accès." }) };
   }
 
-  const appUrl = (process.env.APP_URL || "https://www.foodiz.co").replace(/\/$/, "");
+  const appUrl = (process.env.APP_URL || "https://weello.app").replace(/\/$/, "");
   let sent = 0;
   let skippedUnvalidatedCouriers = 0;
   let skippedUnvalidatedPartners = 0;
@@ -75,9 +75,9 @@ const handler: Handler = async (event) => {
     try {
       await sendPrelaunchEmail({
         to: profile.email,
-        subject: "Votre accès Foodiz est ouvert",
-        headline: `Foodiz est lancé, ${profile.first_name}`,
-        body: "Votre compte est prêt. Activez maintenant votre accès sécurisé pour rejoindre Foodiz. Le lien est valable 7 jours et ne doit pas être partagé.",
+        subject: "Votre accès Weello est ouvert",
+        headline: `Weello est lancé, ${profile.first_name}`,
+        body: "Votre compte est prêt. Activez maintenant votre accès sécurisé pour rejoindre Weello. Le lien est valable 7 jours et ne doit pas être partagé.",
         actionLabel: "Activer mon accès",
         actionUrl: activationUrl,
         recipientUserId: profile.user_id,

@@ -7,7 +7,7 @@ const topics = [
   { icon: PackageCheck, title: "Commande", text: "Contrôlez que le sac est fermé et que tous les éléments annoncés sont présents." },
   { icon: MapPinCheck, title: "Livraison", text: "Mettez à jour chaque étape afin que le client suive votre progression en direct." },
   { icon: KeyRound, title: "Code sécurisé", text: "Demandez le code à six chiffres au client uniquement lors de la remise." },
-  { icon: Clock3, title: "Retard", text: "À partir de la récupération, Foodiz compare l’estimation GPS et le temps réel pour protéger le client." },
+  { icon: Clock3, title: "Retard", text: "À partir de la récupération, Weello compare l’estimation GPS et le temps réel pour protéger le client." },
   { icon: FileCheck2, title: "Dossier", text: "Gardez vos justificatifs lisibles et à jour pour conserver votre accès aux courses." },
 ];
 
@@ -17,7 +17,7 @@ export default function CourierHelpCenter() {
     <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.16),rgba(13,13,13,0.98)_50%)] p-6 text-center">
       <LifeBuoy size={30} className="mx-auto text-foodiz-gold" />
       <p className="mt-3 text-[10px] font-black uppercase tracking-[.25em] text-foodiz-gold">Support livreur</p>
-      <h2 className="foodiz-title mt-2 text-2xl">Les bons réflexes Foodiz</h2>
+      <h2 className="foodiz-title mt-2 text-2xl">Les bons réflexes Weello</h2>
       <p className="mt-2 text-sm leading-relaxed text-foodiz-gray">
         Un parcours clair pour livrer vite, proprement, et garder une relation de confiance avec le client.
       </p>

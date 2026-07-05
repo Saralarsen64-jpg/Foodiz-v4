@@ -30,7 +30,7 @@ export default function ActivatePrelaunch() {
         const destination = typeof payload.loginPath === "string" ? payload.loginPath : "/auth/login";
         setLoginPath(destination);
         setState("success");
-        setMessage("Votre accès Foodiz est activé. Vous allez être redirigé vers votre première connexion.");
+        setMessage("Votre accès Weello est activé. Vous allez être redirigé vers votre première connexion.");
         window.setTimeout(() => navigate(destination, { replace: true }), 2500);
       })
       .catch((error) => {
@@ -45,13 +45,13 @@ export default function ActivatePrelaunch() {
     <main className="min-h-screen bg-foodiz-black px-5 py-10 flex items-center justify-center">
       <section className="w-full max-w-lg foodiz-card p-8 sm:p-10 text-center">
         <div className="flex justify-center mb-8">
-          <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="w-72 max-w-full h-auto rounded-2xl" />
+          <img src="/images/weello-wordmark.png" alt="Weello" className="w-72 max-w-full h-auto rounded-2xl" />
         </div>
         <div className="w-20 h-20 rounded-[1.7rem] border border-foodiz-gold/25 bg-foodiz-gold/10 mx-auto flex items-center justify-center text-foodiz-gold">
           <Icon size={36} className={state === "loading" ? "animate-spin" : ""} />
         </div>
         <h1 className="foodiz-title text-3xl mt-7">
-          {state === "success" ? "Bienvenue chez Foodiz" : state === "error" ? "Activation impossible" : "Un instant…"}
+          {state === "success" ? "Bienvenue chez Weello" : state === "error" ? "Activation impossible" : "Un instant…"}
         </h1>
         <p className="text-foodiz-gray mt-4 leading-relaxed">{message}</p>
         {state === "success" && (

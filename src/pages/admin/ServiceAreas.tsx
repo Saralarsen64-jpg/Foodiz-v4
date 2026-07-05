@@ -99,7 +99,7 @@ export default function AdminServiceAreasPage() {
   }), [areas]);
 
   return (
-    <AdminShell title="Villes Foodiz" subtitle="Déploiement national progressif, ville par ville">
+    <AdminShell title="Villes Weello" subtitle="Déploiement national progressif, ville par ville">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["Villes détectées", totals.cities],

@@ -1,7 +1,7 @@
 import type { Handler } from "@netlify/functions";
 
 import { adminSupabase, authenticatedUser, userRole } from "./_lib/auth.js";
-import { sendFoodizEmail } from "./_lib/foodiz-email.js";
+import { sendWeelloEmail } from "./_lib/weello-email.js";
 
 const reply = (statusCode: number, body: unknown) => ({
   statusCode,
@@ -50,7 +50,7 @@ const handler: Handler = async (event) => {
     if (resolveError) throw resolveError;
 
     let recipientEmail = ticketBefore.user_email || "";
-    let recipientName = "Foodizer";
+    let recipientName = "Weelloer";
     if (ticketBefore.user_id) {
       const { data: profile } = await adminSupabase
         .from("profiles")
@@ -63,23 +63,23 @@ const handler: Handler = async (event) => {
 
     let emailSent = false;
     if (recipientEmail) {
-      const publicUrl = (process.env.URL || process.env.DEPLOY_PRIME_URL || "https://www.foodiz.co").replace(/\/$/, "");
+      const publicUrl = (process.env.URL || process.env.DEPLOY_PRIME_URL || "https://weello.app").replace(/\/$/, "");
       const role = ticketBefore.user_role || "client";
       const supportPath = supportPathByRole[role] || supportPathByRole.client;
-      const emailResult = await sendFoodizEmail({
+      const emailResult = await sendWeelloEmail({
         to: recipientEmail,
-        subject: "Votre demande Foodiz a été traitée",
+        subject: "Votre demande Weello a été traitée",
         headline: `Votre demande a été traitée, ${recipientName}`,
         body: [
-          `Nous avons traité votre demande “${ticketBefore.subject || "Support Foodiz"}”. Voici la réponse de l’équipe Foodiz :`,
+          `Nous avons traité votre demande “${ticketBefore.subject || "Support Weello"}”. Voici la réponse de l’équipe Weello :`,
           finalResponse,
-          "Merci de faire confiance à Foodiz. Si le sujet n’est pas totalement résolu, vous pouvez rouvrir une demande depuis votre espace.",
+          "Merci de faire confiance à Weello. Si le sujet n’est pas totalement résolu, vous pouvez rouvrir une demande depuis votre espace.",
         ],
         emailType: "support_ticket_resolved",
         recipientUserId: ticketBefore.user_id || null,
         required: false,
         action: {
-          label: "Ouvrir mon espace Foodiz",
+          label: "Ouvrir mon espace Weello",
           url: `${publicUrl}${supportPath}`,
         },
         metadata: {

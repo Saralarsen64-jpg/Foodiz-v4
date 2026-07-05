@@ -16,8 +16,8 @@ export default function Logo({ size = "md", className = "" }: LogoProps) {
   return (
     <div className={`${sizes[size]} ${className} relative shrink-0 overflow-hidden rounded-xl border border-foodiz-gold/10 bg-black/10 shadow-[0_0_24px_rgba(216,168,79,.10)]`}>
       <img
-        src="/images/Logo-Foodiz.PNG"
-        alt="Foodiz"
+        src="/images/weello-wordmark.png"
+        alt="Weello"
         className="h-full w-full object-contain object-center"
       />
     </div>

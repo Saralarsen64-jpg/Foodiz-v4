@@ -1,16 +1,16 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizLegalLinks,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloLegalLinks,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -89,7 +89,7 @@ export default function CourierAccountScreen() {
         })
         .eq('user_id', user.id);
       if (error) throw error;
-      Alert.alert('Disponibilités enregistrées', 'Foodiz tiendra compte de ces préférences pour préparer le dispatch.');
+      Alert.alert('Disponibilités enregistrées', 'Weello tiendra compte de ces préférences pour préparer le dispatch.');
     } catch (error) {
       Alert.alert(
         'Enregistrement impossible',
@@ -103,14 +103,14 @@ export default function CourierAccountScreen() {
   const confirmDeletion = () => {
     Alert.alert(
       'Supprimer définitivement le compte',
-      'Cette action est irréversible et supprime votre accès Foodiz.',
+      'Cette action est irréversible et supprime votre accès Weello.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Supprimer',
           style: 'destructive',
           onPress: () =>
-            void foodizApi('delete-account', { method: 'POST' })
+            void weelloApi('delete-account', { method: 'POST' })
               .then(() => signOut())
               .catch((error) =>
                 Alert.alert(
@@ -124,17 +124,17 @@ export default function CourierAccountScreen() {
   };
 
   return (
-    <FoodizScreen>
-      <FoodizBrand subtitle="Profil livreur" />
-      <FoodizCard>
-        <Text style={foodizText.heading}>{profile?.full_name || profile?.first_name}</Text>
-        <Text style={foodizText.body}>{profile?.email}</Text>
-        <Text style={foodizText.body}>{profile?.city || 'Ville non renseignée'}</Text>
-      </FoodizCard>
+    <WeelloScreen>
+      <WeelloBrand subtitle="Profil livreur" />
+      <WeelloCard>
+        <Text style={weelloText.heading}>{profile?.full_name || profile?.first_name}</Text>
+        <Text style={weelloText.body}>{profile?.email}</Text>
+        <Text style={weelloText.body}>{profile?.city || 'Ville non renseignée'}</Text>
+      </WeelloCard>
 
-      <FoodizCard>
-        <Text style={foodizText.heading}>Mes disponibilités</Text>
-        <Text style={foodizText.body}>
+      <WeelloCard>
+        <Text style={weelloText.heading}>Mes disponibilités</Text>
+        <Text style={weelloText.body}>
           Choisissez les jours et les créneaux où vous souhaitez recevoir des
           courses. Vous pourrez toujours vous mettre hors ligne.
         </Text>
@@ -146,7 +146,7 @@ export default function CourierAccountScreen() {
             Je suis flexible
           </Text>
           <Text style={[styles.choiceDetail, flexible && styles.activeDetail]}>
-            Foodiz peut me proposer d’autres créneaux si besoin.
+            Weello peut me proposer d’autres créneaux si besoin.
           </Text>
         </Pressable>
 
@@ -181,30 +181,35 @@ export default function CourierAccountScreen() {
           })}
         </View>
 
-        <FoodizButton
+        <WeelloButton
           label="Enregistrer mes disponibilités"
           onPress={() => void saveAvailability()}
           loading={savingAvailability}
         />
-      </FoodizCard>
+      </WeelloCard>
 
-      <FoodizButton
+      <WeelloButton
         label="Voir le statut de mon dossier"
         onPress={() => router.push('/courier-status')}
       />
-      <FoodizButton
+      <WeelloButton
         label="Mettre à jour mes justificatifs"
         onPress={() => router.push('/courier-onboarding')}
         secondary
       />
-      <FoodizButton label="Se déconnecter" onPress={() => void signOut()} secondary />
-      <FoodizButton
+      <WeelloButton
+        label="Centre d’aide Weello"
+        onPress={() => router.push('/support' as Href)}
+        secondary
+      />
+      <WeelloButton label="Se déconnecter" onPress={() => void signOut()} secondary />
+      <WeelloButton
         label="Supprimer définitivement mon compte"
         onPress={confirmDeletion}
         secondary
       />
-      <FoodizLegalLinks />
-    </FoodizScreen>
+      <WeelloLegalLinks />
+    </WeelloScreen>
   );
 }
 

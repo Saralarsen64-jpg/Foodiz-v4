@@ -3,14 +3,14 @@ import { router } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizCard,
-  FoodizHero,
-  FoodizMetric,
-  FoodizPill,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloCard,
+  WeelloHero,
+  WeelloMetric,
+  WeelloPill,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -38,25 +38,25 @@ export default function ClientOrdersScreen() {
   }, [session?.user.id]);
 
   return (
-    <FoodizScreen>
-      <FoodizBrand subtitle="Mes commandes" />
-      <FoodizHero
-        eyebrow="Suivi Foodiz"
+    <WeelloScreen>
+      <WeelloBrand subtitle="Mes commandes" />
+      <WeelloHero
+        eyebrow="Suivi Weello"
         title="Vos commandes, sans stress"
         body="Retrouvez l’historique, le statut et le suivi live dès qu’un livreur prend le relais.">
-        <FoodizMetric
+        <WeelloMetric
           label="Commandes"
           value={orders.length}
           helper="récentes"
           tone={orders.length > 0 ? 'success' : 'muted'}
         />
-      </FoodizHero>
+      </WeelloHero>
 
       {orders.length === 0 ? (
-        <FoodizCard>
-          <Text style={foodizText.heading}>Aucune commande</Text>
-          <Text style={foodizText.body}>Votre historique apparaîtra ici.</Text>
-        </FoodizCard>
+        <WeelloCard>
+          <Text style={weelloText.heading}>Aucune commande</Text>
+          <Text style={weelloText.body}>Votre historique apparaîtra ici.</Text>
+        </WeelloCard>
       ) : (
         orders.map((order) => (
           <Pressable
@@ -67,8 +67,8 @@ export default function ClientOrdersScreen() {
                 params: { id: order.id },
               })
             }>
-            <FoodizCard>
-              <FoodizPill
+            <WeelloCard>
+              <WeelloPill
                 label={order.status}
                 tone={
                   order.status === 'delivered'
@@ -78,20 +78,20 @@ export default function ClientOrdersScreen() {
                       : 'gold'
                 }
               />
-              <Text style={foodizText.heading}>
-                {order.restaurant?.name || 'Commande Foodiz'}
+              <Text style={weelloText.heading}>
+                {order.restaurant?.name || 'Commande Weello'}
               </Text>
-              <Text style={foodizText.body}>
+              <Text style={weelloText.body}>
                 #{order.id.slice(0, 8)}
               </Text>
-              <Text style={[foodizText.heading, foodizText.gold]}>
+              <Text style={[weelloText.heading, weelloText.gold]}>
                 {(order.final_client_total_cents / 100).toFixed(2)} €
               </Text>
-              <Text style={foodizText.gold}>Voir le suivi →</Text>
-            </FoodizCard>
+              <Text style={weelloText.gold}>Voir le suivi →</Text>
+            </WeelloCard>
           </Pressable>
         ))
       )}
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }

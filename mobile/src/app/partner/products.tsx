@@ -10,14 +10,14 @@ import {
 } from 'react-native';
 
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizHero,
-  FoodizMetric,
-  FoodizPill,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloHero,
+  WeelloMetric,
+  WeelloPill,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -28,6 +28,8 @@ type Product = {
   category: string;
   partner_price_cents: number;
   is_active: boolean;
+  promotion_label: string | null;
+  promotion_partner_price_cents: number | null;
 };
 
 async function fetchPartnerProducts(userId: string) {
@@ -39,7 +41,7 @@ async function fetchPartnerProducts(userId: string) {
   if (!restaurant) return [] as Product[];
   const { data } = await supabase
     .from('products')
-    .select('id,name,category,partner_price_cents,is_active')
+    .select('id,name,category,partner_price_cents,is_active,promotion_label,promotion_partner_price_cents')
     .eq('restaurant_id', restaurant.id)
     .order('category')
     .order('name');
@@ -102,55 +104,61 @@ export default function PartnerProductsScreen() {
             tintColor={colors.gold}
           />
         }>
-        <FoodizBrand subtitle="Carte partenaire" />
-        <FoodizHero
-          eyebrow="Votre carte Foodiz"
+        <WeelloBrand subtitle="Carte partenaire" />
+        <WeelloHero
+          eyebrow="Votre carte Weello"
           title="Une carte claire vend mieux"
           body="Ajoutez vos produits, gardez les prix propres et masquez temporairement ce qui n’est plus disponible.">
           <View style={styles.metrics}>
-            <FoodizMetric
+            <WeelloMetric
               label="Produits"
               value={products.length}
               helper="dans votre carte"
             />
-            <FoodizMetric
+            <WeelloMetric
               label="Actifs"
               value={products.filter((product) => product.is_active).length}
               helper="visibles client"
               tone="success"
             />
           </View>
-          <FoodizButton
+          <WeelloButton
             label="Ajouter un produit"
             onPress={() => router.push('/partner/product')}
           />
-        </FoodizHero>
+        </WeelloHero>
 
         {products.length === 0 ? (
-          <FoodizCard>
-            <Text style={foodizText.heading}>Votre carte est vide</Text>
-            <Text style={foodizText.body}>
+          <WeelloCard>
+            <Text style={weelloText.heading}>Votre carte est vide</Text>
+            <Text style={weelloText.body}>
               Ajoutez votre premier produit et son prix partenaire.
             </Text>
-          </FoodizCard>
+          </WeelloCard>
         ) : (
           products.map((product) => (
-              <FoodizCard key={product.id}>
+              <WeelloCard key={product.id}>
                 <View style={styles.row}>
                   <View style={styles.productText}>
                     <Text style={styles.category}>{product.category}</Text>
-                    <Text style={foodizText.heading}>{product.name}</Text>
-                    <Text style={foodizText.body}>
+                    <Text style={weelloText.heading}>{product.name}</Text>
+                    <Text style={weelloText.body}>
                       Prix partenaire :{' '}
                       {(product.partner_price_cents / 100).toFixed(2)} €
                     </Text>
+                    {product.promotion_partner_price_cents ? (
+                      <Text style={styles.offer}>
+                        {product.promotion_label || 'Offre partenaire'} ·{' '}
+                        {(product.promotion_partner_price_cents / 100).toFixed(2)} €
+                      </Text>
+                    ) : null}
                   </View>
-                  <FoodizPill
+                  <WeelloPill
                     label={product.is_active ? 'Actif' : 'Masqué'}
                     tone={product.is_active ? 'success' : 'muted'}
                   />
                 </View>
-                <FoodizButton
+                <WeelloButton
                   label="Modifier le produit"
                   onPress={() =>
                     router.push({
@@ -159,12 +167,12 @@ export default function PartnerProductsScreen() {
                     })
                   }
                 />
-                <FoodizButton
+                <WeelloButton
                   label={product.is_active ? 'Masquer temporairement' : 'Réactiver'}
                   onPress={() => void toggle(product)}
                   secondary
                 />
-              </FoodizCard>
+              </WeelloCard>
           ))
         )}
       </ScrollView>
@@ -187,5 +195,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1.3,
+  },
+  offer: {
+    color: colors.gold,
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 4,
   },
 });

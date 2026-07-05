@@ -6,13 +6,13 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RoleGuard } from '@/components/role-guard';
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizField,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloField,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import {
   courierDocumentLabels,
   type CourierDocument,
@@ -283,7 +283,7 @@ export default function CourierOnboardingScreen() {
       await refreshProfile();
       Alert.alert(
         'Dossier transmis',
-        'Foodiz va contrôler votre identité, votre activité et la concordance du SIRET.',
+        'Weello va contrôler votre identité, votre activité et la concordance du SIRET.',
       );
       router.replace('/courier-status');
     } catch (error) {
@@ -298,30 +298,30 @@ export default function CourierOnboardingScreen() {
 
   return (
     <RoleGuard role="courier">
-      <FoodizScreen>
+      <WeelloScreen>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.back}>← Retour</Text>
         </Pressable>
-        <FoodizBrand subtitle="Dossier livreur sécurisé" />
-        <Text style={foodizText.title}>Votre activité professionnelle</Text>
-        <Text style={foodizText.body}>
+        <WeelloBrand subtitle="Dossier livreur sécurisé" />
+        <Text style={weelloText.title}>Votre activité professionnelle</Text>
+        <Text style={weelloText.body}>
           Aucune course ni aucun revenu ne sont accessibles avant validation
-          manuelle par Foodiz.
+          manuelle par Weello.
         </Text>
 
-        <FoodizField
+        <WeelloField
           value={form.name}
           onChangeText={(name) => setForm((current) => ({ ...current, name }))}
           placeholder="Nom complet"
           autoCapitalize="words"
         />
-        <FoodizField
+        <WeelloField
           value={form.phone}
           onChangeText={(phone) => setForm((current) => ({ ...current, phone }))}
           placeholder="Téléphone"
           keyboardType="phone-pad"
         />
-        <FoodizField
+        <WeelloField
           value={form.legalName}
           onChangeText={(legalName) =>
             setForm((current) => ({ ...current, legalName }))
@@ -329,7 +329,7 @@ export default function CourierOnboardingScreen() {
           placeholder="Nom légal / raison sociale"
           autoCapitalize="words"
         />
-        <FoodizField
+        <WeelloField
           value={form.siret}
           onChangeText={(siret) =>
             setForm((current) => ({
@@ -340,7 +340,7 @@ export default function CourierOnboardingScreen() {
           placeholder="SIRET — 14 chiffres"
           keyboardType="number-pad"
         />
-        <FoodizField
+        <WeelloField
           value={form.address}
           onChangeText={(address) =>
             setForm((current) => ({ ...current, address }))
@@ -348,7 +348,7 @@ export default function CourierOnboardingScreen() {
           placeholder="Adresse professionnelle"
           autoCapitalize="words"
         />
-        <FoodizField
+        <WeelloField
           value={form.postalCode}
           onChangeText={(postalCode) =>
             setForm((current) => ({
@@ -359,15 +359,15 @@ export default function CourierOnboardingScreen() {
           placeholder="Code postal"
           keyboardType="number-pad"
         />
-        <FoodizField
+        <WeelloField
           value={form.city}
           onChangeText={(city) => setForm((current) => ({ ...current, city }))}
           placeholder="Ville"
           autoCapitalize="words"
         />
 
-        <FoodizCard>
-          <Text style={foodizText.heading}>Véhicule</Text>
+        <WeelloCard>
+          <Text style={weelloText.heading}>Véhicule</Text>
           <View style={styles.vehicleRow}>
             {[
               ['bike', 'Vélo'],
@@ -394,13 +394,13 @@ export default function CourierOnboardingScreen() {
               </Pressable>
             ))}
           </View>
-        </FoodizCard>
+        </WeelloCard>
 
-        <FoodizCard>
-          <Text style={foodizText.heading}>Mes disponibilités</Text>
-          <Text style={foodizText.body}>
+        <WeelloCard>
+          <Text style={weelloText.heading}>Mes disponibilités</Text>
+          <Text style={weelloText.body}>
             Indiquez les créneaux et les jours où vous souhaitez travailler.
-            Foodiz utilisera ces préférences pour préparer le dispatch.
+            Weello utilisera ces préférences pour préparer le dispatch.
           </Text>
           <Pressable
             onPress={() =>
@@ -480,11 +480,11 @@ export default function CourierOnboardingScreen() {
               );
             })}
           </View>
-        </FoodizCard>
+        </WeelloCard>
 
-        <FoodizCard>
-          <Text style={foodizText.heading}>Justificatifs obligatoires</Text>
-          <Text style={foodizText.body}>
+        <WeelloCard>
+          <Text style={weelloText.heading}>Justificatifs obligatoires</Text>
+          <Text style={weelloText.body}>
             Photos nettes, sans reflet, avec les quatre bords visibles. Le
             justificatif d’activité peut être une attestation INSEE, un avis
             SIRENE/RNE ou un document officiel équivalent.
@@ -497,13 +497,13 @@ export default function CourierOnboardingScreen() {
                   <Text style={styles.documentTitle}>
                     {courierDocumentLabels[documentType]}
                   </Text>
-                  <Text style={foodizText.body}>
+                  <Text style={weelloText.body}>
                     {document
                       ? `Statut : ${document.status}${document.review_comment ? ` · ${document.review_comment}` : ''}`
                       : 'Document manquant'}
                   </Text>
                 </View>
-                <FoodizButton
+                <WeelloButton
                   label={
                     documentType === 'activity_proof'
                       ? document
@@ -524,14 +524,14 @@ export default function CourierOnboardingScreen() {
               </View>
             );
           })}
-        </FoodizCard>
+        </WeelloCard>
 
-        <FoodizButton
-          label="Envoyer mon dossier à Foodiz"
+        <WeelloButton
+          label="Envoyer mon dossier à Weello"
           onPress={() => void saveApplication()}
           loading={saving}
         />
-      </FoodizScreen>
+      </WeelloScreen>
     </RoleGuard>
   );
 }

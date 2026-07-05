@@ -3,10 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   calculateDeliveryFee,
-  calculateFoodizOrder,
+  calculateWeelloOrder,
   calculateItemSplit,
   calculateServiceFee,
-} from "../../src/lib/engines/foodizEconomicEngine.ts";
+} from "../../src/lib/engines/weelloEconomicEngine.ts";
 
 const checkoutSource = readFileSync(
   new URL("../../netlify/functions/create-checkout-session.ts", import.meta.url),
@@ -94,11 +94,11 @@ test("la livraison suit la règle 5 km puis 0,60 EUR par km commencé", () => {
 test("aucune distance absente ou invalide n'est acceptée", () => {
   assert.throws(() => calculateDeliveryFee(Number.NaN));
   assert.throws(() => calculateDeliveryFee(-1));
-  assert.throws(() => calculateFoodizOrder([{ partnerPriceCents: 350 }], Number.NaN));
+  assert.throws(() => calculateWeelloOrder([{ partnerPriceCents: 350 }], Number.NaN));
 });
 
 test("le total client additionne prix finaux, service et livraison", () => {
-  const totals = calculateFoodizOrder(
+  const totals = calculateWeelloOrder(
     [
       { partnerPriceCents: 350 },
       { partnerPriceCents: 351 },
@@ -113,7 +113,7 @@ test("le total client additionne prix finaux, service et livraison", () => {
 });
 
 test("Stripe importe le moteur unique et refuse une divergence avec le prix affiché", () => {
-  assert.match(checkoutSource, /from "\.\.\/\.\.\/src\/lib\/engines\/foodizEconomicEngine\.js"/);
+  assert.match(checkoutSource, /from "\.\.\/\.\.\/src\/lib\/engines\/weelloEconomicEngine\.js"/);
   assert.doesNotMatch(checkoutSource, /function calculateItemSplit/);
   assert.doesNotMatch(checkoutSource, /let distanceKm = 2/);
   assert.match(checkoutSource, /expectedTotalCents !== amountToPayCents/);

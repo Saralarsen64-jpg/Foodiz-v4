@@ -17,11 +17,16 @@ const cents = (value: unknown) => `${(Number(value || 0) / 100).toFixed(2)} EUR`
 const displayDate = (value: unknown) => value ? new Date(String(value)).toLocaleDateString("fr-FR") : "-";
 
 function legalIdentity() {
-  const name = process.env.FOODIZ_LEGAL_NAME?.trim();
-  const address = process.env.FOODIZ_LEGAL_ADDRESS?.trim();
-  const siret = process.env.FOODIZ_SIRET?.trim();
-  if (!name || !address || !siret) throw new Error("Missing Foodiz legal identity environment variables");
-  return { name, address, siret, vat: process.env.FOODIZ_VAT_NUMBER?.trim() || null };
+  const name = process.env.WEELLO_LEGAL_NAME?.trim() || process.env.FOODIZ_LEGAL_NAME?.trim();
+  const address = process.env.WEELLO_LEGAL_ADDRESS?.trim() || process.env.FOODIZ_LEGAL_ADDRESS?.trim();
+  const siret = process.env.WEELLO_SIRET?.trim() || process.env.FOODIZ_SIRET?.trim();
+  if (!name || !address || !siret) throw new Error("Missing Weello legal identity environment variables");
+  return {
+    name,
+    address,
+    siret,
+    vat: process.env.WEELLO_VAT_NUMBER?.trim() || process.env.FOODIZ_VAT_NUMBER?.trim() || null,
+  };
 }
 
 export async function loadFinancialDocument(documentId: string) {
@@ -70,7 +75,7 @@ export async function renderFinancialDocumentPdf(document: FinancialDocument) {
     line(`Sous-total produits : ${cents(payload.partner_total_cents)}`);
     line(`Frais de service : ${cents(payload.service_fee_cents)}`);
     line(`Frais de livraison : ${cents(payload.delivery_fee_cents)}`);
-    if (Number(payload.advantage_discount_cents || 0) > 0) line(`Avantage Foodiz : -${cents(payload.advantage_discount_cents)}`);
+    if (Number(payload.advantage_discount_cents || 0) > 0) line(`Avantage Weello : -${cents(payload.advantage_discount_cents)}`);
     gap(8);
     line(`TOTAL PAYE : ${cents(payload.total_paid_cents)}`, { size: 14, strong: true, color: gold });
   } else {
@@ -87,7 +92,7 @@ export async function renderFinancialDocumentPdf(document: FinancialDocument) {
     gap(8);
     line(`TOTAL VERSE : ${cents(payload.amount_cents)}`, { size: 14, strong: true, color: gold });
     gap(18);
-    line("Ce document atteste du reversement enregistre par Foodiz pour la periode indiquee.", { size: 8 });
+    line("Ce document atteste du reversement enregistre par Weello pour la periode indiquee.", { size: 8 });
     line("Il ne constitue ni une fiche de paie ni une qualification juridique de la relation.", { size: 8 });
   }
   return pdf.save();
@@ -96,7 +101,7 @@ export async function renderFinancialDocumentPdf(document: FinancialDocument) {
 export async function sendFinancialDocumentEmail(document: FinancialDocument) {
   const email = document.recipient_email?.trim();
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.FOODIZ_EMAIL_FROM;
+  const from = process.env.WEELLO_EMAIL_FROM || process.env.FOODIZ_EMAIL_FROM;
   if (!email) throw new Error("Recipient email is missing");
   if (!apiKey || !from) throw new Error("Missing Resend environment variables");
 
@@ -106,8 +111,8 @@ export async function sendFinancialDocumentEmail(document: FinancialDocument) {
     const result = await new Resend(apiKey).emails.send({
       from,
       to: email,
-      subject: receipt ? `Votre reçu Foodiz ${document.document_number}` : `Votre bordereau Foodiz ${document.document_number}`,
-      html: `<div style="font-family:Arial,sans-serif;color:#171717"><h2 style="color:#b58a3a">${receipt ? "Paiement confirmé" : "Reversement confirmé"}</h2><p>Bonjour,</p><p>${receipt ? "Votre paiement Foodiz a bien été enregistré." : "Votre règlement Foodiz a bien été enregistré pour la période indiquée."}</p><p>Le justificatif détaillé <strong>${document.document_number}</strong> est joint à cet email.</p><p>Foodiz</p></div>`,
+      subject: receipt ? `Votre reçu Weello ${document.document_number}` : `Votre bordereau Weello ${document.document_number}`,
+      html: `<div style="font-family:Arial,sans-serif;color:#171717"><h2 style="color:#b58a3a">${receipt ? "Paiement confirmé" : "Reversement confirmé"}</h2><p>Bonjour,</p><p>${receipt ? "Votre paiement Weello a bien été enregistré." : "Votre règlement Weello a bien été enregistré pour la période indiquée."}</p><p>Le justificatif détaillé <strong>${document.document_number}</strong> est joint à cet email.</p><p>Weello</p></div>`,
       attachments: [{ filename: `${document.document_number}.pdf`, content: Buffer.from(pdf) }],
     });
     if (result.error) throw new Error(result.error.message);

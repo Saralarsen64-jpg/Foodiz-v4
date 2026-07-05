@@ -255,9 +255,9 @@ const handler: Handler = async (event) => {
     try {
       await sendPrelaunchEmail({
         to: profile.email,
-        subject: "Vos justificatifs partenaire Foodiz ont bien été reçus",
+        subject: "Vos justificatifs partenaire Weello ont bien été reçus",
         headline: "Dossier établissement transmis",
-        body: "Merci. Les justificatifs de votre établissement sont bien transmis. L’équipe Foodiz vérifie l’activité, les documents légaux, l’assurance et les éléments réglementaires avant toute activation commerciale.",
+        body: "Merci. Les justificatifs de votre établissement sont bien transmis. L’équipe Weello vérifie l’activité, les documents légaux, l’assurance et les éléments réglementaires avant toute activation commerciale.",
         recipientUserId: profile.user_id,
         emailType: "professional_documents_received",
         required: false,
@@ -269,7 +269,7 @@ const handler: Handler = async (event) => {
     return reply(200, {
       submitted: true,
       reviewStatus: "pending_review",
-      message: "Vos justificatifs sont transmis à Foodiz pour vérification.",
+      message: "Vos justificatifs sont transmis à Weello pour vérification.",
     });
   }
 

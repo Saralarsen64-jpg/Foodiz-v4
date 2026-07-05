@@ -89,7 +89,7 @@ const handler: Handler = async (event) => {
 
     return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ checkoutUrl: session.url }) };
   } catch (error: any) {
-    console.error("Foodiz+ Checkout creation failed", error);
+    console.error("Weello+ Checkout creation failed", error);
     return { statusCode: 500, body: JSON.stringify({ error: "CHECKOUT_CREATION_FAILED" }) };
   }
 };

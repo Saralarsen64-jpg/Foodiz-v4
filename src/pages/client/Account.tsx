@@ -74,7 +74,7 @@ export default function AccountPage() {
     { label: "Mes paiements", icon: CreditCard, path: "/client/account/payments" },
     { label: "Mes favoris", icon: Gift, path: "/client/account/favorites" },
     { label: "Parrainage & VIP", icon: Gift, path: "/client/account/referral" },
-    { label: "Foodiz Club", icon: Gift, path: "/client/advantages" },
+    { label: "Weello Club", icon: Gift, path: "/client/advantages" },
     { label: "Centre d'aide", icon: Settings, path: "/client/help-center" },
   ];
 

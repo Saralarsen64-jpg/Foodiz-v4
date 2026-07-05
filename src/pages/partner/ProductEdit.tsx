@@ -21,7 +21,12 @@ export default function ProductEditPage() {
     price: "", // En euros pour l'input, converti en centimes pour la BDD
     category: "Plats",
     image_url: "",
-    is_active: true
+    is_active: true,
+    promotion_enabled: false,
+    promotion_label: "",
+    promotion_price: "",
+    promotion_starts_at: "",
+    promotion_ends_at: "",
   });
 
   useEffect(() => {
@@ -41,7 +46,18 @@ export default function ProductEditPage() {
                 price: (product.partner_price_cents / 100).toString(),
                 category: product.category || "Plats",
                 image_url: product.image_url || "",
-                is_active: product.is_active
+                is_active: product.is_active,
+                promotion_enabled: Boolean(product.promotion_partner_price_cents),
+                promotion_label: product.promotion_label || "",
+                promotion_price: product.promotion_partner_price_cents
+                  ? (product.promotion_partner_price_cents / 100).toFixed(2)
+                  : "",
+                promotion_starts_at: product.promotion_starts_at
+                  ? new Date(product.promotion_starts_at).toISOString().slice(0, 16)
+                  : "",
+                promotion_ends_at: product.promotion_ends_at
+                  ? new Date(product.promotion_ends_at).toISOString().slice(0, 16)
+                  : "",
               });
             }
             setLoading(false);
@@ -64,6 +80,25 @@ export default function ProductEditPage() {
       setSaving(false);
       return;
     }
+    const promotionPriceCents = formData.promotion_enabled
+      ? Math.round(parseFloat(formData.promotion_price) * 100)
+      : null;
+    if (
+      formData.promotion_enabled
+      && (
+        !promotionPriceCents
+        || promotionPriceCents < 50
+        || promotionPriceCents >= priceCents
+        || formData.promotion_label.trim().length < 2
+      )
+    ) {
+      setMessage({
+        type: 'error',
+        text: "L’offre doit avoir un libellé et un prix compris entre 0,50 € et le prix habituel.",
+      });
+      setSaving(false);
+      return;
+    }
 
     const productData = {
       restaurant_id: restaurantId,
@@ -72,7 +107,19 @@ export default function ProductEditPage() {
       partner_price_cents: priceCents,
       category: formData.category,
       image_url: formData.image_url,
-      is_active: formData.is_active
+      is_active: formData.is_active,
+      promotion_label: formData.promotion_enabled
+        ? formData.promotion_label.trim()
+        : null,
+      promotion_partner_price_cents: promotionPriceCents,
+      promotion_starts_at:
+        formData.promotion_enabled && formData.promotion_starts_at
+          ? new Date(formData.promotion_starts_at).toISOString()
+          : null,
+      promotion_ends_at:
+        formData.promotion_enabled && formData.promotion_ends_at
+          ? new Date(formData.promotion_ends_at).toISOString()
+          : null,
     };
 
     let error;
@@ -141,7 +188,7 @@ export default function ProductEditPage() {
 
       <main className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="foodiz-title text-2xl text-foodiz-cream mb-2">{isEditing ? "Modifier le plat" : "Nouveau plat"}</h1>
-        <p className="text-foodiz-gray text-sm mb-8">Remplissez les informations de votre produit. Le prix sera utilisé par le moteur économique Foodiz.</p>
+        <p className="text-foodiz-gray text-sm mb-8">Remplissez les informations de votre produit. Le prix sera utilisé par le moteur économique Weello.</p>
 
         <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
           {message && (
@@ -209,6 +256,84 @@ export default function ProductEditPage() {
                 className="w-5 h-5 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold"
               />
               <label htmlFor="available" className="text-foodiz-cream text-sm">Produit disponible à la vente</label>
+            </div>
+
+            <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="promotion"
+                  checked={formData.promotion_enabled}
+                  onChange={(event) =>
+                    setFormData({
+                      ...formData,
+                      promotion_enabled: event.target.checked,
+                    })}
+                  className="h-5 w-5 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold"
+                />
+                <label htmlFor="promotion" className="text-sm font-semibold text-foodiz-cream">
+                  Créer une offre sur ce produit
+                </label>
+              </div>
+              {formData.promotion_enabled && (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                    Libellé de l’offre
+                    <input
+                      value={formData.promotion_label}
+                      maxLength={40}
+                      onChange={(event) =>
+                        setFormData({
+                          ...formData,
+                          promotion_label: event.target.value,
+                        })}
+                      placeholder="Ex : Offre découverte"
+                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                    />
+                  </label>
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                    Prix partenaire en offre (€)
+                    <input
+                      type="number"
+                      min="0.50"
+                      step="0.01"
+                      value={formData.promotion_price}
+                      onChange={(event) =>
+                        setFormData({
+                          ...formData,
+                          promotion_price: event.target.value,
+                        })}
+                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                    />
+                  </label>
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                    Début facultatif
+                    <input
+                      type="datetime-local"
+                      value={formData.promotion_starts_at}
+                      onChange={(event) =>
+                        setFormData({
+                          ...formData,
+                          promotion_starts_at: event.target.value,
+                        })}
+                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                    />
+                  </label>
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                    Fin facultative
+                    <input
+                      type="datetime-local"
+                      value={formData.promotion_ends_at}
+                      onChange={(event) =>
+                        setFormData({
+                          ...formData,
+                          promotion_ends_at: event.target.value,
+                        })}
+                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                    />
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="pt-4 flex justify-end">

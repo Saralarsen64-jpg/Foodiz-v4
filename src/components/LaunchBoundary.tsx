@@ -10,6 +10,7 @@ function isAdminPath(pathname: string) {
 
 export default function LaunchBoundary({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const isLocalDesignStudio = import.meta.env.DEV && location.pathname === "/design-studio";
   const [launched, setLaunched] = useState<boolean | null>(null);
   const [sessionRole, setSessionRole] = useState<string | null | undefined>(undefined);
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -59,7 +60,7 @@ export default function LaunchBoundary({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  if (launched === null || sessionRole === undefined || hasSession === null || accessAllowed === null) {
+  if (!isLocalDesignStudio && (launched === null || sessionRole === undefined || hasSession === null || accessAllowed === null)) {
     return (
       <div className="min-h-screen bg-foodiz-black flex items-center justify-center">
         <div className="w-12 h-12 rounded-full border border-foodiz-gold/20 border-t-foodiz-gold animate-spin" />
@@ -73,21 +74,21 @@ export default function LaunchBoundary({ children }: { children: ReactNode }) {
 
   // The public domain root is always the public waitlist before launch,
   // including when an administrator session is already present.
-  if (!launched && location.pathname === "/") {
+  if (!isLocalDesignStudio && !launched && location.pathname === "/") {
     return <Navigate to="/waitlist" replace />;
   }
 
-  if (!launched && location.pathname === "/auth/signup") {
+  if (!isLocalDesignStudio && !launched && location.pathname === "/auth/signup") {
     return <Navigate to="/waitlist" replace />;
   }
 
-  if (!launched && !accessAllowed && !availableBeforeLaunch) {
+  if (!isLocalDesignStudio && !launched && !accessAllowed && !availableBeforeLaunch) {
     if (sessionRole === "admin") return <Navigate to="/waitlist" replace />;
     if (hasSession) return <Navigate to="/prelaunch-confirmed" replace />;
     return <Navigate to="/waitlist" replace />;
   }
 
-  if (launched && location.pathname === "/waitlist") {
+  if (!isLocalDesignStudio && launched && location.pathname === "/waitlist") {
     return <Navigate to="/auth" replace />;
   }
 

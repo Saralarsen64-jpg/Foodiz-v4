@@ -131,7 +131,7 @@ const handler: Handler = async (event) => {
         user_id: order.client_id,
         title: paymentIntentId ? "Commande annulée et remboursée" : "Commande annulée",
         message: paymentIntentId
-          ? `La commande #${orderId.slice(0, 8)} a été annulée par Foodiz. Stripe traite le remboursement.`
+          ? `La commande #${orderId.slice(0, 8)} a été annulée par Weello. Stripe traite le remboursement.`
           : `La commande #${orderId.slice(0, 8)} a été annulée et vos avantages ont été restitués.`,
         type: "payment",
         related_order_id: orderId,

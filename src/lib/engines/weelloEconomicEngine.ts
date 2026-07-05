@@ -1,4 +1,4 @@
-// Source de vérité économique unique Foodiz.
+// Source de vérité économique unique Weello.
 // Tous les montants sont exprimés en centimes.
 
 export interface ItemBreakdown {
@@ -41,7 +41,7 @@ export function calculateItemSplit(partnerPriceCents: number): ItemBreakdown {
   assertIntegerCents(partnerPriceCents, "partnerPriceCents");
 
   if (partnerPriceCents < 50) {
-    throw new Error("Foodiz products must have a partner price of at least 0.50 EUR");
+    throw new Error("Weello products must have a partner price of at least 0.50 EUR");
   }
 
   if (partnerPriceCents <= 350) {
@@ -126,7 +126,7 @@ export function isValidCoordinates(latitude: unknown, longitude: unknown): boole
   );
 }
 
-export function calculateFoodizOrder(
+export function calculateWeelloOrder(
   items: { partnerPriceCents: number }[],
   distanceKm: number,
 ): OrderTotals {

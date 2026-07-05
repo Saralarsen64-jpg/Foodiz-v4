@@ -55,7 +55,7 @@ export default function MarketPage() {
       <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <button onClick={() => navigate("/client")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-          <h1 className="foodiz-title text-lg">Market Foodiz</h1>
+          <h1 className="foodiz-title text-lg">Market Weello</h1>
           <div className="w-6" />
         </div>
       </header>

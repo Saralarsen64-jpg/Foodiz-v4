@@ -435,7 +435,7 @@ export class SelfHostedOsrmProvider extends BaseRoutingProvider {
           method: "GET",
           headers: {
             Accept: "application/json",
-            "User-Agent": "Foodiz/1.0 operations@foodiz.co",
+            "User-Agent": "Weello/1.0 contact@weello.co",
           },
         },
       );

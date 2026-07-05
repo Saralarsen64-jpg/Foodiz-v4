@@ -100,10 +100,10 @@ export default function PartnerOrderDetail() {
             </div>
             <div className="border-t border-foodiz-gold/10 pt-3">
               <div className="flex justify-between text-sm">
-                <span className="text-foodiz-gray">Supplément Foodiz global payé par le client</span>
+                <span className="text-foodiz-gray">Supplément Weello global payé par le client</span>
                 <span className="text-foodiz-gold">{supplement.toFixed(2).replace(".", ",")} €</span>
               </div>
-              <p className="text-[10px] text-foodiz-gray/50 mt-1">Ce supplément couvre les frais de service, de livraison, la commission Foodiz et la fidélité.</p>
+              <p className="text-[10px] text-foodiz-gray/50 mt-1">Ce supplément couvre les frais de service, de livraison, la commission Weello et la fidélité.</p>
             </div>
           </div>
         </div>

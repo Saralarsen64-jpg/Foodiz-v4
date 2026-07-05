@@ -12,7 +12,11 @@ import {
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { calculateClientUnitPriceCents } from "../../lib/engines/foodizEconomicEngine";
+import { calculateClientUnitPriceCents } from "../../lib/engines/weelloEconomicEngine";
+import {
+  effectivePartnerPriceCents,
+  productOfferIsActive,
+} from "../../lib/productOffers";
 
 export default function EstablishmentPage() {
   const { id } = useParams();
@@ -41,12 +45,21 @@ export default function EstablishmentPage() {
       setEstablishment(restaurant);
       const grouped = (products || []).reduce<Record<string, any[]>>((acc, product) => {
         const category = product.category || "Menu";
+        const offerActive = productOfferIsActive(product);
         acc[category] ||= [];
         acc[category].push({
           id: product.id,
           name: product.name,
           desc: product.description || "",
-          price: calculateClientUnitPriceCents(product.partner_price_cents) / 100,
+          price: calculateClientUnitPriceCents(
+            effectivePartnerPriceCents(product),
+          ) / 100,
+          originalPrice: offerActive
+            ? calculateClientUnitPriceCents(product.partner_price_cents) / 100
+            : null,
+          promotionLabel: offerActive
+            ? product.promotion_label || "Offre partenaire"
+            : null,
           points: 0,
           image: product.image_url || restaurant?.cover_image || "/images/auth-restaurant.jpg",
         });
@@ -178,13 +191,25 @@ export default function EstablishmentPage() {
                         <h3 className="text-lg font-serif italic text-foodiz-cream font-bold">
                           {item.name}
                         </h3>
-                        <span className="text-foodiz-gold font-bold font-serif text-lg">
-                          {item.price.toFixed(2).replace(".", ",")} €
+                        <span className="text-right">
+                          {item.originalPrice && (
+                            <span className="mr-2 text-xs text-foodiz-gray line-through">
+                              {item.originalPrice.toFixed(2).replace(".", ",")} €
+                            </span>
+                          )}
+                          <span className="text-foodiz-gold font-bold font-serif text-lg">
+                            {item.price.toFixed(2).replace(".", ",")} €
+                          </span>
                         </span>
                       </div>
                       <p className="text-xs text-foodiz-gray mt-1 line-clamp-2">
                         {item.desc}
                       </p>
+                      {item.promotionLabel && (
+                        <span className="mt-2 inline-flex rounded-full border border-foodiz-gold/30 bg-foodiz-gold/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-foodiz-gold">
+                          {item.promotionLabel}
+                        </span>
+                      )}
                     </div>
                     
                     <div className="flex items-center justify-between mt-4">

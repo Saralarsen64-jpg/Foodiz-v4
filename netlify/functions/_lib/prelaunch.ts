@@ -1,11 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
-import { sendFoodizEmail } from "./foodiz-email.js";
+import { sendWeelloEmail } from "./weello-email.js";
 
 export function normalizeEmail(value: unknown) {
   return String(value || "").trim().toLowerCase();
 }
 
-export function normalizeFoodizPhone(value: unknown) {
+export function normalizeWeelloPhone(value: unknown) {
   const digits = String(value || "").replace(/\D/g, "");
   if (/^0[1-9]\d{8}$/.test(digits)) return `+33${digits.slice(1)}`;
   if (/^33[1-9]\d{8}$/.test(digits)) return `+${digits}`;
@@ -63,7 +63,7 @@ export async function sendPrelaunchEmail({
   emailType?: "prelaunch_confirmation" | "launch_access" | "professional_documents_received" | "professional_approved" | "professional_replacement_requested" | "professional_rejected";
   required?: boolean;
 }) {
-  return sendFoodizEmail({
+  return sendWeelloEmail({
     to,
     subject,
     headline,

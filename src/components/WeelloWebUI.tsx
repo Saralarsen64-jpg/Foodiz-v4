@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "../utils/cn";
 
-export function FoodizHero({
+export function WeelloHero({
   eyebrow,
   title,
   description,
@@ -44,7 +44,7 @@ export function FoodizHero({
   );
 }
 
-export function FoodizMetricCard({
+export function WeelloMetricCard({
   label,
   value,
   helper,
@@ -90,7 +90,7 @@ export function FoodizMetricCard({
   );
 }
 
-export function FoodizActionCard({
+export function WeelloActionCard({
   title,
   description,
   icon: Icon,
@@ -124,7 +124,7 @@ export function FoodizActionCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-semibold text-foodiz-cream">{title}</h3>
-            {badge && <FoodizPill>{badge}</FoodizPill>}
+            {badge && <WeelloPill>{badge}</WeelloPill>}
           </div>
           <p className="mt-1 text-xs leading-relaxed text-foodiz-gray">{description}</p>
         </div>
@@ -134,7 +134,7 @@ export function FoodizActionCard({
   );
 }
 
-export function FoodizPill({
+export function WeelloPill({
   children,
   tone = "gold",
 }: {

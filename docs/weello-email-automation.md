@@ -1,4 +1,4 @@
-# Foodiz — emails automatiques
+# Weello — emails automatiques
 
 Cette note décrit les emails transactionnels prévus côté serveur. Les clés email ne doivent jamais être exposées côté client.
 
@@ -7,7 +7,7 @@ Cette note décrit les emails transactionnels prévus côté serveur. Les clés 
 À renseigner dans l’environnement de production Netlify/Vercel :
 
 - `RESEND_API_KEY`
-- `FOODIZ_EMAIL_FROM` — exemple : `Foodiz <contact@foodiz.co>`
+- `WEELLO_EMAIL_FROM` — exemple : `Weello <contact@weello.co>`
 
 ## Emails envoyés automatiquement
 

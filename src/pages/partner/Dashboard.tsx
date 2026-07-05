@@ -230,7 +230,7 @@ export default function PartnerDashboard() {
   const readinessItems = [
     {
       label: "Dossier opérationnel",
-      detail: operationalStatus ? "Compte prêt à vendre" : "Validation Foodiz en cours",
+      detail: operationalStatus ? "Compte prêt à vendre" : "Validation Weello en cours",
       ready: operationalStatus,
       icon: ClipboardCheck,
       path: "/partner/validation-status",
@@ -250,7 +250,7 @@ export default function PartnerDashboard() {
       path: "/partner/settings",
     },
     {
-      label: "Carte Foodiz",
+      label: "Carte Weello",
       detail: productsCount >= 5 ? `${productsCount} produits en carte` : "Visez au moins 5 produits",
       ready: productsCount >= 5,
       icon: UtensilsCrossed,
@@ -298,7 +298,7 @@ export default function PartnerDashboard() {
       ready: activeBreakdown.ready > 0 || activeOrders.length === 0,
     },
     {
-      title: "Confiance Foodiz",
+      title: "Confiance Weello",
       detail: "Documents, fiche, support et carte gardent votre compte solide.",
       icon: ShieldCheck,
       ready: operationalStatus && openSupportCount === 0,
@@ -310,7 +310,7 @@ export default function PartnerDashboard() {
     { label: "Créer une catégorie", icon: FolderPlus, path: "/partner/menu", desc: "Structurer votre carte" },
     { label: "Photo fiche établissement", icon: ImageIcon, path: "/partner/settings", desc: "Mettre à jour la couverture" },
     { label: "Photos produits", icon: UtensilsCrossed, path: "/partner/products", desc: "Éditer les cartes plats" },
-    { label: "Foodiz+", icon: Megaphone, path: "/partner/marketing", desc: "Envoyer une campagne locale" },
+    { label: "Weello+", icon: Megaphone, path: "/partner/marketing", desc: "Envoyer une campagne locale" },
     { label: "Historique commandes", icon: History, path: "/partner/orders/history", desc: "Revoir toutes les ventes" },
     { label: "Virements", icon: Wallet, path: "/partner/payouts", desc: "Consulter les règlements enregistrés" },
   ];
@@ -320,7 +320,7 @@ export default function PartnerDashboard() {
     { label: "Commandes en cours", icon: ShoppingBag, path: "/partner/orders/current" },
     { label: "Historique", icon: History, path: "/partner/orders/history" },
     { label: "Revenus", icon: DollarSign, path: "/partner/revenues" },
-    { label: "Foodiz+", icon: Megaphone, path: "/partner/marketing" },
+    { label: "Weello+", icon: Megaphone, path: "/partner/marketing" },
     { label: "Menu", icon: Menu, path: "/partner/menu" },
     { label: "Produits", icon: UtensilsCrossed, path: "/partner/products" },
     { label: "Clients", icon: Users, path: "/partner/customers" },
@@ -389,7 +389,7 @@ export default function PartnerDashboard() {
         <div className="foodiz-card overflow-hidden p-0 border-foodiz-gold/20 bg-[linear-gradient(135deg,rgba(216,168,79,0.12),rgba(17,17,17,0.96)_28%,rgba(5,5,5,1)_100%)] shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
           <div className="grid lg:grid-cols-[1.25fr_0.75fr] gap-0">
             <div className="p-6">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-foodiz-gold font-bold mb-2">Espace Partenaire Foodiz</p>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-foodiz-gold font-bold mb-2">Espace Partenaire Weello</p>
               <h2 className="foodiz-title text-3xl mb-2">Bonjour, {restaurantName}</h2>
               <p className="text-foodiz-gray text-sm max-w-xl leading-relaxed">
                 Pilotez votre activité, votre carte, vos visuels et vos revenus depuis un cockpit unique pensé pour la performance et l’image premium de votre établissement.
@@ -418,7 +418,7 @@ export default function PartnerDashboard() {
               <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold font-bold">Fiche établissement</p>
-                  <p className="text-sm text-foodiz-cream mt-1">Établissement Foodiz</p>
+                  <p className="text-sm text-foodiz-cream mt-1">Établissement Weello</p>
                   <p className="text-[11px] text-foodiz-gray mt-1">{location}</p>
                 </div>
                 <button
@@ -470,7 +470,7 @@ export default function PartnerDashboard() {
 
           <article className="foodiz-card border-foodiz-gold/15 p-5">
             <div className="mb-4">
-              <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Standard Foodiz</p>
+              <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Standard Weello</p>
               <h2 className="foodiz-title mt-1 text-xl">Le rituel qui fait revenir les clients</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -535,7 +535,7 @@ export default function PartnerDashboard() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="foodiz-title text-xl">Plan d’action partenaire</h2>
-                <p className="mt-1 text-xs text-foodiz-gray">Les détails qui transforment une fiche en vraie vitrine Foodiz.</p>
+                <p className="mt-1 text-xs text-foodiz-gray">Les détails qui transforment une fiche en vraie vitrine Weello.</p>
               </div>
               <span className="rounded-full border border-foodiz-gold/20 px-3 py-1 text-[10px] uppercase tracking-widest text-foodiz-gold">
                 {readinessItems.filter((item) => item.ready).length}/{readinessItems.length}
@@ -589,7 +589,7 @@ export default function PartnerDashboard() {
             },
             {
               title: "Réactivité = préférence",
-              text: "Plus vos commandes sont acceptées et préparées vite, plus l’expérience Foodiz devient mémorable.",
+              text: "Plus vos commandes sont acceptées et préparées vite, plus l’expérience Weello devient mémorable.",
               icon: Clock,
               path: "/partner/orders/current",
             },

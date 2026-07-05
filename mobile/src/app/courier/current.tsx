@@ -12,13 +12,18 @@ import {
 } from 'react-native';
 
 import {
-  FoodizButton,
-  FoodizCard,
-  FoodizScreen,
-  FoodizPill,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloButton,
+  WeelloCard,
+  WeelloScreen,
+  WeelloPill,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
+import {
+  isContinuousDeliveryTrackingEnabled,
+  startContinuousDeliveryTracking,
+  stopContinuousDeliveryTracking,
+} from '@/lib/delivery-location-task';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -82,12 +87,6 @@ function formatDuration(seconds: number) {
     .padStart(2, '0')}`;
 }
 
-function formatDistanceMeters(meters?: number | null) {
-  if (typeof meters !== 'number' || !Number.isFinite(meters)) return 'Distance calculée au pickup';
-  if (meters < 1000) return `${Math.round(meters)} m`;
-  return `${(meters / 1000).toFixed(1)} km`;
-}
-
 function delayPenaltyCents(delaySeconds: number) {
   if (delaySeconds > 1200) return 200;
   if (delaySeconds > 900) return 100;
@@ -111,6 +110,8 @@ export default function CurrentDeliveryScreen() {
   const [step, setStep] = useState<DeliveryStep>('accepted');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [continuousTracking, setContinuousTracking] = useState(false);
+  const [enablingTracking, setEnablingTracking] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const watchRef = useRef<Location.LocationSubscription | null>(null);
 
@@ -171,7 +172,7 @@ export default function CurrentDeliveryScreen() {
   }, []);
 
   useEffect(() => {
-    if (!order || step === 'delivered') return;
+    if (!order || step === 'delivered' || continuousTracking) return;
     let active = true;
 
     void Location.requestForegroundPermissionsAsync().then(async (permission) => {
@@ -183,7 +184,7 @@ export default function CurrentDeliveryScreen() {
           distanceInterval: 20,
         },
         (position) => {
-          void foodizApi('courier-delivery-action', {
+          void weelloApi('courier-delivery-action', {
             method: 'POST',
             body: JSON.stringify({
               orderId: order.id,
@@ -202,7 +203,49 @@ export default function CurrentDeliveryScreen() {
       watchRef.current?.remove();
       watchRef.current = null;
     };
-  }, [order, step]);
+  }, [continuousTracking, order, step]);
+
+  useEffect(() => {
+    let active = true;
+    void isContinuousDeliveryTrackingEnabled().then((enabled) => {
+      if (active) setContinuousTracking(enabled);
+    });
+    return () => {
+      active = false;
+    };
+  }, [order?.id]);
+
+  async function enableContinuousTracking() {
+    if (!order) return;
+    setEnablingTracking(true);
+    try {
+      const foreground = await Location.requestForegroundPermissionsAsync();
+      if (!foreground.granted) {
+        throw new Error(
+          'La localisation précise est nécessaire pendant une course active.',
+        );
+      }
+      const background = await Location.requestBackgroundPermissionsAsync();
+      if (!background.granted) {
+        throw new Error(
+          'Choisissez « Toujours » dans les réglages de localisation pour assurer le suivi continu.',
+        );
+      }
+      await startContinuousDeliveryTracking(order.id);
+      setContinuousTracking(true);
+      Alert.alert(
+        'Suivi continu activé',
+        'La position est partagée uniquement pendant cette course et s’arrête après la remise au client.',
+      );
+    } catch (error) {
+      Alert.alert(
+        'Suivi continu non activé',
+        error instanceof Error ? error.message : 'Vérifiez les autorisations de localisation.',
+      );
+    } finally {
+      setEnablingTracking(false);
+    }
+  }
 
   async function advance() {
     if (!order) return;
@@ -222,7 +265,7 @@ export default function CurrentDeliveryScreen() {
         });
       }
 
-      const result = await foodizApi<{ expectedArrivalAt?: string | null; routeDurationSeconds?: number | null }>('courier-delivery-action', {
+      const result = await weelloApi<{ expectedArrivalAt?: string | null; routeDurationSeconds?: number | null }>('courier-delivery-action', {
         method: 'POST',
         body: JSON.stringify({
           orderId: order.id,
@@ -267,12 +310,14 @@ export default function CurrentDeliveryScreen() {
     }
     setBusy(true);
     try {
-      await foodizApi('verify-delivery-code', {
+      await weelloApi('verify-delivery-code', {
         method: 'POST',
         body: JSON.stringify({ orderId: order.id, code }),
       });
       setStep('delivered');
       setOrder({ ...order, status: 'delivered' });
+      await stopContinuousDeliveryTracking();
+      setContinuousTracking(false);
     } catch (error) {
       setCode('');
       Alert.alert(
@@ -296,16 +341,16 @@ export default function CurrentDeliveryScreen() {
 
   if (!order) {
     return (
-      <FoodizScreen>
-        <Text style={foodizText.title}>Aucune course active</Text>
-        <Text style={foodizText.body}>
+      <WeelloScreen>
+        <Text style={weelloText.title}>Aucune course active</Text>
+        <Text style={weelloText.body}>
           Acceptez une course disponible pour commencer.
         </Text>
-        <FoodizButton
+        <WeelloButton
           label="Voir les courses"
           onPress={() => router.replace('/courier/deliveries')}
         />
-      </FoodizScreen>
+      </WeelloScreen>
     );
   }
 
@@ -336,15 +381,15 @@ export default function CurrentDeliveryScreen() {
     : null;
 
   return (
-    <FoodizScreen>
+    <WeelloScreen>
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Tableau de bord</Text>
       </Pressable>
       <View style={styles.headerRow}>
         <Text style={styles.kicker}>COURSE #{order.id.slice(0, 8)}</Text>
-        <FoodizPill label={`${index + 1}/${steps.length}`} />
+        <WeelloPill label={`${index + 1}/${steps.length}`} />
       </View>
-      <Text style={foodizText.title}>{steps[index]?.label}</Text>
+      <Text style={weelloText.title}>{steps[index]?.label}</Text>
       <Text style={styles.earnings}>Gain max si à l’heure : {formatCurrency(earnings)}</Text>
 
       <View style={styles.timeline}>
@@ -359,18 +404,39 @@ export default function CurrentDeliveryScreen() {
         ))}
       </View>
 
+      <WeelloCard>
+        <Text style={styles.kicker}>SUIVI GPS CLIENT</Text>
+        <Text style={weelloText.heading}>
+          {continuousTracking ? 'Suivi continu actif' : 'Suivi en arrière-plan à activer'}
+        </Text>
+        <Text style={weelloText.body}>
+          {continuousTracking
+            ? 'La position est actualisée pendant la course, même si vous consultez votre navigation. Le suivi s’arrête à la livraison.'
+            : 'Weello utilise votre position uniquement pendant cette course afin que le client puisse suivre son arrivée en direct.'}
+        </Text>
+        {!continuousTracking ? (
+          <WeelloButton
+            label="Autoriser le suivi continu"
+            onPress={() => void enableContinuousTracking()}
+            loading={enablingTracking}
+          />
+        ) : (
+          <WeelloPill label="Position partagée pendant la course" tone="success" />
+        )}
+      </WeelloCard>
+
       {['accepted', 'at_restaurant'].includes(step) ? (
-        <FoodizCard>
+        <WeelloCard>
           <Text style={styles.kicker}>NUMÉRO À PRÉSENTER AU RESTAURANT</Text>
           <Text style={styles.pickupCode}>#{order.id.slice(0, 8).toUpperCase()}</Text>
-          <Text style={foodizText.body}>
+          <Text style={weelloText.body}>
             Présentez ce numéro au partenaire pour récupérer la bonne commande.
             Le chrono de ponctualité démarre uniquement après “Commande récupérée”.
           </Text>
-        </FoodizCard>
+        </WeelloCard>
       ) : null}
 
-      <FoodizCard>
+      <WeelloCard>
         <View style={styles.moneyGrid}>
           <View style={styles.moneyBox}>
             <Text style={styles.kicker}>GAIN MAX</Text>
@@ -393,56 +459,56 @@ export default function CurrentDeliveryScreen() {
                 ? `+${formatDuration(delaySeconds)}`
                 : formatDuration(remainingSeconds)}
             </Text>
-            <Text style={foodizText.body}>
+            <Text style={weelloText.body}>
               Arrivée prévue {expectedArrivalLabel || 'en calcul'} · {delayStatus(delaySeconds)}
               {currentPenalty > 0 ? ` · pénalité actuelle -${formatCurrency(currentPenalty)}` : ''}
             </Text>
           </View>
         ) : (
-          <Text style={foodizText.body}>
+          <Text style={weelloText.body}>
             Le chrono exact et les pénalités éventuelles seront calculés au moment
             où vous confirmez la récupération avec GPS précis.
           </Text>
         )}
         <Text style={styles.moneyHint}>
-          Règles Foodiz : +10 min = -0,50 €, +15 min = -1 €, +20 min = -2 € et priorité réduite.
+          Règles Weello : +10 min = -0,50 €, +15 min = -1 €, +20 min = -2 € et priorité réduite.
         </Text>
-      </FoodizCard>
+      </WeelloCard>
 
-      <FoodizCard>
+      <WeelloCard>
         <Text style={styles.kicker}>RÉCUPÉRATION</Text>
-        <Text style={foodizText.heading}>{order.restaurant?.name}</Text>
-        <Text style={foodizText.body}>
+        <Text style={weelloText.heading}>{order.restaurant?.name}</Text>
+        <Text style={weelloText.body}>
           {[order.restaurant?.address, order.restaurant?.postal_code, order.restaurant?.city]
             .filter(Boolean)
             .join(' · ')}
         </Text>
-        <FoodizButton
+        <WeelloButton
           label="Ouvrir l’itinéraire restaurant"
           onPress={() =>
             navigateTo(order.restaurant?.latitude, order.restaurant?.longitude)
           }
           secondary
         />
-      </FoodizCard>
+      </WeelloCard>
 
-      <FoodizCard>
+      <WeelloCard>
         <Text style={styles.kicker}>LIVRAISON</Text>
-        <Text style={foodizText.heading}>Adresse client</Text>
-        <Text style={foodizText.body}>{order.delivery_address}</Text>
-        <FoodizButton
+        <Text style={weelloText.heading}>Adresse client</Text>
+        <Text style={weelloText.body}>{order.delivery_address}</Text>
+        <WeelloButton
           label="Ouvrir l’itinéraire client"
           onPress={() =>
             navigateTo(order.client_latitude, order.client_longitude)
           }
           secondary
         />
-      </FoodizCard>
+      </WeelloCard>
 
       {step === 'at_customer' ? (
-        <FoodizCard>
-          <Text style={foodizText.heading}>Code de remise</Text>
-          <Text style={foodizText.body}>
+        <WeelloCard>
+          <Text style={weelloText.heading}>Code de remise</Text>
+          <Text style={weelloText.body}>
             Demandez au client son code personnel à 6 chiffres.
           </Text>
           <TextInput
@@ -454,29 +520,29 @@ export default function CurrentDeliveryScreen() {
             placeholderTextColor={colors.muted}
             style={styles.code}
           />
-          <FoodizButton
+          <WeelloButton
             label="Valider la livraison"
             onPress={() => void verifyCode()}
             loading={busy}
           />
-        </FoodizCard>
+        </WeelloCard>
       ) : step === 'delivered' ? (
-        <FoodizCard>
-          <Text style={foodizText.heading}>Mission accomplie</Text>
-          <Text style={foodizText.body}>La remise a été confirmée avec succès.</Text>
-          <FoodizButton
+        <WeelloCard>
+          <Text style={weelloText.heading}>Mission accomplie</Text>
+          <Text style={weelloText.body}>La remise a été confirmée avec succès.</Text>
+          <WeelloButton
             label="Retour aux courses"
             onPress={() => router.replace('/courier/deliveries')}
           />
-        </FoodizCard>
+        </WeelloCard>
       ) : (
-        <FoodizButton
+        <WeelloButton
           label={steps[index + 1]?.label || 'Continuer'}
           onPress={() => void advance()}
           loading={busy}
         />
       )}
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 

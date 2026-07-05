@@ -85,7 +85,7 @@ test("aucune pénalité n'est appliquée sans ETA vérifiée", () => {
   assert.match(delayMigration, /'reason', 'NO_VERIFIED_ETA'/);
 });
 
-test("les trois seuils de retard Foodiz sont exacts et non cumulatifs", () => {
+test("les trois seuils de retard Weello sont exacts et non cumulatifs", () => {
   assert.match(delayMigration, /delay_seconds_value >= 600 AND delay_seconds_value <= 900[\s\S]*penalty_cents_value := 50[\s\S]*reward_points_value := 50/);
   assert.match(delayMigration, /delay_seconds_value > 900 AND delay_seconds_value <= 1200[\s\S]*penalty_cents_value := 100[\s\S]*reward_points_value := 100/);
   assert.match(delayMigration, /delay_seconds_value > 1200[\s\S]*penalty_cents_value := 200[\s\S]*reward_points_value := 200[\s\S]*priority_delta := -10/);

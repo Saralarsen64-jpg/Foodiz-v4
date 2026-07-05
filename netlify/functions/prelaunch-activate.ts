@@ -9,7 +9,7 @@ const handler: Handler = async (event) => {
   if (!(await appIsLaunched())) {
     return {
       statusCode: 423,
-      body: JSON.stringify({ error: "L’accès Foodiz n’est pas encore ouvert." }),
+      body: JSON.stringify({ error: "L’accès Weello n’est pas encore ouvert." }),
     };
   }
 
@@ -40,7 +40,7 @@ const handler: Handler = async (event) => {
     };
   }
   if (new Date(profile.launch_token_expires_at).getTime() <= Date.now()) {
-    return { statusCode: 410, body: JSON.stringify({ error: "Ce lien a expiré. Demandez un nouvel accès à Foodiz." }) };
+    return { statusCode: 410, body: JSON.stringify({ error: "Ce lien a expiré. Demandez un nouvel accès à Weello." }) };
   }
   if (profile.status !== "launch_email_sent") {
     return { statusCode: 409, body: JSON.stringify({ error: "Ce compte ne peut pas encore être activé." }) };
@@ -75,7 +75,7 @@ const handler: Handler = async (event) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       activated: true,
-      message: "Votre accès Foodiz est activé. Vous pouvez maintenant vous connecter.",
+      message: "Votre accès Weello est activé. Vous pouvez maintenant vous connecter.",
       loginPath: `/auth/login?role=${profile.role === "livreur" ? "courier" : profile.role === "partenaire" ? "partner" : "client"}`,
     }),
   };

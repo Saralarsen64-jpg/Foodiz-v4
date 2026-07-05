@@ -117,7 +117,7 @@ test("la route exacte /admin et ses sous-routes restent accessibles avant lancem
   assert.match(launchBoundary, /isAdminPath\(location\.pathname\)/);
 });
 
-test("foodiz.co reste toujours la waitlist même avec une session admin", () => {
+test("la page publique reste la waitlist même avec une session admin", () => {
   assert.match(appRoutes, /path="\/" element=\{<Navigate to="\/waitlist" replace \/>}/);
   assert.match(launchBoundary, /location\.pathname === "\/"/);
   assert.match(launchBoundary, /sessionRole === "admin"\) return <Navigate to="\/waitlist"/);
@@ -130,16 +130,16 @@ test("foodiz.co reste toujours la waitlist même avec une session admin", () => 
 test("les formats français équivalents partagent une identité téléphonique", () => {
   assert.match(uniquePhoneMigration, /normalize_foodiz_phone/);
   assert.match(uniquePhoneMigration, /\+33.*substring/);
-  assert.match(prelaunchHelpers, /normalizeFoodizPhone/);
+  assert.match(prelaunchHelpers, /normalizeWeelloPhone/);
   assert.match(prelaunchHelpers, /`\+33\$\{digits\.slice\(1\)\}`/);
 });
 
-test("un téléphone ne peut appartenir qu’à un client ou livreur Foodiz", () => {
+test("un téléphone ne peut appartenir qu’à un client ou livreur Weello", () => {
   assert.match(uniquePhoneMigration, /profiles_client_courier_phone_unique/);
   assert.match(uniquePhoneMigration, /prelaunch_client_courier_phone_unique/);
   assert.match(uniquePhoneMigration, /role IN \('client', 'courier'\)/);
   assert.match(uniquePhoneMigration, /role IN \('client', 'livreur'\)/);
-  assert.match(registerApi, /Ce numéro de téléphone est déjà associé à un compte Foodiz/);
+  assert.match(registerApi, /Ce numéro de téléphone est déjà associé à un compte Weello/);
 });
 
 test("la migration refuse les doublons historiques au lieu de les modifier", () => {

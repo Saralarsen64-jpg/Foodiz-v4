@@ -4,12 +4,12 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { RoleGuard } from '@/components/role-guard';
 import {
-  FoodizBrand,
-  FoodizButton,
-  FoodizCard,
-  FoodizScreen,
-  foodizText,
-} from '@/components/foodiz-ui';
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloScreen,
+  weelloText,
+} from '@/components/weello-ui';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -17,7 +17,7 @@ import { colors } from '@/theme/colors';
 const statusLabels: Record<string, { title: string; description: string }> = {
   pending: {
     title: 'Établissement en cours de vérification',
-    description: 'Foodiz contrôle les informations de votre entreprise.',
+    description: 'Weello contrôle les informations de votre entreprise.',
   },
   validated: {
     title: 'Dossier partenaire validé',
@@ -29,7 +29,7 @@ const statusLabels: Record<string, { title: string; description: string }> = {
   },
   missing_documents: {
     title: 'Informations complémentaires requises',
-    description: 'Modifiez votre dossier selon le commentaire Foodiz.',
+    description: 'Modifiez votre dossier selon le commentaire Weello.',
   },
   rejected: {
     title: 'Dossier non validé',
@@ -102,40 +102,40 @@ export default function PartnerStatusScreen() {
 
   return (
     <RoleGuard role="partner">
-      <FoodizScreen>
+      <WeelloScreen>
         <Pressable onPress={() => router.replace('/')}>
           <Text style={styles.back}>← Accueil</Text>
         </Pressable>
-        <FoodizBrand subtitle="Validation partenaire" />
-        <FoodizCard>
+        <WeelloBrand subtitle="Validation partenaire" />
+        <WeelloCard>
           <Text style={styles.kicker}>STATUT ÉTABLISSEMENT</Text>
-          <Text style={foodizText.title}>{current.title}</Text>
-          <Text style={foodizText.body}>{current.description}</Text>
+          <Text style={weelloText.title}>{current.title}</Text>
+          <Text style={weelloText.body}>{current.description}</Text>
           <Text style={styles.status}>
             Statut : {status} · Publication : {active ? 'active' : 'inactive'}
           </Text>
           {comment ? (
-            <Text style={styles.comment}>Commentaire Foodiz : {comment}</Text>
+            <Text style={styles.comment}>Commentaire Weello : {comment}</Text>
           ) : null}
-        </FoodizCard>
+        </WeelloCard>
         {operational ? (
-          <FoodizButton
+          <WeelloButton
             label="Accéder à mon espace partenaire"
             onPress={() => router.replace('/partner')}
           />
         ) : (
-          <FoodizButton
+          <WeelloButton
             label="Modifier mon dossier"
             onPress={() => router.push('/partner-onboarding')}
           />
         )}
-        <FoodizButton
+        <WeelloButton
           label="Actualiser le statut"
           onPress={() => void load()}
           loading={loading}
           secondary
         />
-      </FoodizScreen>
+      </WeelloScreen>
     </RoleGuard>
   );
 }

@@ -75,7 +75,7 @@ export default function PrelaunchPartnerDocuments() {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!requested.length || requested.some((documentType) => !files[documentType])) {
-      setError("Ajoutez chaque document demandé par Foodiz.");
+      setError("Ajoutez chaque document demandé par Weello.");
       return;
     }
     setSubmitting(true);
@@ -133,7 +133,7 @@ export default function PrelaunchPartnerDocuments() {
   return (
     <main className="min-h-screen bg-foodiz-black px-5 py-10 text-foodiz-cream">
       <section className="mx-auto max-w-xl rounded-[2rem] border border-foodiz-gold/25 bg-foodiz-card p-6 shadow-[0_30px_100px_rgba(0,0,0,.6)] sm:p-9">
-        <img src="/images/Logo-Foodiz.PNG" alt="Foodiz" className="mx-auto w-64 max-w-full rounded-2xl" />
+        <img src="/images/weello-wordmark.png" alt="Weello" className="mx-auto w-64 max-w-full rounded-2xl" />
         <div className="mt-7 flex items-center gap-3">
           <ShieldCheck className="text-foodiz-gold" />
           <div>
@@ -150,7 +150,7 @@ export default function PrelaunchPartnerDocuments() {
           <form onSubmit={submit} className="mt-7 space-y-4">
             {comment && (
               <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-4">
-                <p className="text-[10px] uppercase tracking-widest text-foodiz-gold">Commentaire Foodiz</p>
+                <p className="text-[10px] uppercase tracking-widest text-foodiz-gold">Commentaire Weello</p>
                 <p className="mt-2 text-sm text-foodiz-cream">{comment}</p>
               </div>
             )}
@@ -171,7 +171,7 @@ export default function PrelaunchPartnerDocuments() {
             </button>
           </form>
         )}
-        <Link to="/waitlist" className="mt-7 block text-center text-xs text-foodiz-gold">Retour à Foodiz</Link>
+        <Link to="/waitlist" className="mt-7 block text-center text-xs text-foodiz-gold">Retour à Weello</Link>
       </section>
     </main>
   );

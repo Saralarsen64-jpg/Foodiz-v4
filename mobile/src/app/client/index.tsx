@@ -1,19 +1,28 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  ImageBackground,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import {
-  FoodizActionCard,
-  FoodizBrand,
-  FoodizCard,
-  FoodizHero,
-  FoodizMetric,
-  FoodizPill,
-  FoodizScreen,
-  FoodizSectionTitle,
-  foodizText,
-} from '@/components/foodiz-ui';
-import { foodizApi } from '@/lib/api';
+  WeelloActionCard,
+  WeelloBrand,
+  WeelloButton,
+  WeelloCard,
+  WeelloField,
+  WeelloHero,
+  WeelloMetric,
+  WeelloPill,
+  WeelloScreen,
+  WeelloSectionTitle,
+  weelloText,
+} from '@/components/weello-ui';
+import { weelloApi } from '@/lib/api';
 import { useAuth } from '@/providers/auth-provider';
 import { useCart } from '@/providers/cart-provider';
 import { colors } from '@/theme/colors';
@@ -24,6 +33,8 @@ type Restaurant = {
   cuisine_type: string | null;
   city: string | null;
   address: string | null;
+  cover_image: string | null;
+  distance_meters?: number | null;
 };
 
 function getGreeting() {
@@ -37,12 +48,47 @@ export default function ClientHomeScreen() {
   const { profile } = useAuth();
   const { itemCount, subtotalCents } = useCart();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [coverage, setCoverage] = useState<{
+    available: boolean;
+    city: string | null;
+    addressRequired: boolean;
+  } | null>(null);
+  const [requestingArea, setRequestingArea] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const categories = useMemo(
+    () => Array.from(new Set(
+      restaurants
+        .map((restaurant) => restaurant.cuisine_type?.trim())
+        .filter((category): category is string => Boolean(category)),
+    )).slice(0, 8),
+    [restaurants],
+  );
+  const visibleRestaurants = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase('fr-FR');
+    if (!query) return restaurants;
+    return restaurants.filter((restaurant) =>
+      [restaurant.name, restaurant.cuisine_type, restaurant.city]
+        .filter(Boolean)
+        .some((value) => String(value).toLocaleLowerCase('fr-FR').includes(query)),
+    );
+  }, [restaurants, search]);
 
   useEffect(() => {
     let active = true;
-    void foodizApi<{ restaurants: Restaurant[] }>('client-catalog')
+    void weelloApi<{
+      restaurants: Restaurant[];
+      coverage: {
+        available: boolean;
+        city: string | null;
+        addressRequired: boolean;
+      };
+    }>('client-catalog')
       .then((data) => {
-        if (active) setRestaurants(data.restaurants);
+        if (active) {
+          setRestaurants(data.restaurants);
+          setCoverage(data.coverage);
+        }
       })
       .catch(() => {
         if (active) setRestaurants([]);
@@ -52,52 +98,100 @@ export default function ClientHomeScreen() {
     };
   }, []);
 
+  async function requestArea() {
+    if (coverage?.addressRequired) {
+      router.push('/client/address');
+      return;
+    }
+    setRequestingArea(true);
+    try {
+      await weelloApi('request-service-area', { method: 'POST' });
+      Alert.alert(
+        'Demande enregistrée ✨',
+        `Weello étudie le déploiement à ${coverage?.city || 'votre ville'}. Vous serez informé dès l’arrivée des premiers partenaires.`,
+      );
+    } catch (error) {
+      Alert.alert(
+        'Demande impossible',
+        error instanceof Error ? error.message : 'Réessayez dans quelques instants.',
+      );
+    } finally {
+      setRequestingArea(false);
+    }
+  }
+
   return (
-    <FoodizScreen>
-      <FoodizBrand subtitle="Votre table locale, livrée avec soin" />
-      <FoodizHero
-        eyebrow="Foodiz sélection locale"
+    <WeelloScreen>
+      <WeelloBrand subtitle="Votre table locale, livrée avec soin" />
+      <WeelloHero
+        eyebrow="Weello sélection locale"
         title={`${getGreeting()} ${profile?.first_name || 'Foodie'} 👋`}
-        body="Commandez auprès des établissements de votre ville, suivez votre livraison en direct et cumulez vos avantages Foodiz.">
+        body="Commandez auprès des établissements de votre ville, suivez votre livraison en direct et cumulez vos avantages Weello.">
         <View style={styles.metrics}>
-          <FoodizMetric
+          <WeelloMetric
             label="Établissements"
             value={restaurants.length}
             helper="actifs autour de vous"
           />
-          <FoodizMetric
+          <WeelloMetric
             label="Panier"
             value={itemCount}
             helper={`${(subtotalCents / 100).toFixed(2)} € en cours`}
             tone={itemCount > 0 ? 'success' : 'muted'}
           />
         </View>
-      </FoodizHero>
+      </WeelloHero>
+
+      <View style={styles.searchBlock}>
+        <Text style={styles.appetiteTitle}>
+          Envie de quelque chose <Text style={styles.appetiteAccent}>de bon ?</Text>
+        </Text>
+        <WeelloField
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Restaurant, cuisine, ville…"
+          accessibilityLabel="Rechercher un établissement"
+        />
+        {categories.length > 0 ? (
+          <View style={styles.categoryRow}>
+            {categories.map((category) => (
+              <Pressable key={category} onPress={() => setSearch(category)}>
+                <WeelloPill label={category} tone={search === category ? 'gold' : 'muted'} />
+              </Pressable>
+            ))}
+            {search ? (
+              <Pressable onPress={() => setSearch('')}>
+                <WeelloPill label="Tout voir" />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
 
       {itemCount > 0 ? (
         <Pressable onPress={() => router.push('/client/cart')}>
-          <FoodizCard>
+          <WeelloCard>
             <Text style={styles.kicker}>VOTRE PANIER</Text>
             <Text style={styles.points}>{itemCount} article(s)</Text>
-            <Text style={foodizText.body}>
+            <Text style={weelloText.body}>
               Sous-total articles {(subtotalCents / 100).toFixed(2)} €
             </Text>
-          </FoodizCard>
+          </WeelloCard>
         </Pressable>
       ) : null}
 
-      <FoodizCard>
-        <Text style={styles.kicker}>EXPÉRIENCE FOODIZ</Text>
-        <Text style={foodizText.heading}>Un suivi clair, du four à votre porte.</Text>
+      <WeelloCard>
+        <Text style={styles.kicker}>EXPÉRIENCE WEELLO</Text>
+        <Text style={weelloText.heading}>Un suivi clair, du four à votre porte.</Text>
         <View style={styles.promiseList}>
           <Text style={styles.promise}>• Préparation statique pendant que le restaurant cuisine.</Text>
           <Text style={styles.promise}>• Suivi live dès que le livreur récupère la commande.</Text>
           <Text style={styles.promise}>• Code sécurisé à transmettre uniquement à la remise.</Text>
         </View>
-      </FoodizCard>
+      </WeelloCard>
 
       <View style={styles.actions}>
-        <FoodizActionCard
+        <WeelloActionCard
           icon="🍽️"
           title="Commander"
           description="Explorez les cartes disponibles et composez votre envie du moment."
@@ -109,34 +203,50 @@ export default function ClientHomeScreen() {
             });
           }}
         />
-        <FoodizActionCard
+        <WeelloActionCard
           icon="📍"
           title="Suivre ma commande"
           description="Retrouvez le suivi live dès qu’une commande est en cours."
           onPress={() => router.push('/client/orders')}
         />
-        <FoodizActionCard
+        <WeelloActionCard
           icon="✦"
-          title="Foodiz Club"
+          title="Weello Club"
           description="Consultez vos points, récompenses et avantages fidélité."
           onPress={() => router.push('/client/benefits')}
         />
       </View>
 
-      <FoodizSectionTitle
-        title="Établissements"
-        action={<FoodizPill label={`${restaurants.length} ouverts`} />}
+      <WeelloSectionTitle
+        title={search ? 'Résultats' : 'Établissements'}
+        action={<WeelloPill label={`${visibleRestaurants.length} ouverts`} />}
       />
       {restaurants.length === 0 ? (
-        <FoodizCard>
-          <Text style={foodizText.heading}>Ça mijote encore par ici</Text>
-          <Text style={foodizText.body}>
-            Aucun établissement actif pour le moment. Dès l’ouverture de votre
-            ville, les premières adresses apparaîtront ici.
+        <WeelloCard>
+          <Text style={weelloText.heading}>Ça mijote encore par ici</Text>
+          <Text style={weelloText.body}>
+            {coverage?.addressRequired
+              ? 'Enregistrez votre adresse pour découvrir les établissements disponibles autour de vous.'
+              : `Nous préparons l’arrivée de Weello à ${coverage?.city || 'votre ville'}. Votre demande nous aide à prioriser les prochains partenaires.`}
           </Text>
-        </FoodizCard>
+          <WeelloButton
+            label={coverage?.addressRequired
+              ? 'Ajouter mon adresse'
+              : 'Demander Weello dans ma ville'}
+            onPress={() => void requestArea()}
+            loading={requestingArea}
+          />
+        </WeelloCard>
+      ) : visibleRestaurants.length === 0 ? (
+        <WeelloCard>
+          <Text style={weelloText.heading}>Aucun résultat</Text>
+          <Text style={weelloText.body}>
+            Essayez une autre cuisine ou affichez tous les établissements.
+          </Text>
+          <WeelloButton label="Tout afficher" onPress={() => setSearch('')} secondary />
+        </WeelloCard>
       ) : (
-        restaurants.map((restaurant) => (
+        visibleRestaurants.map((restaurant) => (
           <Pressable
             key={restaurant.id}
             onPress={() =>
@@ -145,26 +255,52 @@ export default function ClientHomeScreen() {
                 params: { id: restaurant.id },
               })
             }>
-            <FoodizCard>
-              <View style={styles.restaurantHeader}>
-                <FoodizPill
-                  label={restaurant.cuisine_type || 'Sélection Foodiz'}
-                  tone="muted"
-                />
-                {restaurant.city ? <FoodizPill label={restaurant.city} /> : null}
-              </View>
-              <Text style={foodizText.heading}>{restaurant.name}</Text>
-              <Text style={foodizText.body}>
-                {[restaurant.address, restaurant.city]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-              <Text style={styles.discover}>Découvrir la carte →</Text>
-            </FoodizCard>
+            {restaurant.cover_image ? (
+              <ImageBackground
+                source={{ uri: restaurant.cover_image }}
+                imageStyle={styles.restaurantImage}
+                style={styles.restaurantVisual}>
+                <View style={styles.restaurantOverlay}>
+                  <View style={styles.restaurantHeader}>
+                    <WeelloPill
+                      label={restaurant.cuisine_type || 'Sélection Weello'}
+                      tone="muted"
+                    />
+                    {restaurant.city ? <WeelloPill label={restaurant.city} /> : null}
+                  </View>
+                  <View>
+                    <Text style={styles.restaurantVisualTitle}>{restaurant.name}</Text>
+                    <Text style={styles.restaurantVisualMeta}>
+                      {restaurant.distance_meters
+                        ? `${(restaurant.distance_meters / 1000).toFixed(1)} km · `
+                        : ''}
+                      Découvrir la carte →
+                    </Text>
+                  </View>
+                </View>
+              </ImageBackground>
+            ) : (
+              <WeelloCard>
+                <View style={styles.restaurantHeader}>
+                  <WeelloPill
+                    label={restaurant.cuisine_type || 'Sélection Weello'}
+                    tone="muted"
+                  />
+                  {restaurant.city ? <WeelloPill label={restaurant.city} /> : null}
+                </View>
+                <Text style={weelloText.heading}>{restaurant.name}</Text>
+                <Text style={weelloText.body}>
+                  {[restaurant.address, restaurant.city]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Text>
+                <Text style={styles.discover}>Découvrir la carte →</Text>
+              </WeelloCard>
+            )}
           </Pressable>
         ))
       )}
-    </FoodizScreen>
+    </WeelloScreen>
   );
 }
 
@@ -176,6 +312,24 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 10,
+  },
+  searchBlock: {
+    gap: 12,
+  },
+  appetiteTitle: {
+    color: colors.cream,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 27,
+    lineHeight: 33,
+  },
+  appetiteAccent: {
+    color: colors.goldLight,
+    fontFamily: 'PlayfairDisplay_600SemiBold_Italic',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   restaurantHeader: {
     flexDirection: 'row',
@@ -205,5 +359,32 @@ const styles = StyleSheet.create({
   discover: {
     color: colors.gold,
     fontWeight: '800',
+  },
+  restaurantVisual: {
+    borderColor: colors.border,
+    borderRadius: 26,
+    borderWidth: 1,
+    height: 230,
+    overflow: 'hidden',
+  },
+  restaurantImage: {
+    borderRadius: 26,
+  },
+  restaurantOverlay: {
+    backgroundColor: 'rgba(5,5,5,0.48)',
+    flex: 1,
+    justifyContent: 'space-between',
+    padding: 18,
+  },
+  restaurantVisualTitle: {
+    color: colors.cream,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 27,
+  },
+  restaurantVisualMeta: {
+    color: colors.goldLight,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
+    marginTop: 6,
   },
 });
