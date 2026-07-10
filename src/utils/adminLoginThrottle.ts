@@ -1,4 +1,4 @@
-const ADMIN_LOGIN_THROTTLE_KEY = "foodiz_admin_login_throttle_v1";
+const ADMIN_LOGIN_THROTTLE_KEY = "weello_admin_login_throttle_v1";
 
 export const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
 export const ADMIN_LOGIN_WINDOW_MS = 10 * 60 * 1000;

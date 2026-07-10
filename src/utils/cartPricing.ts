@@ -22,9 +22,9 @@ export interface AdvantageOption {
   source?: "saved" | "cart";
 }
 
-export const LOCKED_ADVANTAGE_KEY = "foodiz_locked_advantage_v1";
-export const ADVANTAGES_SET_KEY = "foodiz_advantages_set_v1";
-export const CART_SELECTED_ADVANTAGE_KEY = "foodiz_cart_selected_advantage_v1";
+export const LOCKED_ADVANTAGE_KEY = "weello_locked_advantage_v1";
+export const ADVANTAGES_SET_KEY = "weello_advantages_set_v1";
+export const CART_SELECTED_ADVANTAGE_KEY = "weello_cart_selected_advantage_v1";
 
 export const DEFAULT_ADVANTAGES: AdvantageOption[] = [
   { id: "a1", name: "-10 % sur votre commande", points: 200, discountType: "percent", discountValue: 10, source: "cart" },

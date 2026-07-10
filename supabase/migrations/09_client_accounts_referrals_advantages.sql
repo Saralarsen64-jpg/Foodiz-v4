@@ -102,7 +102,7 @@ BEGIN
     INSERT INTO public.restaurants (owner_id, name, siret, phone, address, postal_code, city, status, is_active)
     VALUES (
       NEW.id,
-      coalesce(nullif(NEW.raw_user_meta_data ->> 'business_name', ''), nullif(NEW.raw_user_meta_data ->> 'full_name', ''), 'Établissement Foodiz'),
+      coalesce(nullif(NEW.raw_user_meta_data ->> 'business_name', ''), nullif(NEW.raw_user_meta_data ->> 'full_name', ''), 'Établissement Weello'),
       nullif(NEW.raw_user_meta_data ->> 'siret', ''),
       nullif(NEW.raw_user_meta_data ->> 'phone', ''),
       nullif(NEW.raw_user_meta_data ->> 'address', ''),
@@ -114,7 +114,7 @@ BEGIN
     INSERT INTO public.partner_applications (user_id, business_name, siret, phone, email, address, postal_code, city, status)
     VALUES (
       NEW.id,
-      coalesce(nullif(NEW.raw_user_meta_data ->> 'business_name', ''), nullif(NEW.raw_user_meta_data ->> 'full_name', ''), 'Établissement Foodiz'),
+      coalesce(nullif(NEW.raw_user_meta_data ->> 'business_name', ''), nullif(NEW.raw_user_meta_data ->> 'full_name', ''), 'Établissement Weello'),
       nullif(NEW.raw_user_meta_data ->> 'siret', ''),
       nullif(NEW.raw_user_meta_data ->> 'phone', ''), NEW.email,
       nullif(NEW.raw_user_meta_data ->> 'address', ''),

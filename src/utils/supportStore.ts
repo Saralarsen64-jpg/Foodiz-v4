@@ -14,7 +14,7 @@ export type SupportTicket = {
   createdAt: string;
 };
 
-const STORAGE_KEY = "foodiz_support_tickets_v1";
+const STORAGE_KEY = "weello_support_tickets_v1";
 
 export function loadSupportTickets(): SupportTicket[] {
   try {

@@ -20,6 +20,8 @@ const handler: Handler = async (event) => {
       { data: restaurants, error: restaurantsError },
       { data: partnerDocuments, error: partnerDocumentsError },
       { data: courierDocuments, error: courierDocumentsError },
+      { data: profiles, error: profilesError },
+      { data: requests, error: requestsError },
     ] = await Promise.all([
       adminSupabase
         .from("service_areas")
@@ -40,8 +42,17 @@ const handler: Handler = async (event) => {
       adminSupabase
         .from("courier_documents")
         .select("user_id,status"),
+      adminSupabase
+        .from("profiles")
+        .select("id,role,city,postal_code,status")
+        .neq("role", "admin"),
+      adminSupabase
+        .from("service_area_requests")
+        .select("id,user_id,city,postal_code,status,created_at")
+        .order("created_at", { ascending: false }),
     ]);
-    const loadError = areasError || partnersError || couriersError || restaurantsError || partnerDocumentsError || courierDocumentsError;
+    const loadError = areasError || partnersError || couriersError || restaurantsError
+      || partnerDocumentsError || courierDocumentsError || profilesError || requestsError;
     if (loadError) {
       console.error("Service area dashboard load failed", loadError);
       return reply(500, { error: "Impossible de charger les villes Weello." });
@@ -49,8 +60,15 @@ const handler: Handler = async (event) => {
 
     return reply(200, {
       areas: (areas || []).map((area) => {
+        const normalizedCity = String(area.city_normalized || area.city || "").trim().toLocaleLowerCase("fr-FR");
         const areaPartners = (partners || []).filter((item) => item.service_area_id === area.id);
         const areaCouriers = (couriers || []).filter((item) => item.service_area_id === area.id);
+        const areaProfiles = (profiles || []).filter((profile) => (
+          String(profile.city || "").trim().toLocaleLowerCase("fr-FR") === normalizedCity
+        ));
+        const areaRequests = (requests || []).filter((request) => (
+          String(request.city || "").trim().toLocaleLowerCase("fr-FR") === normalizedCity
+        ));
         const partnerApplicationIds = new Set(areaPartners.map((item) => item.id));
         const courierUserIds = new Set(areaCouriers.map((item) => item.user_id));
         const partnerDocumentsToReview = (partnerDocuments || []).filter((document) => (
@@ -76,9 +94,14 @@ const handler: Handler = async (event) => {
             courierApplicationsToReview: areaCouriers.filter((item) => ["pending", "pending_review", "documents_required", "replacement_requested"].includes(item.document_review_status || item.status || "")).length,
             courierDocumentsToReview,
             documentsToReview: partnerDocumentsToReview + courierDocumentsToReview,
+            clients: areaProfiles.filter((profile) => profile.role === "client").length,
+            partners: areaProfiles.filter((profile) => profile.role === "partner").length,
+            couriers: areaProfiles.filter((profile) => profile.role === "courier").length,
+            serviceAreaRequests: areaRequests.length,
           },
         };
       }),
+      requests: requests || [],
     });
   }
 

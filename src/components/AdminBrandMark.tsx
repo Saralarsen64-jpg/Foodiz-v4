@@ -3,7 +3,7 @@ export default function AdminBrandMark({ size = "md" }: { size?: "sm" | "md" | "
 
   return (
     <div
-      className={`${dimensions} relative shrink-0 overflow-hidden rounded-full border-2 border-foodiz-gold/70 bg-foodiz-kraft shadow-[0_0_24px_rgba(216,168,79,.2)]`}
+      className={`${dimensions} relative shrink-0 overflow-hidden rounded-full border-2 border-weello-gold/70 bg-weello-kraft shadow-[0_0_24px_rgba(216,168,79,.2)]`}
       aria-label="Weello"
     >
       <img

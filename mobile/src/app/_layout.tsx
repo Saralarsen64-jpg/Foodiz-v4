@@ -1,6 +1,5 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts as useInterFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import {
   PlayfairDisplay_600SemiBold,
@@ -11,11 +10,12 @@ import {
 
 import { AuthProvider } from '@/providers/auth-provider';
 import { CartProvider } from '@/providers/cart-provider';
+import { WeelloStripeProvider } from '@/components/weello-stripe-provider';
+import { LoadingScreen } from '@/components/loading-screen';
 import { colors } from '@/theme/colors';
 import '@/lib/delivery-location-task';
 
 export default function RootLayout() {
-  const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
   const [interLoaded] = useInterFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -28,13 +28,12 @@ export default function RootLayout() {
     PlayfairDisplay_700Bold,
   });
 
-  if (!interLoaded || !playfairLoaded) return null;
+  if (!interLoaded || !playfairLoaded) {
+    return <LoadingScreen label="Préparation de Weello…" />;
+  }
 
   return (
-    <StripeProvider
-      publishableKey={stripeKey}
-      merchantIdentifier="merchant.app.weello"
-      urlScheme="weello">
+    <WeelloStripeProvider>
       <AuthProvider>
         <CartProvider>
           <StatusBar style="light" />
@@ -47,6 +46,6 @@ export default function RootLayout() {
           />
         </CartProvider>
       </AuthProvider>
-    </StripeProvider>
+    </WeelloStripeProvider>
   );
 }

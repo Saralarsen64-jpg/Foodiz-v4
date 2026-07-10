@@ -1,4 +1,4 @@
-const ADMIN_ACCESS_KEY = "foodiz_admin_access_v1";
+const ADMIN_ACCESS_KEY = "weello_admin_access_v1";
 export const ADMIN_ACCESS_TTL_MS = 30 * 60 * 1000;
 
 type AdminAccessGrant = {

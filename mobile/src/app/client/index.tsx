@@ -10,19 +10,17 @@ import {
 } from 'react-native';
 
 import {
-  WeelloActionCard,
-  WeelloBrand,
   WeelloButton,
   WeelloCard,
   WeelloField,
-  WeelloHero,
-  WeelloMetric,
+  WeelloBlackMasthead,
   WeelloPill,
   WeelloScreen,
   WeelloSectionTitle,
   weelloText,
 } from '@/components/weello-ui';
 import { weelloApi } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useCart } from '@/providers/cart-provider';
 import { colors } from '@/theme/colors';
@@ -37,15 +35,16 @@ type Restaurant = {
   distance_meters?: number | null;
 };
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Bonjour';
-  if (hour < 18) return 'Bel après-midi';
-  return 'Bonsoir';
-}
+type RecentOrder = {
+  id: string;
+  status: string;
+  final_client_total_cents: number;
+  created_at: string;
+  restaurant: { name: string | null } | null;
+};
 
 export default function ClientHomeScreen() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const { itemCount, subtotalCents } = useCart();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [coverage, setCoverage] = useState<{
@@ -55,6 +54,13 @@ export default function ClientHomeScreen() {
   } | null>(null);
   const [requestingArea, setRequestingArea] = useState(false);
   const [search, setSearch] = useState('');
+  const [summary, setSummary] = useState({
+    points: 0,
+    referrals: 0,
+    rewards: 0,
+    unread: 0,
+  });
+  const [recentOrder, setRecentOrder] = useState<RecentOrder | null>(null);
 
   const categories = useMemo(
     () => Array.from(new Set(
@@ -98,6 +104,52 @@ export default function ClientHomeScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session?.user.id) return;
+    let active = true;
+    void Promise.all([
+      supabase
+        .from('client_wallets')
+        .select('points_balance')
+        .eq('user_id', session.user.id)
+        .maybeSingle(),
+      supabase
+        .from('referrals')
+        .select('*', { count: 'exact', head: true })
+        .eq('parrain_id', session.user.id)
+        .eq('status', 'completed'),
+      supabase
+        .from('client_rewards')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('status', 'active'),
+      supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('is_read', false),
+      supabase
+        .from('orders')
+        .select('id,status,final_client_total_cents,created_at,restaurant:restaurants(name)')
+        .eq('client_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]).then(([wallet, referrals, rewards, notifications, order]) => {
+      if (!active) return;
+      setSummary({
+        points: Number(wallet.data?.points_balance || 0),
+        referrals: referrals.count || 0,
+        rewards: rewards.count || 0,
+        unread: notifications.count || 0,
+      });
+      setRecentOrder((order.data || null) as unknown as RecentOrder | null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session?.user.id]);
+
   async function requestArea() {
     if (coverage?.addressRequired) {
       router.push('/client/address');
@@ -122,25 +174,27 @@ export default function ClientHomeScreen() {
 
   return (
     <WeelloScreen>
-      <WeelloBrand subtitle="Votre table locale, livrée avec soin" />
-      <WeelloHero
-        eyebrow="Weello sélection locale"
-        title={`${getGreeting()} ${profile?.first_name || 'Foodie'} 👋`}
-        body="Commandez auprès des établissements de votre ville, suivez votre livraison en direct et cumulez vos avantages Weello.">
-        <View style={styles.metrics}>
-          <WeelloMetric
-            label="Établissements"
-            value={restaurants.length}
-            helper="actifs autour de vous"
-          />
-          <WeelloMetric
-            label="Panier"
-            value={itemCount}
-            helper={`${(subtotalCents / 100).toFixed(2)} € en cours`}
-            tone={itemCount > 0 ? 'success' : 'muted'}
-          />
+      <WeelloBlackMasthead />
+
+      <View style={styles.utilityRow}>
+        <Pressable onPress={() => router.push('/client/address')} style={styles.locationBlock}>
+          <Text style={styles.utilityIcon}>⌖</Text>
+          <View>
+            <Text style={styles.utilityLabel}>Ma position</Text>
+            <Text style={styles.locationValue}>{profile?.city || 'Ajouter mon adresse'}⌄</Text>
+          </View>
+        </Pressable>
+        <View style={styles.utilityActions}>
+          <Pressable onPress={() => router.push('/client/account')} style={styles.roundAction}>
+            <Text style={styles.utilityIcon}>♢</Text>
+            {summary.unread > 0 ? <Text style={styles.actionBadge}>{summary.unread}</Text> : null}
+          </Pressable>
+          <Pressable onPress={() => router.push('/client/cart')} style={styles.roundAction}>
+            <Text style={styles.utilityIcon}>⌑</Text>
+            {itemCount > 0 ? <Text style={styles.actionBadge}>{itemCount}</Text> : null}
+          </Pressable>
         </View>
-      </WeelloHero>
+      </View>
 
       <View style={styles.searchBlock}>
         <Text style={styles.appetiteTitle}>
@@ -152,21 +206,99 @@ export default function ClientHomeScreen() {
           placeholder="Restaurant, cuisine, ville…"
           accessibilityLabel="Rechercher un établissement"
         />
-        {categories.length > 0 ? (
-          <View style={styles.categoryRow}>
-            {categories.map((category) => (
-              <Pressable key={category} onPress={() => setSearch(category)}>
-                <WeelloPill label={category} tone={search === category ? 'gold' : 'muted'} />
-              </Pressable>
-            ))}
-            {search ? (
-              <Pressable onPress={() => setSearch('')}>
-                <WeelloPill label="Tout voir" />
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
       </View>
+
+      <View style={styles.exploreRow}>
+        <Pressable onPress={() => setSearch('')} style={styles.exploreCard}>
+          <ImageBackground
+            source={require('../../../assets/images/restaurant-bistrot.jpg')}
+            imageStyle={styles.exploreImage}
+            style={styles.exploreBackground}>
+            <View style={styles.exploreOverlay}>
+              <Text style={styles.exploreTitle}>RESTAURANTS</Text>
+              <Text style={styles.exploreBody}>Plats préparés{'\n'}avec amour</Text>
+              <Text style={styles.exploreArrow}>→</Text>
+            </View>
+          </ImageBackground>
+        </Pressable>
+        <Pressable onPress={() => setSearch('market')} style={styles.exploreCard}>
+          <ImageBackground
+            source={require('../../../assets/images/market-bio.jpg')}
+            imageStyle={styles.exploreImage}
+            style={styles.exploreBackground}>
+            <View style={styles.exploreOverlay}>
+              <Text style={styles.exploreTitle}>MARKET</Text>
+              <Text style={styles.exploreBody}>Courses, snacks{'\n'}et essentiels</Text>
+              <Text style={styles.exploreArrow}>→</Text>
+            </View>
+          </ImageBackground>
+        </Pressable>
+      </View>
+
+      {categories.length > 0 ? (
+        <View style={styles.categoryRow}>
+          {categories.map((category) => (
+            <Pressable key={category} onPress={() => setSearch(category)}>
+              <WeelloPill label={category} tone={search === category ? 'gold' : 'muted'} />
+            </Pressable>
+          ))}
+          {search ? (
+            <Pressable onPress={() => setSearch('')}>
+              <WeelloPill label="Tout voir" />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      <Pressable onPress={() => router.push('/client/benefits')}>
+        <WeelloCard>
+          <Text style={styles.clubTitle}>Des avantages{'\n'}rien que pour vous</Text>
+          <Text style={styles.clubBody}>Fidélité, parrainage, offres exclusives…</Text>
+          <Text style={styles.clubCta}>Découvrir →</Text>
+        </WeelloCard>
+      </Pressable>
+
+      <WeelloSectionTitle title="Vos avantages" />
+      <View style={styles.benefitGrid}>
+        {[
+          ['☆', 'Fidélité', `${summary.points.toLocaleString('fr-FR')} points`],
+          ['♢', 'Parrainage', `${summary.referrals} validé(s)`],
+          ['%', 'Offres exclusives', `${summary.rewards} disponible(s)`],
+        ].map(([icon, label, value]) => (
+          <Pressable key={label} onPress={() => router.push('/client/benefits')} style={styles.benefitCard}>
+            <Text style={styles.benefitIcon}>{icon}</Text>
+            <Text style={styles.benefitLabel}>{label}</Text>
+            <Text style={styles.benefitValue}>{value}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {recentOrder ? (
+        <>
+          <WeelloSectionTitle title="Votre dernière commande" />
+          <Pressable
+            onPress={() => router.push({
+              pathname: '/client/order/[id]',
+              params: { id: recentOrder.id },
+            })}>
+            <WeelloCard>
+              <View style={styles.recentOrder}>
+                <View style={styles.recentOrderText}>
+                  <Text style={weelloText.heading}>
+                    {recentOrder.restaurant?.name || 'Commande Weello'}
+                  </Text>
+                  <Text style={weelloText.body}>
+                    {new Date(recentOrder.created_at).toLocaleDateString('fr-FR')} · {recentOrder.status}
+                  </Text>
+                </View>
+                <Text style={styles.recentAmount}>
+                  {(recentOrder.final_client_total_cents / 100).toFixed(2)} €
+                </Text>
+              </View>
+            </WeelloCard>
+          </Pressable>
+        </>
+      ) : null}
 
       {itemCount > 0 ? (
         <Pressable onPress={() => router.push('/client/cart')}>
@@ -179,43 +311,6 @@ export default function ClientHomeScreen() {
           </WeelloCard>
         </Pressable>
       ) : null}
-
-      <WeelloCard>
-        <Text style={styles.kicker}>EXPÉRIENCE WEELLO</Text>
-        <Text style={weelloText.heading}>Un suivi clair, du four à votre porte.</Text>
-        <View style={styles.promiseList}>
-          <Text style={styles.promise}>• Préparation statique pendant que le restaurant cuisine.</Text>
-          <Text style={styles.promise}>• Suivi live dès que le livreur récupère la commande.</Text>
-          <Text style={styles.promise}>• Code sécurisé à transmettre uniquement à la remise.</Text>
-        </View>
-      </WeelloCard>
-
-      <View style={styles.actions}>
-        <WeelloActionCard
-          icon="🍽️"
-          title="Commander"
-          description="Explorez les cartes disponibles et composez votre envie du moment."
-          onPress={() => {
-            if (!restaurants[0]) return;
-            router.push({
-              pathname: '/client/restaurant/[id]',
-              params: { id: restaurants[0].id },
-            });
-          }}
-        />
-        <WeelloActionCard
-          icon="📍"
-          title="Suivre ma commande"
-          description="Retrouvez le suivi live dès qu’une commande est en cours."
-          onPress={() => router.push('/client/orders')}
-        />
-        <WeelloActionCard
-          icon="✦"
-          title="Weello Club"
-          description="Consultez vos points, récompenses et avantages fidélité."
-          onPress={() => router.push('/client/benefits')}
-        />
-      </View>
 
       <WeelloSectionTitle
         title={search ? 'Résultats' : 'Établissements'}
@@ -305,13 +400,57 @@ export default function ClientHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  metrics: {
+  utilityRow: {
+    alignItems: 'center',
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  locationBlock: {
+    alignItems: 'center',
+    flexDirection: 'row',
     gap: 10,
   },
-  actions: {
+  utilityActions: {
+    flexDirection: 'row',
     gap: 10,
+  },
+  roundAction: {
+    alignItems: 'center',
+    borderColor: colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 46,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 46,
+  },
+  utilityIcon: {
+    color: colors.gold,
+    fontSize: 24,
+  },
+  utilityLabel: {
+    color: colors.gold,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+  },
+  locationValue: {
+    color: colors.cream,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 18,
+  },
+  actionBadge: {
+    backgroundColor: colors.gold,
+    borderRadius: 99,
+    color: colors.black,
+    fontSize: 10,
+    fontWeight: '900',
+    minWidth: 18,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    position: 'absolute',
+    right: -3,
+    textAlign: 'center',
+    top: -4,
   },
   searchBlock: {
     gap: 12,
@@ -331,6 +470,113 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  exploreRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  exploreCard: {
+    flex: 1,
+  },
+  exploreBackground: {
+    height: 205,
+  },
+  exploreImage: {
+    borderColor: colors.border,
+    borderRadius: 22,
+    borderWidth: 1,
+  },
+  exploreOverlay: {
+    backgroundColor: 'rgba(5,5,5,.36)',
+    borderRadius: 22,
+    flex: 1,
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  exploreTitle: {
+    color: colors.cream,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 18,
+  },
+  exploreBody: {
+    color: colors.cream,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  exploreArrow: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.gold,
+    borderRadius: 99,
+    color: colors.black,
+    fontSize: 24,
+    height: 42,
+    lineHeight: 39,
+    textAlign: 'center',
+    width: 42,
+  },
+  clubTitle: {
+    color: colors.cream,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 29,
+    lineHeight: 34,
+  },
+  clubBody: {
+    color: colors.goldLight,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 13,
+  },
+  clubCta: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.gold,
+    borderRadius: 12,
+    color: colors.black,
+    fontFamily: 'Inter_700Bold',
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  benefitGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  benefitCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 130,
+    padding: 12,
+  },
+  benefitIcon: {
+    color: colors.gold,
+    fontSize: 26,
+  },
+  benefitLabel: {
+    color: colors.cream,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 14,
+    marginTop: 10,
+  },
+  benefitValue: {
+    color: colors.muted,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10,
+    marginTop: 5,
+  },
+  recentOrder: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+  },
+  recentOrderText: {
+    flex: 1,
+  },
+  recentAmount: {
+    color: colors.goldLight,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 20,
+  },
   restaurantHeader: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -346,15 +592,6 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontSize: 28,
     fontWeight: '900',
-  },
-  promiseList: {
-    gap: 8,
-    marginTop: 12,
-  },
-  promise: {
-    color: colors.muted,
-    fontSize: 13,
-    lineHeight: 19,
   },
   discover: {
     color: colors.gold,

@@ -112,59 +112,59 @@ export default function AdvantagesPage() {
     }
   };
 
-  const currentTier = points >= 5000 ? { name: "Platinum", icon: Crown, color: "text-foodiz-cream" } : points >= 1500 ? { name: "Gold", icon: Trophy, color: "text-foodiz-gold" } : { name: "Membre", icon: Star, color: "text-gray-400" };
+  const currentTier = points >= 5000 ? { name: "Platinum", icon: Crown, color: "text-weello-cream" } : points >= 1500 ? { name: "Gold", icon: Trophy, color: "text-weello-gold" } : { name: "Membre", icon: Star, color: "text-gray-400" };
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+    <div className="min-h-screen bg-weello-black pb-24 animate-fade-in-up border-x-2 border-weello-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
       
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-          <h1 className="foodiz-title text-lg">Weello Club</h1>
+          <button onClick={() => navigate("/client/account")} className="text-weello-gold"><ChevronLeft size={24} /></button>
+          <h1 className="weello-title text-lg">Weello Club</h1>
           <div className="w-6" />
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-8">
         {/* Wallet Card */}
-        <div className="foodiz-card p-8 bg-gradient-to-br from-foodiz-gold/20 to-foodiz-card border border-foodiz-gold/30 text-center relative overflow-hidden">
+        <div className="weello-card p-8 bg-gradient-to-br from-weello-gold/20 to-weello-card border border-weello-gold/30 text-center relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-foodiz-gold text-xs uppercase tracking-widest font-bold mb-2">Mon Solde Weello</p>
-            {loading ? <div className="text-4xl font-serif italic text-foodiz-cream animate-pulse">...</div> : <div className="text-5xl font-serif italic text-foodiz-cream mb-2">{points.toLocaleString('fr-FR')}</div>}
-            <p className="text-foodiz-gray text-sm">points fidélité disponibles</p>
+            <p className="text-weello-gold text-xs uppercase tracking-widest font-bold mb-2">Mon Solde Weello</p>
+            {loading ? <div className="text-4xl font-serif italic text-weello-cream animate-pulse">...</div> : <div className="text-5xl font-serif italic text-weello-cream mb-2">{points.toLocaleString('fr-FR')}</div>}
+            <p className="text-weello-gray text-sm">points fidélité disponibles</p>
             <div className={`mt-4 text-sm font-bold flex items-center justify-center gap-2 ${currentTier.color}`}>
               <currentTier.icon size={16} /> Statut {currentTier.name}
             </div>
           </div>
-          <Gift size={120} className="absolute -bottom-4 -right-4 text-foodiz-gold/5 rotate-12" />
+          <Gift size={120} className="absolute -bottom-4 -right-4 text-weello-gold/5 rotate-12" />
         </div>
 
         {/* Compte à rebours */}
-        <div className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/20 flex items-center justify-center gap-3">
-          <Hourglass size={18} className="text-foodiz-gold animate-pulse" />
+        <div className="weello-card p-4 bg-[#0A0A0A] border-weello-gold/20 flex items-center justify-center gap-3">
+          <Hourglass size={18} className="text-weello-gold animate-pulse" />
           <div className="text-center">
-            <p className="text-[10px] text-foodiz-gray uppercase tracking-widest">Nouveaux avantages dans</p>
-            <p className="text-foodiz-cream font-mono text-lg font-bold">{timeLeft}</p>
+            <p className="text-[10px] text-weello-gray uppercase tracking-widest">Nouveaux avantages dans</p>
+            <p className="text-weello-cream font-mono text-lg font-bold">{timeLeft}</p>
           </div>
         </div>
 
         {/* Avantage Verrouillé (Unique) */}
         {lockedAdvantage && (
           <div>
-            <h3 className="foodiz-title text-lg mb-4 flex items-center gap-2 text-foodiz-gold"><Lock size={18} /> Mon Avantage Verrouillé</h3>
-            <div className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/20 flex justify-between items-center">
+            <h3 className="weello-title text-lg mb-4 flex items-center gap-2 text-weello-gold"><Lock size={18} /> Mon Avantage Verrouillé</h3>
+            <div className="weello-card p-4 bg-[#0A0A0A] border-weello-gold/20 flex justify-between items-center">
               <div>
-                <p className="text-foodiz-cream font-bold text-sm">{lockedAdvantage.title}</p>
-                <p className="text-foodiz-gray text-xs">{lockedAdvantage.description}</p>
+                <p className="text-weello-cream font-bold text-sm">{lockedAdvantage.title}</p>
+                <p className="text-weello-gray text-xs">{lockedAdvantage.description}</p>
               </div>
               <div className="text-right flex flex-col items-end gap-2">
-                <p className="text-foodiz-gold font-bold text-sm">{lockedAdvantage.points_cost} pts</p>
+                <p className="text-weello-gold font-bold text-sm">{lockedAdvantage.points_cost} pts</p>
                 {points >= lockedAdvantage.points_cost ? (
-                  <button onClick={() => navigate('/client/cart')} className="px-3 py-1 rounded-lg bg-foodiz-green text-foodiz-black text-[10px] font-bold">Utiliser au paiement</button>
+                  <button onClick={() => navigate('/client/cart')} className="px-3 py-1 rounded-lg bg-weello-green text-weello-black text-[10px] font-bold">Utiliser au paiement</button>
                 ) : (
-                  <button onClick={handleUnlock} className="px-3 py-1 rounded-lg bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 text-[10px] font-bold">Déverrouiller</button>
+                  <button onClick={handleUnlock} className="px-3 py-1 rounded-lg bg-weello-red/10 text-weello-red border border-weello-red/20 text-[10px] font-bold">Déverrouiller</button>
                 )}
               </div>
             </div>
@@ -173,32 +173,32 @@ export default function AdvantagesPage() {
 
         {/* Catalogue */}
         <div>
-          <h3 className="foodiz-title text-lg mb-4 flex items-center gap-2"><Zap size={18} className="text-foodiz-gold" /> Avantages du cycle actuel</h3>
-          {catalogError && <div className="foodiz-card mb-3 border-foodiz-red/20 bg-foodiz-red/5 p-4 text-center text-xs text-foodiz-red">{catalogError}</div>}
-          {!catalogError && advantages.length === 0 && <div className="foodiz-card p-5 text-center text-xs text-foodiz-gray">Synchronisation des avantages...</div>}
+          <h3 className="weello-title text-lg mb-4 flex items-center gap-2"><Zap size={18} className="text-weello-gold" /> Avantages du cycle actuel</h3>
+          {catalogError && <div className="weello-card mb-3 border-weello-red/20 bg-weello-red/5 p-4 text-center text-xs text-weello-red">{catalogError}</div>}
+          {!catalogError && advantages.length === 0 && <div className="weello-card p-5 text-center text-xs text-weello-gray">Synchronisation des avantages...</div>}
           <div className="space-y-3">
             {advantages.map((adv) => {
               const isLocked = lockedAdvantage?.catalog_id === adv.id;
               const canUnlock = points >= adv.points_cost;
               
               return (
-                <div key={adv.id} className={`foodiz-card p-4 flex justify-between items-center transition-all ${isLocked ? 'border-foodiz-gold bg-foodiz-gold/5' : 'border-foodiz-gold/10'}`}>
+                <div key={adv.id} className={`weello-card p-4 flex justify-between items-center transition-all ${isLocked ? 'border-weello-gold bg-weello-gold/5' : 'border-weello-gold/10'}`}>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-foodiz-cream font-bold text-sm">{adv.title}</p>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-foodiz-black border border-foodiz-gold/20 text-foodiz-gold">{adv.points_cost} pts</span>
+                      <p className="text-weello-cream font-bold text-sm">{adv.title}</p>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-weello-black border border-weello-gold/20 text-weello-gold">{adv.points_cost} pts</span>
                     </div>
-                    <p className="text-foodiz-gray text-xs">{adv.description}</p>
+                    <p className="text-weello-gray text-xs">{adv.description}</p>
                   </div>
                   <div className="ml-4">
                     {isLocked ? (
-                      <span className="text-[10px] text-foodiz-gold font-bold px-3 py-2">Verrouillé</span>
+                      <span className="text-[10px] text-weello-gold font-bold px-3 py-2">Verrouillé</span>
                     ) : canUnlock ? (
-                      <button disabled={busy} onClick={() => handleLock(adv)} className="px-3 py-2 rounded-xl bg-foodiz-green text-foodiz-black text-xs font-bold flex items-center gap-1 hover:bg-foodiz-green/80 disabled:opacity-50">
+                      <button disabled={busy} onClick={() => handleLock(adv)} className="px-3 py-2 rounded-xl bg-weello-green text-weello-black text-xs font-bold flex items-center gap-1 hover:bg-weello-green/80 disabled:opacity-50">
                         <Unlock size={12} /> Débloquer
                       </button>
                     ) : (
-                      <button disabled={busy} onClick={() => handleLock(adv)} className="px-3 py-2 rounded-xl bg-foodiz-black border border-foodiz-gold/30 text-foodiz-gold text-xs font-bold flex items-center gap-1 hover:bg-foodiz-gold/10 disabled:opacity-50">
+                      <button disabled={busy} onClick={() => handleLock(adv)} className="px-3 py-2 rounded-xl bg-weello-black border border-weello-gold/30 text-weello-gold text-xs font-bold flex items-center gap-1 hover:bg-weello-gold/10 disabled:opacity-50">
                         <Lock size={12} /> Verrouiller
                       </button>
                     )}
@@ -210,8 +210,8 @@ export default function AdvantagesPage() {
         </div>
 
         <div>
-          <h3 className="foodiz-title text-lg mb-4 flex items-center gap-2"><Gift size={18} className="text-foodiz-gold" /> Mes récompenses</h3>
-          {rewards.length === 0 ? <div className="foodiz-card p-5 text-center text-xs text-foodiz-gray">Aucune récompense débloquée pour le moment.</div> : <div className="space-y-3">{rewards.map((reward) => <div key={reward.id} className="foodiz-card p-4 border-foodiz-gold/15"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-foodiz-cream">{reward.title}</p><p className="text-xs text-foodiz-gray mt-1">{reward.description}</p></div><span className={`text-[9px] uppercase px-2 py-1 rounded-full border ${reward.status === 'active' ? 'text-foodiz-green border-foodiz-green/20 bg-foodiz-green/5' : 'text-foodiz-gray border-white/10'}`}>{reward.status === 'active' ? 'Disponible' : reward.status}</span></div><div className="mt-3 flex items-center justify-between"><code className="text-xs text-foodiz-gold tracking-wider">{reward.reward_code}</code><span className="text-[10px] text-foodiz-gray">Expire le {new Date(reward.expires_at).toLocaleDateString('fr-FR')}</span></div></div>)}</div>}
+          <h3 className="weello-title text-lg mb-4 flex items-center gap-2"><Gift size={18} className="text-weello-gold" /> Mes récompenses</h3>
+          {rewards.length === 0 ? <div className="weello-card p-5 text-center text-xs text-weello-gray">Aucune récompense débloquée pour le moment.</div> : <div className="space-y-3">{rewards.map((reward) => <div key={reward.id} className="weello-card p-4 border-weello-gold/15"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-weello-cream">{reward.title}</p><p className="text-xs text-weello-gray mt-1">{reward.description}</p></div><span className={`text-[9px] uppercase px-2 py-1 rounded-full border ${reward.status === 'active' ? 'text-weello-green border-weello-green/20 bg-weello-green/5' : 'text-weello-gray border-white/10'}`}>{reward.status === 'active' ? 'Disponible' : reward.status}</span></div><div className="mt-3 flex items-center justify-between"><code className="text-xs text-weello-gold tracking-wider">{reward.reward_code}</code><span className="text-[10px] text-weello-gray">Expire le {new Date(reward.expires_at).toLocaleDateString('fr-FR')}</span></div></div>)}</div>}
         </div>
       </main>
     </div>

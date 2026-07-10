@@ -102,7 +102,7 @@ BEGIN
     penalty_row.courier_id,
     'Pénalité annulée',
     'La pénalité de retard de la commande #' || left(target_order_id::text, 8)
-      || ' a été annulée après examen par Foodiz.',
+      || ' a été annulée après examen par Weello.',
     'payment',
     target_order_id
   );

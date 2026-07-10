@@ -1,4 +1,4 @@
--- Foodiz+ plans, secure quotas, targeting and campaign performance.
+-- Weello+ plans, secure quotas, targeting and campaign performance.
 
 CREATE TABLE IF NOT EXISTS public.foodiz_plus_plans (
   id text PRIMARY KEY,

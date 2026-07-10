@@ -70,8 +70,8 @@ export default function CourierDashboard() {
           onClick={toggleOnline}
           className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition-all ${
             online
-              ? "border-foodiz-green bg-foodiz-green text-white shadow-[0_0_35px_rgba(63,167,109,0.25)]"
-              : "border-foodiz-gold/25 bg-foodiz-gold/10 text-foodiz-gold hover:bg-foodiz-gold hover:text-foodiz-black"
+              ? "border-weello-green bg-weello-green text-white shadow-[0_0_35px_rgba(63,167,109,0.25)]"
+              : "border-weello-gold/25 bg-weello-gold/10 text-weello-gold hover:bg-weello-gold hover:text-weello-black"
           }`}
         >
           <Power size={18} /> {online ? "Passer hors ligne" : "Passer en ligne"}
@@ -79,7 +79,7 @@ export default function CourierDashboard() {
       </div>
     </WeelloHero>
 
-    {activeOrder && <button onClick={() => navigate(`/courier/deliveries/${activeOrder.id}/tracking`)} className="w-full mt-4 rounded-[1.6rem] border border-foodiz-green/25 bg-foodiz-green/[0.08] p-5 text-left flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-foodiz-green/15 flex items-center justify-center"><Navigation size={20} className="text-foodiz-green" /></div><div className="flex-1"><p className="text-[10px] uppercase tracking-widest text-foodiz-green">Course active</p><p className="text-foodiz-cream font-semibold mt-1">{activeOrder.restaurant?.name || "Restaurant"}</p><p className="text-xs text-foodiz-gray mt-1 truncate">{activeOrder.delivery_address}</p></div><ArrowUpRight size={18} className="text-foodiz-green" /></button>}
+    {activeOrder && <button onClick={() => navigate(`/courier/deliveries/${activeOrder.id}/tracking`)} className="w-full mt-4 rounded-[1.6rem] border border-weello-green/25 bg-weello-green/[0.08] p-5 text-left flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-weello-green/15 flex items-center justify-center"><Navigation size={20} className="text-weello-green" /></div><div className="flex-1"><p className="text-[10px] uppercase tracking-widest text-weello-green">Course active</p><p className="text-weello-cream font-semibold mt-1">{activeOrder.restaurant?.name || "Restaurant"}</p><p className="text-xs text-weello-gray mt-1 truncate">{activeOrder.delivery_address}</p></div><ArrowUpRight size={18} className="text-weello-green" /></button>}
 
     <section className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
       <WeelloMetricCard label="Gains" value={`${todayEarnings.toFixed(2)} €`} helper="aujourd’hui" icon={WalletCards} tone="green" />
@@ -87,7 +87,7 @@ export default function CourierDashboard() {
       <WeelloMetricCard label="Disponibles" value={available} helper={online ? "autour de vous" : "passez en ligne"} icon={MapPinned} tone={available ? "green" : "muted"} />
     </section>
 
-    <button disabled={!online} onClick={() => navigate("/courier/deliveries/available")} className="w-full mt-4 rounded-[1.6rem] bg-foodiz-gold text-foodiz-black p-5 flex items-center gap-4 disabled:opacity-40"><div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center"><MapPinned size={22} /></div><div className="flex-1 text-left"><p className="font-bold">{available} course{available > 1 ? "s" : ""} disponible{available > 1 ? "s" : ""}</p><p className="text-xs text-black/65 mt-1">Voir les missions autour de vous</p></div><ArrowUpRight size={20} /></button>
+    <button disabled={!online} onClick={() => navigate("/courier/deliveries/available")} className="w-full mt-4 rounded-[1.6rem] bg-weello-gold text-weello-black p-5 flex items-center gap-4 disabled:opacity-40"><div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center"><MapPinned size={22} /></div><div className="flex-1 text-left"><p className="font-bold">{available} course{available > 1 ? "s" : ""} disponible{available > 1 ? "s" : ""}</p><p className="text-xs text-black/65 mt-1">Voir les missions autour de vous</p></div><ArrowUpRight size={20} /></button>
 
     <section className="mt-4 grid gap-3">
       {[

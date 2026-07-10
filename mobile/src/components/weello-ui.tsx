@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
   Linking,
   Pressable,
   SafeAreaView,
@@ -15,6 +16,18 @@ import {
 } from 'react-native';
 
 import { colors } from '@/theme/colors';
+
+export function WeelloBlackMasthead({ compact = false }: { compact?: boolean }) {
+  return (
+    <ImageBackground
+      accessibilityIgnoresInvertColors
+      source={require('../../assets/images/weello-wordmark.png')}
+      resizeMode="cover"
+      imageStyle={styles.mastheadImage}
+      style={[styles.masthead, compact && styles.mastheadCompact]}
+    />
+  );
+}
 
 export function WeelloScreen({
   children,
@@ -105,8 +118,11 @@ export function WeelloButton({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       disabled={disabled || loading}
       onPress={onPress}
+      android_ripple={{ color: secondary ? 'rgba(216,168,79,0.12)' : 'rgba(255,255,255,0.2)' }}
       style={({ pressed }) => [
         styles.button,
         secondary && styles.buttonSecondary,
@@ -116,10 +132,18 @@ export function WeelloButton({
       <LinearGradient
         colors={
           secondary
-            ? [colors.surfaceRaised, colors.surface]
-            : [colors.goldLight, colors.gold]
+            ? ['rgba(216,168,79,0.12)', colors.surfaceRaised, colors.surface]
+            : ['#F4D487', colors.goldLight, colors.gold, '#B98535']
         }
+        locations={secondary ? [0, 0.38, 1] : [0, 0.28, 0.68, 1]}
+        start={{ x: 0.08, y: 0 }}
+        end={{ x: 0.92, y: 1 }}
         style={styles.buttonGradient}>
+        <View
+          pointerEvents="none"
+          style={[styles.buttonAmbient, secondary && styles.buttonAmbientSecondary]}
+        />
+        <View pointerEvents="none" style={styles.buttonTopLine} />
         {loading ? (
           <ActivityIndicator color={secondary ? colors.gold : colors.black} />
         ) : (
@@ -218,7 +242,13 @@ export function WeelloActionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.actionCardPressable,
+        pressed && styles.pressed,
+      ]}>
       <LinearGradient
         colors={['rgba(246,238,220,0.06)', 'rgba(216,168,79,0.08)', '#111111']}
         start={{ x: 0, y: 0 }}
@@ -319,6 +349,19 @@ const styles = StyleSheet.create({
     gap: 18,
     backgroundColor: 'transparent',
   },
+  masthead: {
+    backgroundColor: colors.black,
+    height: 205,
+    marginHorizontal: -24,
+    marginTop: -24,
+    overflow: 'hidden',
+  },
+  mastheadCompact: {
+    height: 178,
+  },
+  mastheadImage: {
+    transform: [{ scale: 1.08 }],
+  },
   brandBlock: {
     alignItems: 'center',
     gap: 8,
@@ -399,7 +442,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 16,
     backgroundColor: colors.gold,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,239,198,0.76)',
+    shadowColor: colors.gold,
+    shadowOpacity: 0.27,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 9 },
+    elevation: 8,
   },
   buttonGradient: {
     minHeight: 54,
@@ -407,17 +456,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
+    borderRadius: 15,
+    overflow: 'hidden',
   },
   buttonSecondary: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(216,168,79,0.5)',
     backgroundColor: colors.surface,
+    shadowColor: colors.black,
+    shadowOpacity: 0.34,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 4,
+  },
+  buttonAmbient: {
+    position: 'absolute',
+    width: 140,
+    height: 88,
+    left: -34,
+    top: -52,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+  },
+  buttonAmbientSecondary: {
+    backgroundColor: 'rgba(216,168,79,0.08)',
+  },
+  buttonTopLine: {
+    position: 'absolute',
+    top: 1,
+    left: 20,
+    right: 20,
+    height: 1,
+    backgroundColor: 'rgba(255,251,231,0.58)',
   },
   buttonText: {
     color: colors.black,
     fontSize: 16,
     fontWeight: '800',
     fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.15,
   },
   buttonTextSecondary: {
     color: colors.gold,
@@ -426,7 +503,8 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.92,
+    transform: [{ translateY: 1 }, { scale: 0.985 }],
   },
   card: {
     gap: 12,
@@ -524,6 +602,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
+  },
+  actionCardPressable: {
+    borderRadius: 24,
+    shadowColor: colors.black,
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
   actionIcon: {
     width: 46,

@@ -61,7 +61,6 @@ type PartnerApplication = {
     latitude?: number | null;
     longitude?: number | null;
   } | null;
-  prelaunch?: { access_enabled: boolean } | null;
   service_area?: {
     id: string;
     city: string;
@@ -180,23 +179,6 @@ export default function AdminPartnerApplicationsPage() {
     }
   };
 
-  const setAccess = async (item: PartnerApplication, enabled: boolean) => {
-    setBusy(item.id);
-    try {
-      await adminPartnerRequest("POST", {
-        action: "set_access",
-        userId: item.user_id,
-        enabled,
-      });
-      toast.success(enabled ? "Accès pilote partenaire autorisé." : "Accès pilote retiré.");
-      await loadItems();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setBusy("");
-    }
-  };
-
   const setOperationalStatus = async (item: PartnerApplication, status: "active" | "suspended") => {
     const reason = status === "suspended"
       ? window.prompt("Motif obligatoire de suspension :")?.trim() || ""
@@ -243,35 +225,35 @@ export default function AdminPartnerApplicationsPage() {
     <AdminShell title="Partenaires" subtitle="Conformité documentaire, validation manuelle et activation par ville">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ["À contrôler", stats.pending, AlertCircle, "text-foodiz-gold"],
-          ["Dossiers validés", stats.approved, ShieldCheck, "text-foodiz-green"],
-          ["Établissements actifs", stats.active, Store, "text-foodiz-green"],
-          ["Villes représentées", stats.cities, MapPin, "text-foodiz-gold"],
+          ["À contrôler", stats.pending, AlertCircle, "text-weello-gold"],
+          ["Dossiers validés", stats.approved, ShieldCheck, "text-weello-green"],
+          ["Établissements actifs", stats.active, Store, "text-weello-green"],
+          ["Villes représentées", stats.cities, MapPin, "text-weello-gold"],
         ].map(([label, value, Icon, color]: any[]) => (
-          <article key={label} className="foodiz-card p-5">
+          <article key={label} className="weello-card p-5">
             <Icon size={19} className={color} />
-            <p className="mt-4 text-[10px] uppercase tracking-widest text-foodiz-gray">{label}</p>
-            <p className="mt-2 text-3xl font-serif italic text-foodiz-cream">{value}</p>
+            <p className="mt-4 text-[10px] uppercase tracking-widest text-weello-gray">{label}</p>
+            <p className="mt-2 text-3xl font-serif italic text-weello-cream">{value}</p>
           </article>
         ))}
       </section>
 
       <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
-        <label className="foodiz-card flex items-center gap-3 px-4 py-3">
-          <Search size={17} className="text-foodiz-gold" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom, ville, email ou SIRET" className="w-full bg-transparent text-sm outline-none placeholder:text-foodiz-gray" />
+        <label className="weello-card flex items-center gap-3 px-4 py-3">
+          <Search size={17} className="text-weello-gold" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom, ville, email ou SIRET" className="w-full bg-transparent text-sm outline-none placeholder:text-weello-gray" />
         </label>
-        <select value={city} onChange={(event) => setCity(event.target.value)} className="foodiz-card bg-foodiz-card px-4 py-3 text-sm text-foodiz-cream outline-none">
+        <select value={city} onChange={(event) => setCity(event.target.value)} className="weello-card bg-weello-card px-4 py-3 text-sm text-weello-cream outline-none">
           <option value="all">Toutes les villes</option>
           {cities.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <button onClick={() => void loadItems()} className="rounded-xl border border-foodiz-gold/20 px-4 py-3 text-foodiz-gold"><RefreshCw size={17} /></button>
+        <button onClick={() => void loadItems()} className="rounded-xl border border-weello-gold/20 px-4 py-3 text-weello-gold"><RefreshCw size={17} /></button>
       </div>
 
       {loading ? (
-        <div className="foodiz-card animate-pulse p-8 text-center text-foodiz-gray">Chargement des dossiers privés…</div>
+        <div className="weello-card animate-pulse p-8 text-center text-weello-gray">Chargement des dossiers privés…</div>
       ) : filtered.length === 0 ? (
-        <div className="foodiz-card p-5 text-sm text-foodiz-gray">Aucun partenaire correspondant.</div>
+        <div className="weello-card p-5 text-sm text-weello-gray">Aucun partenaire correspondant.</div>
       ) : (
         <section className="grid gap-5 xl:grid-cols-2">
           {filtered.map((item) => {
@@ -279,30 +261,30 @@ export default function AdminPartnerApplicationsPage() {
             const dossierComplete = required.every((type) => item.documents.some((document) => document.document_type === type));
             const areaOperational = ["pilot", "open"].includes(item.service_area?.status || "");
             return (
-              <article key={item.id} className="foodiz-card border-foodiz-gold/15 p-5">
+              <article key={item.id} className="weello-card border-weello-gold/15 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="text-lg font-semibold text-foodiz-cream">{item.business_name}</h2>
-                    <p className="mt-1 text-xs text-foodiz-gray">
+                    <h2 className="text-lg font-semibold text-weello-cream">{item.business_name}</h2>
+                    <p className="mt-1 text-xs text-weello-gray">
                       {item.service_area?.city || item.city || "Ville non classée"}
                       {item.service_area?.department_code ? ` (${item.service_area.department_code})` : ""}
                       {" · "}SIRET {item.siret || "manquant"}
                     </p>
-                    <p className="mt-1 text-[10px] text-foodiz-gray">{item.profiles?.email} · {item.profiles?.phone}</p>
+                    <p className="mt-1 text-[10px] text-weello-gray">{item.profiles?.email} · {item.profiles?.phone}</p>
                   </div>
                   <span className={`rounded-full border px-3 py-1 text-[10px] uppercase ${
                     item.compliance_status === "approved"
-                      ? "border-foodiz-green/20 bg-foodiz-green/5 text-foodiz-green"
+                      ? "border-weello-green/20 bg-weello-green/5 text-weello-green"
                       : item.compliance_status === "rejected"
-                        ? "border-foodiz-red/20 bg-foodiz-red/5 text-foodiz-red"
-                        : "border-foodiz-gold/20 bg-foodiz-gold/5 text-foodiz-gold"
+                        ? "border-weello-red/20 bg-weello-red/5 text-weello-red"
+                        : "border-weello-gold/20 bg-weello-gold/5 text-weello-gold"
                   }`}>{item.compliance_status}</span>
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-white/[0.02] p-3 text-[10px]">
-                  <div><p className="text-foodiz-gray">Ville</p><p className={areaOperational ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gold"}>{item.service_area?.status || "non classée"}</p></div>
-                  <div><p className="text-foodiz-gray">Accès pilote</p><p className={item.prelaunch?.access_enabled ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.prelaunch?.access_enabled ? "Autorisé" : "Bloqué"}</p></div>
-                  <div><p className="text-foodiz-gray">Vente</p><p className={item.restaurant?.is_active ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.restaurant?.is_active ? "Active" : "Inactive"}</p></div>
+                  <div><p className="text-weello-gray">Ville</p><p className={areaOperational ? "mt-1 text-weello-green" : "mt-1 text-weello-gold"}>{item.service_area?.status || "non classée"}</p></div>
+                  <div><p className="text-weello-gray">Dossier</p><p className={item.compliance_status === "approved" ? "mt-1 text-weello-green" : "mt-1 text-weello-gold"}>{item.compliance_status === "approved" ? "Validé" : "À contrôler"}</p></div>
+                  <div><p className="text-weello-gray">Vente</p><p className={item.restaurant?.is_active ? "mt-1 text-weello-green" : "mt-1 text-weello-gray"}>{item.restaurant?.is_active ? "Active" : "Inactive"}</p></div>
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -310,17 +292,17 @@ export default function AdminPartnerApplicationsPage() {
                     const document = item.documents.find((candidate) => candidate.document_type === documentType);
                     const selected = (replacementDocuments[item.id] || []).includes(documentType);
                     return (
-                      <div key={documentType} className={`flex items-center gap-3 rounded-2xl border p-3 ${document ? "border-foodiz-gold/15 bg-black/25" : "border-foodiz-red/20 bg-foodiz-red/5"}`}>
+                      <div key={documentType} className={`flex items-center gap-3 rounded-2xl border p-3 ${document ? "border-weello-gold/15 bg-black/25" : "border-weello-red/20 bg-weello-red/5"}`}>
                         <button type="button" disabled={!document?.signed_url} onClick={() => document?.signed_url && window.open(document.signed_url, "_blank", "noopener,noreferrer")} className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-50">
-                          {document ? <FileCheck2 size={17} className="shrink-0 text-foodiz-green" /> : <XCircle size={17} className="shrink-0 text-foodiz-red" />}
+                          {document ? <FileCheck2 size={17} className="shrink-0 text-weello-green" /> : <XCircle size={17} className="shrink-0 text-weello-red" />}
                           <span className="min-w-0">
-                            <span className="block text-xs text-foodiz-cream">{documentLabels[documentType]}</span>
-                            <span className="mt-1 block truncate text-[9px] text-foodiz-gray">{document?.original_name || "Document absent"}</span>
+                            <span className="block text-xs text-weello-cream">{documentLabels[documentType]}</span>
+                            <span className="mt-1 block truncate text-[9px] text-weello-gray">{document?.original_name || "Document absent"}</span>
                           </span>
-                          {document?.signed_url && <ExternalLink size={14} className="ml-auto shrink-0 text-foodiz-gold" />}
+                          {document?.signed_url && <ExternalLink size={14} className="ml-auto shrink-0 text-weello-gold" />}
                         </button>
                         {document && (
-                          <label className="flex items-center gap-2 text-[9px] text-foodiz-gray">
+                          <label className="flex items-center gap-2 text-[9px] text-weello-gray">
                             <input type="checkbox" checked={selected} onChange={() => toggleReplacement(item.id, documentType)} className="accent-[#D8A84F]" />
                             À remplacer
                           </label>
@@ -330,32 +312,31 @@ export default function AdminPartnerApplicationsPage() {
                   })}
                 </div>
 
-                <textarea value={comments[item.id] ?? item.compliance_comment ?? ""} onChange={(event) => setComments((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="Commentaire de contrôle ou motif précis…" className="mt-4 min-h-24 w-full rounded-2xl border border-foodiz-gold/15 bg-black/30 px-4 py-3 text-xs text-foodiz-cream outline-none focus:border-foodiz-gold" />
+                <textarea value={comments[item.id] ?? item.compliance_comment ?? ""} onChange={(event) => setComments((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="Commentaire de contrôle ou motif précis…" className="mt-4 min-h-24 w-full rounded-2xl border border-weello-gold/15 bg-black/30 px-4 py-3 text-xs text-weello-cream outline-none focus:border-weello-gold" />
 
                 {replacementLinks[item.id] && (
-                  <button type="button" onClick={() => void navigator.clipboard.writeText(replacementLinks[item.id])} className="mt-3 w-full break-all rounded-xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-3 text-left text-[10px] text-foodiz-gold">
+                  <button type="button" onClick={() => void navigator.clipboard.writeText(replacementLinks[item.id])} className="mt-3 w-full break-all rounded-xl border border-weello-gold/20 bg-weello-gold/5 p-3 text-left text-[10px] text-weello-gold">
                     Lien privé à transmettre manuellement : {replacementLinks[item.id]}
                   </button>
                 )}
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  <button disabled={busy === item.id || !dossierComplete || item.compliance_status === "approved"} onClick={() => void review(item, "approve")} className="foodiz-btn flex items-center justify-center gap-2 py-3 text-xs disabled:opacity-35"><CheckCircle2 size={15} />Valider dossier</button>
-                  <button disabled={busy === item.id} onClick={() => void review(item, "request_replacement")} className="rounded-xl border border-foodiz-gold/25 px-3 py-3 text-xs text-foodiz-gold disabled:opacity-35">Remplacement</button>
-                  <button disabled={busy === item.id} onClick={() => void review(item, "reject")} className="rounded-xl border border-foodiz-red/25 px-3 py-3 text-xs text-foodiz-red disabled:opacity-35">Refuser</button>
+                  <button disabled={busy === item.id || !dossierComplete || item.compliance_status === "approved"} onClick={() => void review(item, "approve")} className="weello-btn flex items-center justify-center gap-2 py-3 text-xs disabled:opacity-35"><CheckCircle2 size={15} />Valider dossier</button>
+                  <button disabled={busy === item.id} onClick={() => void review(item, "request_replacement")} className="rounded-xl border border-weello-gold/25 px-3 py-3 text-xs text-weello-gold disabled:opacity-35">Remplacement</button>
+                  <button disabled={busy === item.id} onClick={() => void review(item, "reject")} className="rounded-xl border border-weello-red/25 px-3 py-3 text-xs text-weello-red disabled:opacity-35">Refuser</button>
                 </div>
 
                 {item.compliance_status === "approved" && (
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <button disabled={busy === item.id} onClick={() => void setAccess(item, !item.prelaunch?.access_enabled)} className="rounded-xl border border-foodiz-gold/20 px-3 py-3 text-xs text-foodiz-gold disabled:opacity-35">
-                      {item.prelaunch?.access_enabled ? "Retirer l’accès pilote" : "Autoriser l’accès pilote"}
-                    </button>
-                    <button disabled={busy === item.id || (!item.restaurant?.is_active && !areaOperational)} onClick={() => void setOperationalStatus(item, item.restaurant?.is_active ? "suspended" : "active")} className={`rounded-xl border px-3 py-3 text-xs disabled:opacity-35 ${item.restaurant?.is_active ? "border-foodiz-red/20 text-foodiz-red" : "border-foodiz-green/20 text-foodiz-green"}`}>
-                      {item.restaurant?.is_active ? "Suspendre la vente" : "Activer dans cette ville"}
-                    </button>
-                  </div>
+                  <button
+                    disabled={busy === item.id || !item.restaurant?.is_active}
+                    onClick={() => void setOperationalStatus(item, "suspended")}
+                    className="mt-3 w-full rounded-xl border border-weello-red/20 px-3 py-3 text-xs text-weello-red disabled:opacity-35"
+                  >
+                    {item.restaurant?.is_active ? "Suspendre la vente" : "Activation automatique en attente d’un livreur validé"}
+                  </button>
                 )}
                 {!areaOperational && item.compliance_status === "approved" && (
-                  <p className="mt-3 flex items-center gap-2 text-[10px] text-foodiz-gold"><FileText size={13} />Passez d’abord la ville en mode Pilote ou Ouverte.</p>
+                  <p className="mt-3 flex items-center gap-2 text-[10px] text-weello-gold"><FileText size={13} />La ville est préparée automatiquement. La livraison s’ouvrira dès qu’un livreur validé sera disponible.</p>
                 )}
               </article>
             );

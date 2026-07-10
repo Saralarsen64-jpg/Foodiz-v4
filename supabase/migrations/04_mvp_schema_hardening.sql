@@ -1,5 +1,5 @@
 -- ============================================================
--- FOODIZ MVP HARDENING
+-- WEELLO MVP HARDENING
 -- Aligns the database contract with the current React/Netlify app.
 -- Safe to run after the existing 01/02/03 migrations.
 -- ============================================================

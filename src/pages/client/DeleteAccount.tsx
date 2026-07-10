@@ -35,16 +35,16 @@ export default function DeleteAccountPage() {
   };
   return (
     <div className="animate-fade-in-up">
-      <button onClick={() => navigate("/client/account")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6"><ChevronLeft size={18} /> Compte</button>
-      <div className="foodiz-card p-6 border-foodiz-red/30 bg-foodiz-red/5 mb-6">
+      <button onClick={() => navigate("/client/account")} className="flex items-center gap-1 text-weello-gold text-sm mb-6"><ChevronLeft size={18} /> Compte</button>
+      <div className="weello-card p-6 border-weello-red/30 bg-weello-red/5 mb-6">
         <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle size={24} className="text-foodiz-red" />
-          <h1 className="foodiz-title text-xl text-foodiz-red">Zone de danger</h1>
+          <AlertTriangle size={24} className="text-weello-red" />
+          <h1 className="weello-title text-xl text-weello-red">Zone de danger</h1>
         </div>
-        <p className="text-sm text-foodiz-gray mb-6">La suppression de votre compte est irréversible. Vous perdrez tous vos points Weello et votre historique.</p>
-        <label className="block text-xs text-foodiz-gray mb-2">Écrivez <strong className="text-foodiz-cream">SUPPRIMER</strong> pour confirmer.</label>
-        <input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="w-full rounded-2xl border border-foodiz-red/20 bg-foodiz-black px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-red/50 mb-4" />
-        <button disabled={confirmation !== "SUPPRIMER" || loading} onClick={deleteAccount} className="w-full py-4 rounded-2xl bg-foodiz-red text-foodiz-black font-bold text-sm hover:bg-foodiz-red/80 transition-all disabled:opacity-40 disabled:cursor-not-allowed">{loading ? "Suppression..." : "Supprimer définitivement mon compte"}</button>
+        <p className="text-sm text-weello-gray mb-6">La suppression de votre compte est irréversible. Vous perdrez tous vos points Weello et votre historique.</p>
+        <label className="block text-xs text-weello-gray mb-2">Écrivez <strong className="text-weello-cream">SUPPRIMER</strong> pour confirmer.</label>
+        <input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="w-full rounded-2xl border border-weello-red/20 bg-weello-black px-4 py-3 text-weello-cream outline-none focus:border-weello-red/50 mb-4" />
+        <button disabled={confirmation !== "SUPPRIMER" || loading} onClick={deleteAccount} className="w-full py-4 rounded-2xl bg-weello-red text-weello-black font-bold text-sm hover:bg-weello-red/80 transition-all disabled:opacity-40 disabled:cursor-not-allowed">{loading ? "Suppression..." : "Supprimer définitivement mon compte"}</button>
       </div>
     </div>
   );

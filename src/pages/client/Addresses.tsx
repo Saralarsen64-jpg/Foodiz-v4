@@ -108,33 +108,33 @@ export default function AddressesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+    <div className="min-h-screen bg-weello-black pb-24 animate-fade-in-up border-x-2 border-weello-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
       
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-          <h1 className="foodiz-title text-lg">Mes Adresses</h1>
-          <button onClick={() => setShowForm(!showForm)} className="text-foodiz-gold"><Plus size={24} /></button>
+          <button onClick={() => navigate("/client/account")} className="text-weello-gold"><ChevronLeft size={24} /></button>
+          <h1 className="weello-title text-lg">Mes Adresses</h1>
+          <button onClick={() => setShowForm(!showForm)} className="text-weello-gold"><Plus size={24} /></button>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {showForm && (
-          <form onSubmit={handleAdd} className="foodiz-card p-4 bg-[#0A0A0A] border-foodiz-gold/30 space-y-3 animate-fade-in-up">
-            <select value={newAddress.label} onChange={e => setNewAddress({...newAddress, label: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none">
+          <form onSubmit={handleAdd} className="weello-card p-4 bg-[#0A0A0A] border-weello-gold/30 space-y-3 animate-fade-in-up">
+            <select value={newAddress.label} onChange={e => setNewAddress({...newAddress, label: e.target.value})} className="w-full bg-weello-black border border-weello-gold/20 rounded-xl p-3 text-weello-cream text-sm outline-none">
               <option value="Maison">Maison</option>
               <option value="Travail">Travail</option>
               <option value="Autre">Autre</option>
             </select>
-            <input type="text" placeholder="Numéro et rue" required value={newAddress.address} onChange={e => setNewAddress({...newAddress, address: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
+            <input type="text" placeholder="Numéro et rue" required value={newAddress.address} onChange={e => setNewAddress({...newAddress, address: e.target.value})} className="w-full bg-weello-black border border-weello-gold/20 rounded-xl p-3 text-weello-cream text-sm outline-none" />
             <div className="grid grid-cols-2 gap-3">
-              <input type="text" inputMode="numeric" placeholder="Code postal" required value={newAddress.postalCode} onChange={e => setNewAddress({...newAddress, postalCode: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
-              <input type="text" placeholder="Ville" required value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="w-full bg-foodiz-black border border-foodiz-gold/20 rounded-xl p-3 text-foodiz-cream text-sm outline-none" />
+              <input type="text" inputMode="numeric" placeholder="Code postal" required value={newAddress.postalCode} onChange={e => setNewAddress({...newAddress, postalCode: e.target.value})} className="w-full bg-weello-black border border-weello-gold/20 rounded-xl p-3 text-weello-cream text-sm outline-none" />
+              <input type="text" placeholder="Ville" required value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="w-full bg-weello-black border border-weello-gold/20 rounded-xl p-3 text-weello-cream text-sm outline-none" />
             </div>
-            <p className="text-[10px] leading-relaxed text-foodiz-gray">L'adresse est vérifiée côté serveur avant d'être utilisée pour calculer la livraison.</p>
-            <button type="submit" disabled={saving} className="w-full foodiz-btn py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+            <p className="text-[10px] leading-relaxed text-weello-gray">L'adresse est vérifiée côté serveur avant d'être utilisée pour calculer la livraison.</p>
+            <button type="submit" disabled={saving} className="w-full weello-btn py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
               {saving && <Loader size={15} className="animate-spin" />}
               Vérifier et utiliser cette adresse
             </button>
@@ -142,23 +142,23 @@ export default function AddressesPage() {
         )}
 
         {addresses.length === 0 ? (
-          <div className="text-center py-10 text-foodiz-gray text-sm">Aucune adresse enregistrée.</div>
+          <div className="text-center py-10 text-weello-gray text-sm">Aucune adresse enregistrée.</div>
         ) : (
           addresses.map((addr) => (
-            <div key={addr.id} className="foodiz-card p-4 flex items-center justify-between group">
+            <div key={addr.id} className="weello-card p-4 flex items-center justify-between group">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-gold/20 flex items-center justify-center text-foodiz-gold">
+                <div className="w-10 h-10 rounded-full bg-weello-black border border-weello-gold/20 flex items-center justify-center text-weello-gold">
                   <GoldIcon icon={addr.label === 'Maison' ? Home : addr.label === 'Travail' ? Briefcase : MapPin} size={18} />
                 </div>
                 <div>
-                  <p className="text-foodiz-cream text-sm font-bold">{addr.label}</p>
-                  <p className="text-foodiz-gray text-xs">{[addr.address_line || addr.full_address, addr.postal_code, addr.city].filter(Boolean).join(", ")}</p>
-                  {addr.is_default && <p className="mt-1 flex items-center gap-1 text-[10px] text-foodiz-green"><CheckCircle2 size={11}/>Adresse de livraison active</p>}
+                  <p className="text-weello-cream text-sm font-bold">{addr.label}</p>
+                  <p className="text-weello-gray text-xs">{[addr.address_line || addr.full_address, addr.postal_code, addr.city].filter(Boolean).join(", ")}</p>
+                  {addr.is_default && <p className="mt-1 flex items-center gap-1 text-[10px] text-weello-green"><CheckCircle2 size={11}/>Adresse de livraison active</p>}
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                {!addr.is_default && <button disabled={saving} onClick={() => setDefault(addr.id)} className="rounded-lg px-2 py-1 text-[10px] text-foodiz-gold hover:bg-foodiz-gold/10">Utiliser</button>}
-                <button disabled={addr.is_default} onClick={() => handleDelete(addr.id)} className="text-foodiz-gray hover:text-foodiz-red transition-colors p-2 disabled:opacity-20" title={addr.is_default ? "Choisissez une autre adresse avant de supprimer celle-ci" : "Supprimer"}>
+                {!addr.is_default && <button disabled={saving} onClick={() => setDefault(addr.id)} className="rounded-lg px-2 py-1 text-[10px] text-weello-gold hover:bg-weello-gold/10">Utiliser</button>}
+                <button disabled={addr.is_default} onClick={() => handleDelete(addr.id)} className="text-weello-gray hover:text-weello-red transition-colors p-2 disabled:opacity-20" title={addr.is_default ? "Choisissez une autre adresse avant de supprimer celle-ci" : "Supprimer"}>
                   <Trash2 size={18} />
                 </button>
               </div>

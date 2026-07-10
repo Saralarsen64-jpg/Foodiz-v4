@@ -14,7 +14,7 @@ const sizes = {
 
 export default function Logo({ size = "md", className = "" }: LogoProps) {
   return (
-    <div className={`${sizes[size]} ${className} relative shrink-0 overflow-hidden rounded-xl border border-foodiz-gold/10 bg-black/10 shadow-[0_0_24px_rgba(216,168,79,.10)]`}>
+    <div className={`${sizes[size]} ${className} relative shrink-0 overflow-hidden rounded-xl border border-weello-gold/10 bg-black/10 shadow-[0_0_24px_rgba(216,168,79,.10)]`}>
       <img
         src="/images/weello-wordmark.png"
         alt="Weello"

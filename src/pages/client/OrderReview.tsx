@@ -55,35 +55,35 @@ export default function OrderReviewPage() {
   if (submitted) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6 animate-fade-in">
-        <div className="w-20 h-20 bg-foodiz-green/10 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle2 size={48} className="text-foodiz-green" />
+        <div className="w-20 h-20 bg-weello-green/10 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle2 size={48} className="text-weello-green" />
         </div>
-        <h1 className="foodiz-title text-2xl mb-2">Merci !</h1>
-        <p className="text-foodiz-gray">Votre avis a été transmis au restaurant et au livreur.</p>
+        <h1 className="weello-title text-2xl mb-2">Merci !</h1>
+        <p className="text-weello-gray">Votre avis a été transmis au restaurant et au livreur.</p>
       </div>
     );
   }
 
   return (
     <div className="animate-fade-in-up">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-weello-gold text-sm mb-6">
         <ChevronLeft size={18} /> Retour
       </button>
 
-      <h1 className="foodiz-title text-2xl mb-2">Noter ma commande</h1>
-      <p className="text-foodiz-gray text-xs mb-8">{order?.restaurant?.name || "Restaurant"}</p>
+      <h1 className="weello-title text-2xl mb-2">Noter ma commande</h1>
+      <p className="text-weello-gray text-xs mb-8">{order?.restaurant?.name || "Restaurant"}</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && <div className="foodiz-card p-3 text-foodiz-red border-foodiz-red/20">{error}</div>}
+        {error && <div className="weello-card p-3 text-weello-red border-weello-red/20">{error}</div>}
         {/* Restaurant Rating */}
-        {order?.courier_id && <div className="foodiz-card p-6">
+        {order?.courier_id && <div className="weello-card p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-foodiz-gold/10 flex items-center justify-center">
-              <ChefHat size={20} className="text-foodiz-gold" />
+            <div className="w-10 h-10 rounded-xl bg-weello-gold/10 flex items-center justify-center">
+              <ChefHat size={20} className="text-weello-gold" />
             </div>
             <div>
-              <h2 className="foodiz-title text-sm">Le restaurant</h2>
-              <p className="text-[10px] text-foodiz-gray uppercase tracking-widest">Qualité & Préparation</p>
+              <h2 className="weello-title text-sm">Le restaurant</h2>
+              <p className="text-[10px] text-weello-gray uppercase tracking-widest">Qualité & Préparation</p>
             </div>
           </div>
           <div className="flex justify-center gap-3">
@@ -96,7 +96,7 @@ export default function OrderReviewPage() {
               >
                 <Star
                   size={32}
-                  className={star <= restaurantRating ? "text-foodiz-gold fill-foodiz-gold" : "text-foodiz-gray/20"}
+                  className={star <= restaurantRating ? "text-weello-gold fill-weello-gold" : "text-weello-gray/20"}
                 />
               </button>
             ))}
@@ -104,14 +104,14 @@ export default function OrderReviewPage() {
         </div>}
 
         {/* Courier Rating */}
-        <div className="foodiz-card p-6">
+        <div className="weello-card p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-foodiz-gold/10 flex items-center justify-center">
-              <Bike size={20} className="text-foodiz-gold" />
+            <div className="w-10 h-10 rounded-xl bg-weello-gold/10 flex items-center justify-center">
+              <Bike size={20} className="text-weello-gold" />
             </div>
             <div>
-              <h2 className="foodiz-title text-sm">Le livreur</h2>
-              <p className="text-[10px] text-foodiz-gray uppercase tracking-widest">Politesse & Rapidité</p>
+              <h2 className="weello-title text-sm">Le livreur</h2>
+              <p className="text-[10px] text-weello-gray uppercase tracking-widest">Politesse & Rapidité</p>
             </div>
           </div>
           <div className="flex justify-center gap-3">
@@ -124,7 +124,7 @@ export default function OrderReviewPage() {
               >
                 <Star
                   size={32}
-                  className={star <= courierRating ? "text-foodiz-gold fill-foodiz-gold" : "text-foodiz-gray/20"}
+                  className={star <= courierRating ? "text-weello-gold fill-weello-gold" : "text-weello-gray/20"}
                 />
               </button>
             ))}
@@ -132,17 +132,17 @@ export default function OrderReviewPage() {
         </div>
 
         {/* Comment */}
-        <div className="foodiz-card p-6">
-          <h2 className="foodiz-title text-sm mb-4">Un commentaire ?</h2>
+        <div className="weello-card p-6">
+          <h2 className="weello-title text-sm mb-4">Un commentaire ?</h2>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Laissez un message (optionnel)..."
-            className="w-full min-h-[100px] bg-white/[0.03] border border-foodiz-gold/10 rounded-2xl p-4 text-sm text-foodiz-cream outline-none focus:border-foodiz-gold/30 transition-all resize-none"
+            className="w-full min-h-[100px] bg-white/[0.03] border border-weello-gold/10 rounded-2xl p-4 text-sm text-weello-cream outline-none focus:border-weello-gold/30 transition-all resize-none"
           />
         </div>
 
-        <button type="submit" className="w-full foodiz-btn py-4 flex items-center justify-center gap-2">
+        <button type="submit" className="w-full weello-btn py-4 flex items-center justify-center gap-2">
           <Send size={18} />
           Envoyer mon avis
         </button>

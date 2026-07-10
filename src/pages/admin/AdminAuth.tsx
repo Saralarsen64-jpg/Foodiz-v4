@@ -95,40 +95,40 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-foodiz-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md foodiz-card p-8 border border-foodiz-red/20 shadow-2xl bg-[#0A0A0A]">
-        <div className="flex justify-center mb-6 text-foodiz-red"><ShieldAlert size={48} /></div>
-        <h1 className="foodiz-title text-2xl text-center mb-2 text-foodiz-cream">Portail Administrateur</h1>
-        <p className="text-center text-foodiz-gray text-xs mb-6 uppercase tracking-widest">Accès strictement réservé</p>
+    <div className="min-h-screen bg-weello-black flex items-center justify-center p-4">
+      <div className="w-full max-w-md weello-card p-8 border border-weello-red/20 shadow-2xl bg-[#0A0A0A]">
+        <div className="flex justify-center mb-6 text-weello-red"><ShieldAlert size={48} /></div>
+        <h1 className="weello-title text-2xl text-center mb-2 text-weello-cream">Portail Administrateur</h1>
+        <p className="text-center text-weello-gray text-xs mb-6 uppercase tracking-widest">Accès strictement réservé</p>
 
-        {error && <div className="p-3 rounded-lg bg-foodiz-red/10 text-foodiz-red border border-foodiz-red/20 text-xs mb-4 text-center">{error}</div>}
+        {error && <div className="p-3 rounded-lg bg-weello-red/10 text-weello-red border border-weello-red/20 text-xs mb-4 text-center">{error}</div>}
 
         <form onSubmit={handleLogin} className="space-y-4">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
-            <Mail size={18} className="text-foodiz-gold" />
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-weello-gold/30 bg-weello-black">
+            <Mail size={18} className="text-weello-gold" />
             <input 
               type="email" 
               required 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" 
+              className="flex-1 bg-transparent text-weello-cream outline-none text-sm"
               placeholder="Email administrateur" 
               autoComplete="username"
             />
           </div>
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-foodiz-gold/30 bg-foodiz-black">
-            <Lock size={18} className="text-foodiz-gold" />
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-weello-gold/30 bg-weello-black">
+            <Lock size={18} className="text-weello-gold" />
             <input 
               type="password" 
               required 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              className="flex-1 bg-transparent text-foodiz-cream outline-none text-sm" 
+              className="flex-1 bg-transparent text-weello-cream outline-none text-sm"
               placeholder="Mot de passe" 
               autoComplete="current-password"
             />
           </div>
-          <button type="submit" disabled={loading || lockRemainingMs > 0} className="w-full bg-foodiz-red text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
+          <button type="submit" disabled={loading || lockRemainingMs > 0} className="w-full bg-weello-red text-white font-bold py-4 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
             {loading
               ? "Vérification..."
               : lockRemainingMs > 0
@@ -136,7 +136,7 @@ export default function AdminLogin() {
                 : "Accéder au Dashboard"}
           </button>
         </form>
-        <p className="mt-5 text-center text-[10px] leading-relaxed text-foodiz-gray">
+        <p className="mt-5 text-center text-[10px] leading-relaxed text-weello-gray">
           L’accès expire automatiquement après 30 minutes et reste limité à cet onglet.
         </p>
       </div>

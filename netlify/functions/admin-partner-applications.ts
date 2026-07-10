@@ -132,37 +132,30 @@ const handler: Handler = async (event) => {
 
     let replacementUploadUrl: string | null = null;
     if (decision === "request_replacement") {
-      const { data: prelaunchProfile } = await adminSupabase
-        .from("prelaunch_profiles")
-        .select("id")
-        .eq("user_id", application.user_id)
-        .maybeSingle();
-      if (prelaunchProfile) {
-        const replacementToken = createLaunchToken();
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        await adminSupabase
-          .from("prelaunch_partner_details")
-          .update({
-            document_upload_token_hash: replacementToken.hash,
-            document_upload_token_expires_at: expiresAt,
-          })
-          .eq("prelaunch_profile_id", prelaunchProfile.id);
-        const appUrl = (process.env.APP_URL || "https://weello.app").replace(/\/$/, "");
-        replacementUploadUrl = `${appUrl}/partner-documents?token=${encodeURIComponent(replacementToken.raw)}`;
-      }
+      const replacementToken = createLaunchToken();
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      await adminSupabase
+        .from("partner_applications")
+        .update({
+          document_upload_token_hash: replacementToken.hash,
+          document_upload_token_expires_at: expiresAt,
+        })
+        .eq("id", applicationId);
+      const appUrl = (process.env.APP_URL || "https://weello.app").replace(/\/$/, "");
+      replacementUploadUrl = `${appUrl}/partner-documents?mode=professional&token=${encodeURIComponent(replacementToken.raw)}`;
     }
     let emailSent = false;
     try {
-      const { data: prelaunchProfile } = await adminSupabase
-        .from("prelaunch_profiles")
-        .select("email,first_name,user_id")
-        .eq("user_id", application.user_id)
+      const { data: profile } = await adminSupabase
+        .from("profiles")
+        .select("id,email,first_name")
+        .eq("id", application.user_id)
         .maybeSingle();
-      if (prelaunchProfile?.email) {
+      if (profile?.email) {
         const approved = decision === "approve";
         const replacement = decision === "request_replacement";
         const emailResult = await sendPrelaunchEmail({
-          to: prelaunchProfile.email,
+          to: profile.email,
           subject: approved
             ? "Votre dossier partenaire Weello est validé"
             : replacement
@@ -174,13 +167,13 @@ const handler: Handler = async (event) => {
               ? "Un justificatif doit être remplacé"
               : "Votre dossier n’a pas pu être validé",
           body: approved
-            ? "Bonne nouvelle : votre dossier partenaire est validé. Weello vous donnera accès aux fonctionnalités commerciales selon l’ouverture de votre ville et les paramètres opérationnels définis par l’administration."
+            ? "Bonne nouvelle : votre dossier partenaire est validé. Votre ville est maintenant préparée automatiquement et la livraison s’ouvrira dès qu’un livreur validé y sera disponible."
             : replacement
               ? `Weello a besoin d’un ou plusieurs justificatifs plus lisibles ou conformes. Motif : ${comment}`
               : `Weello ne peut pas valider votre dossier en l’état. Motif : ${comment}`,
           actionLabel: replacementUploadUrl ? "Renvoyer mes documents" : undefined,
           actionUrl: replacementUploadUrl || undefined,
-          recipientUserId: prelaunchProfile.user_id,
+          recipientUserId: application.user_id,
           emailType: approved
             ? "professional_approved"
             : replacement

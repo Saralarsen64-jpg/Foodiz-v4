@@ -233,110 +233,110 @@ export default function DeliveryTrackingPage() {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query || "")}`, "_blank", "noopener,noreferrer");
   };
 
-  if (!order) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gray animate-pulse">Chargement de la course...</div>;
+  if (!order) return <div className="min-h-screen bg-weello-black flex items-center justify-center text-weello-gray animate-pulse">Chargement de la course...</div>;
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-32 relative overflow-hidden">
+    <div className="min-h-screen bg-weello-black pb-32 relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_-10%,rgba(216,168,79,0.18),transparent_35%)]" />
-      <header className="sticky top-0 z-40 border-b border-foodiz-gold/10 bg-foodiz-black/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-weello-gold/10 bg-weello-black/85 backdrop-blur-xl">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={() => navigate("/courier")} className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-foodiz-gold"><ChevronLeft size={20} /></button>
-          <div className="text-center"><p className="text-[9px] uppercase tracking-[0.25em] text-foodiz-gold">Course en direct</p><h1 className="foodiz-title text-lg">#{id?.slice(0, 8)}</h1></div>
-          <div className="w-10 h-10 rounded-2xl bg-foodiz-green/10 border border-foodiz-green/20 flex items-center justify-center"><Bike size={19} className="text-foodiz-green" /></div>
+          <button onClick={() => navigate("/courier")} className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-weello-gold"><ChevronLeft size={20} /></button>
+          <div className="text-center"><p className="text-[9px] uppercase tracking-[0.25em] text-weello-gold">Course en direct</p><h1 className="weello-title text-lg">#{id?.slice(0, 8)}</h1></div>
+          <div className="w-10 h-10 rounded-2xl bg-weello-green/10 border border-weello-green/20 flex items-center justify-center"><Bike size={19} className="text-weello-green" /></div>
         </div>
       </header>
 
       <main className="relative max-w-lg mx-auto px-4 py-6 space-y-4">
-        <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.16),rgba(17,17,17,0.96)_38%,rgba(5,5,5,1))] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.55)]">
+        <section className="rounded-[2rem] border border-weello-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.16),rgba(17,17,17,0.96)_38%,rgba(5,5,5,1))] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.55)]">
           <div className="flex items-start justify-between gap-4">
-            <div><p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gray">Étape actuelle</p><h2 className="foodiz-title text-2xl mt-2">{STEPS[currentIndex]?.label}</h2></div>
-            <div className="text-right"><p className="text-[10px] text-foodiz-gray">Votre gain</p><p className="text-2xl font-serif italic text-foodiz-green">+{earnings.toFixed(2)} €</p></div>
+            <div><p className="text-[10px] uppercase tracking-[0.2em] text-weello-gray">Étape actuelle</p><h2 className="weello-title text-2xl mt-2">{STEPS[currentIndex]?.label}</h2></div>
+            <div className="text-right"><p className="text-[10px] text-weello-gray">Votre gain</p><p className="text-2xl font-serif italic text-weello-green">+{earnings.toFixed(2)} €</p></div>
           </div>
-          <div className="h-2 bg-white/5 rounded-full mt-6 overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-foodiz-gold-dark via-foodiz-gold to-foodiz-green transition-all duration-700" style={{ width: `${progress}%` }} /></div>
-          <div className="flex justify-between mt-2 text-[9px] text-foodiz-gray"><span>Restaurant</span><span>Client</span><span>Validée</span></div>
+          <div className="h-2 bg-white/5 rounded-full mt-6 overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-weello-gold-dark via-weello-gold to-weello-green transition-all duration-700" style={{ width: `${progress}%` }} /></div>
+          <div className="flex justify-between mt-2 text-[9px] text-weello-gray"><span>Restaurant</span><span>Client</span><span>Validée</span></div>
         </section>
 
         {["accepted", "at_restaurant"].includes(step) && (
-          <section className="foodiz-card border-foodiz-gold/25 bg-foodiz-gold/[0.05] p-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-foodiz-gold">
+          <section className="weello-card border-weello-gold/25 bg-weello-gold/[0.05] p-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-weello-gold">
               Numéro à présenter au restaurant
             </p>
-            <p className="mt-3 text-4xl font-black tracking-[0.15em] text-foodiz-cream">
+            <p className="mt-3 text-4xl font-black tracking-[0.15em] text-weello-cream">
               #{id?.slice(0, 8).toUpperCase()}
             </p>
-            <p className="mt-3 text-xs leading-relaxed text-foodiz-gray">
+            <p className="mt-3 text-xs leading-relaxed text-weello-gray">
               Présentez ce numéro au partenaire pour récupérer la bonne commande.
               Le chrono réglementé démarre uniquement après “Commande récupérée”.
             </p>
           </section>
         )}
 
-        <section className="foodiz-card p-5">
+        <section className="weello-card p-5">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodiz-gold">Gain max</p>
-              <p className="mt-2 text-2xl font-serif italic text-foodiz-green">{euros(grossCourierCents)}</p>
-              <p className="mt-1 text-[10px] text-foodiz-gray">Si livraison à l’heure</p>
+            <div className="rounded-2xl border border-weello-gold/15 bg-black/25 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-weello-gold">Gain max</p>
+              <p className="mt-2 text-2xl font-serif italic text-weello-green">{euros(grossCourierCents)}</p>
+              <p className="mt-1 text-[10px] text-weello-gray">Si livraison à l’heure</p>
             </div>
-            <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodiz-gold">Gain mini</p>
-              <p className="mt-2 text-2xl font-serif italic text-foodiz-gold">{euros(grossCourierCents - maxDelayPenaltyCents)}</p>
-              <p className="mt-1 text-[10px] text-foodiz-gray">Si pénalité max appliquée</p>
+            <div className="rounded-2xl border border-weello-gold/15 bg-black/25 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-weello-gold">Gain mini</p>
+              <p className="mt-2 text-2xl font-serif italic text-weello-gold">{euros(grossCourierCents - maxDelayPenaltyCents)}</p>
+              <p className="mt-1 text-[10px] text-weello-gray">Si pénalité max appliquée</p>
             </div>
           </div>
 
-          <div className="mt-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[0.04] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foodiz-gold">Chrono réglementé</p>
+          <div className="mt-3 rounded-2xl border border-weello-gold/15 bg-weello-gold/[0.04] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-weello-gold">Chrono réglementé</p>
             {hasRegulatedTimer ? (
               <>
-                <p className={`mt-2 text-4xl font-black ${currentPenaltyCents > 0 ? "text-foodiz-red" : "text-foodiz-green"}`}>
+                <p className={`mt-2 text-4xl font-black ${currentPenaltyCents > 0 ? "text-weello-red" : "text-weello-green"}`}>
                   {delaySeconds > 0 ? `+${formatTimer(delaySeconds)}` : formatTimer(remainingSeconds)}
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">
+                <p className="mt-2 text-xs leading-relaxed text-weello-gray">
                   Arrivée prévue {expectedArrivalLabel || "en calcul"} · {delayLabel(delaySeconds)}
                   {currentPenaltyCents > 0 ? ` · pénalité actuelle -${euros(currentPenaltyCents)}` : ""}
                 </p>
               </>
             ) : (
-              <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">
+              <p className="mt-2 text-xs leading-relaxed text-weello-gray">
                 Le chrono exact sera calculé au moment où vous confirmez la récupération avec GPS précis.
               </p>
             )}
-            <p className="mt-3 text-[10px] leading-relaxed text-foodiz-gray">
+            <p className="mt-3 text-[10px] leading-relaxed text-weello-gray">
               Règles Weello : +10 min = -0,50 €, +15 min = -1 €, +20 min = -2 € et priorité réduite.
             </p>
           </div>
         </section>
 
-        {locationError && <div className="rounded-2xl border border-foodiz-red/20 bg-foodiz-red/10 p-4 text-xs text-foodiz-red">{locationError}</div>}
+        {locationError && <div className="rounded-2xl border border-weello-red/20 bg-weello-red/10 p-4 text-xs text-weello-red">{locationError}</div>}
 
         <section className="grid gap-3">
-          <div className="foodiz-card p-5 bg-white/[0.025]">
-            <div className="flex items-start gap-4"><div className="gold-glow-icon gold-glow-icon-md"><Store size={18} /></div><div className="flex-1 min-w-0"><p className="text-[10px] uppercase tracking-widest text-foodiz-gold">Récupération</p><h3 className="text-foodiz-cream font-semibold mt-1">{order.restaurant?.name || "Restaurant"}</h3><p className="text-xs text-foodiz-gray mt-1">{restaurantAddress || "Adresse non renseignée"}</p></div><button onClick={() => openNavigation("restaurant")} className="w-10 h-10 rounded-xl bg-foodiz-gold text-foodiz-black flex items-center justify-center"><Navigation size={17} /></button></div>
+          <div className="weello-card p-5 bg-white/[0.025]">
+            <div className="flex items-start gap-4"><div className="gold-glow-icon gold-glow-icon-md"><Store size={18} /></div><div className="flex-1 min-w-0"><p className="text-[10px] uppercase tracking-widest text-weello-gold">Récupération</p><h3 className="text-weello-cream font-semibold mt-1">{order.restaurant?.name || "Restaurant"}</h3><p className="text-xs text-weello-gray mt-1">{restaurantAddress || "Adresse non renseignée"}</p></div><button onClick={() => openNavigation("restaurant")} className="w-10 h-10 rounded-xl bg-weello-gold text-weello-black flex items-center justify-center"><Navigation size={17} /></button></div>
           </div>
-          <div className="foodiz-card p-5 bg-white/[0.025]">
-            <div className="flex items-start gap-4"><div className="gold-glow-icon gold-glow-icon-md"><CircleUserRound size={18} /></div><div className="flex-1 min-w-0"><p className="text-[10px] uppercase tracking-widest text-foodiz-gold">Livraison</p><h3 className="text-foodiz-cream font-semibold mt-1">{clientName}</h3><p className="text-xs text-foodiz-gray mt-1">{order.delivery_address}</p><div className="flex gap-4 mt-3">{order.client?.phone && <><a href={`tel:${order.client.phone}`} className="text-xs text-foodiz-gold flex items-center gap-1"><Phone size={13} /> Appeler</a><a href={`sms:${order.client.phone}`} className="text-xs text-foodiz-gold flex items-center gap-1"><MessageCircle size={13} /> Message</a></>}</div></div><button onClick={() => openNavigation("client")} className="w-10 h-10 rounded-xl bg-foodiz-gold text-foodiz-black flex items-center justify-center"><MapPin size={17} /></button></div>
+          <div className="weello-card p-5 bg-white/[0.025]">
+            <div className="flex items-start gap-4"><div className="gold-glow-icon gold-glow-icon-md"><CircleUserRound size={18} /></div><div className="flex-1 min-w-0"><p className="text-[10px] uppercase tracking-widest text-weello-gold">Livraison</p><h3 className="text-weello-cream font-semibold mt-1">{clientName}</h3><p className="text-xs text-weello-gray mt-1">{order.delivery_address}</p><div className="flex gap-4 mt-3">{order.client?.phone && <><a href={`tel:${order.client.phone}`} className="text-xs text-weello-gold flex items-center gap-1"><Phone size={13} /> Appeler</a><a href={`sms:${order.client.phone}`} className="text-xs text-weello-gold flex items-center gap-1"><MessageCircle size={13} /> Message</a></>}</div></div><button onClick={() => openNavigation("client")} className="w-10 h-10 rounded-xl bg-weello-gold text-weello-black flex items-center justify-center"><MapPin size={17} /></button></div>
           </div>
         </section>
 
-        <section className="foodiz-card p-5">
-          <p className="text-[10px] uppercase tracking-widest text-foodiz-gold mb-4">Contenu de la commande</p>
-          <div className="space-y-3">{order.order_items?.map((item: any) => <div key={item.id} className="flex justify-between text-sm"><span className="text-foodiz-cream">{item.product?.name || "Produit"}</span><span className="text-foodiz-gold">x{item.quantity}</span></div>)}</div>
+        <section className="weello-card p-5">
+          <p className="text-[10px] uppercase tracking-widest text-weello-gold mb-4">Contenu de la commande</p>
+          <div className="space-y-3">{order.order_items?.map((item: any) => <div key={item.id} className="flex justify-between text-sm"><span className="text-weello-cream">{item.product?.name || "Produit"}</span><span className="text-weello-gold">x{item.quantity}</span></div>)}</div>
         </section>
 
         {step === "at_customer" && (
-          <section className="rounded-[2rem] border border-foodiz-gold/30 bg-foodiz-gold/[0.06] p-6 text-center shadow-[0_0_50px_rgba(216,168,79,0.08)]">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-foodiz-gold/10 border border-foodiz-gold/20 flex items-center justify-center mb-4"><ShieldCheck size={24} className="text-foodiz-gold" /></div>
-            <h3 className="foodiz-title text-xl">Code de remise</h3><p className="text-xs text-foodiz-gray mt-2">Demandez au client son code personnel à 6 chiffres.</p>
-            <div className="flex justify-center gap-2 mt-6">{enteredCode.map((digit, index) => <input key={index} id={`delivery-code-${index}`} value={digit} onChange={(event) => handleCodeChange(index, event.target.value)} inputMode="numeric" maxLength={1} className={`w-10 h-13 rounded-xl bg-foodiz-black border text-center text-lg font-bold text-foodiz-cream outline-none ${codeError ? "border-foodiz-red" : "border-foodiz-gold/30 focus:border-foodiz-gold"}`} />)}</div>
-            {codeError && <p className="text-foodiz-red text-xs mt-4 flex items-center justify-center gap-1"><X size={13} /> {codeError}</p>}
+          <section className="rounded-[2rem] border border-weello-gold/30 bg-weello-gold/[0.06] p-6 text-center shadow-[0_0_50px_rgba(216,168,79,0.08)]">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-weello-gold/10 border border-weello-gold/20 flex items-center justify-center mb-4"><ShieldCheck size={24} className="text-weello-gold" /></div>
+            <h3 className="weello-title text-xl">Code de remise</h3><p className="text-xs text-weello-gray mt-2">Demandez au client son code personnel à 6 chiffres.</p>
+            <div className="flex justify-center gap-2 mt-6">{enteredCode.map((digit, index) => <input key={index} id={`delivery-code-${index}`} value={digit} onChange={(event) => handleCodeChange(index, event.target.value)} inputMode="numeric" maxLength={1} className={`w-10 h-13 rounded-xl bg-weello-black border text-center text-lg font-bold text-weello-cream outline-none ${codeError ? "border-weello-red" : "border-weello-gold/30 focus:border-weello-gold"}`} />)}</div>
+            {codeError && <p className="text-weello-red text-xs mt-4 flex items-center justify-center gap-1"><X size={13} /> {codeError}</p>}
           </section>
         )}
 
-        {step === "delivered" && <section className="rounded-[2rem] border border-foodiz-green/30 bg-foodiz-green/[0.08] p-8 text-center"><CheckCircle2 size={48} className="text-foodiz-green mx-auto" /><h3 className="foodiz-title text-2xl mt-4">Mission accomplie</h3><p className="text-foodiz-gray text-sm mt-2">{earnings.toFixed(2)} € ont été ajoutés à vos gains.</p><button onClick={() => navigate("/courier")} className="foodiz-btn mt-6">Retour au tableau de bord</button></section>}
+        {step === "delivered" && <section className="rounded-[2rem] border border-weello-green/30 bg-weello-green/[0.08] p-8 text-center"><CheckCircle2 size={48} className="text-weello-green mx-auto" /><h3 className="weello-title text-2xl mt-4">Mission accomplie</h3><p className="text-weello-gray text-sm mt-2">{earnings.toFixed(2)} € ont été ajoutés à vos gains.</p><button onClick={() => navigate("/courier")} className="weello-btn mt-6">Retour au tableau de bord</button></section>}
       </main>
 
-      {step !== "at_customer" && step !== "delivered" && <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-foodiz-black/85 backdrop-blur-xl border-t border-foodiz-gold/10"><button disabled={busy} onClick={nextStep} className="w-full max-w-lg mx-auto foodiz-btn py-4 flex items-center justify-center gap-2 disabled:opacity-50"><Navigation size={18} /> {STEPS[currentIndex + 1]?.label}</button></div>}
+      {step !== "at_customer" && step !== "delivered" && <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-weello-black/85 backdrop-blur-xl border-t border-weello-gold/10"><button disabled={busy} onClick={nextStep} className="w-full max-w-lg mx-auto weello-btn py-4 flex items-center justify-center gap-2 disabled:opacity-50"><Navigation size={18} /> {STEPS[currentIndex + 1]?.label}</button></div>}
     </div>
   );
 }

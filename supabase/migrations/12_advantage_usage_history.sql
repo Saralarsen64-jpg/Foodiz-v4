@@ -1,4 +1,4 @@
--- Record confirmed advantage usage in the Foodiz Club history.
+-- Record confirmed advantage usage in the Weello Club history.
 
 CREATE OR REPLACE FUNCTION public.apply_order_advantage(target_order_id uuid)
 RETURNS void
@@ -31,7 +31,7 @@ BEGIN
   ) VALUES (
     redemption.user_id,
     redemption.advantage_id,
-    coalesce(catalog_row.title, 'Avantage Foodiz Club'),
+    coalesce(catalog_row.title, 'Avantage Weello Club'),
     catalog_row.description,
     redemption.points_cost,
     'USED-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10)),

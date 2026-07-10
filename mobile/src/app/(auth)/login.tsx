@@ -1,6 +1,6 @@
 import { Link, router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 import {
   WeelloBrand,
@@ -53,6 +53,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const professionalSignupUrl = selectedRole === 'courier'
+    ? '/auth/signup?role=courier'
+    : '/auth/signup?role=partner';
 
   async function login() {
     if (!email.trim() || !password) {
@@ -116,6 +119,16 @@ export default function LoginScreen() {
         <Link href="/signup" style={styles.link}>
           Créer un compte Weello
         </Link>
+      )}
+      {(selectedRole === 'courier' || selectedRole === 'partner') && (
+        <WeelloButton
+          label={selectedRole === 'courier' ? 'Créer mon dossier livreur' : 'Créer mon dossier partenaire'}
+          secondary
+          onPress={() => {
+            const baseUrl = (process.env.EXPO_PUBLIC_API_URL || 'https://weello.app').replace(/\/+$/, '');
+            void Linking.openURL(`${baseUrl}${professionalSignupUrl}`);
+          }}
+        />
       )}
       <Link href="/welcome" style={styles.secondaryLink}>
         Changer d’espace

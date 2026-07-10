@@ -26,7 +26,7 @@ import { handler as createPaymentIntent } from "../netlify/functions/create-paym
 import { handler as createSubscription } from "../netlify/functions/create-subscription.js";
 import { handler as deleteAccount } from "../netlify/functions/delete-account.js";
 import { handler as financialDocument } from "../netlify/functions/financial-document.js";
-import { handler as foodizPlus } from "../netlify/functions/foodiz-plus.js";
+import { handler as weelloPlus } from "../netlify/functions/weello-plus.js";
 import { handler as getSubscription } from "../netlify/functions/get-subscription.js";
 import { handler as launchStatus } from "../netlify/functions/launch-status.js";
 import { handler as partnerOrderAction } from "../netlify/functions/partner-order-action.js";
@@ -35,6 +35,9 @@ import { handler as prelaunchActivate } from "../netlify/functions/prelaunch-act
 import { handler as prelaunchRegister } from "../netlify/functions/prelaunch-register.js";
 import { handler as prelaunchCourierDocuments } from "../netlify/functions/prelaunch-courier-documents.js";
 import { handler as prelaunchPartnerDocuments } from "../netlify/functions/prelaunch-partner-documents.js";
+import { handler as professionalDocuments } from "../netlify/functions/professional-documents.js";
+import { handler as professionalRegister } from "../netlify/functions/professional-register.js";
+import { handler as requestServiceArea } from "../netlify/functions/request-service-area.js";
 import { handler as rotateAdvantages } from "../netlify/functions/rotate-advantages.js";
 import { handler as sendLaunchAccess } from "../netlify/functions/send-launch-access.js";
 import { handler as stripeWebhook } from "../netlify/functions/stripe-webhook.js";
@@ -64,7 +67,7 @@ const handlers: Record<string, Handler> = {
   "create-subscription": createSubscription,
   "delete-account": deleteAccount,
   "financial-document": financialDocument,
-  "foodiz-plus": foodizPlus,
+  "weello-plus": weelloPlus,
   "get-subscription": getSubscription,
   "launch-status": launchStatus,
   "partner-order-action": partnerOrderAction,
@@ -73,6 +76,9 @@ const handlers: Record<string, Handler> = {
   "prelaunch/courier-documents": prelaunchCourierDocuments,
   "prelaunch/partner-documents": prelaunchPartnerDocuments,
   "prelaunch/register": prelaunchRegister,
+  "professional/documents": professionalDocuments,
+  "professional/register": professionalRegister,
+  "request-service-area": requestServiceArea,
   "rotate-advantages": rotateAdvantages,
   "stripe-webhook": stripeWebhook,
   "support-diagnostic": supportDiagnostic,
@@ -100,6 +106,7 @@ const LARGE_UPLOAD_ROUTES = new Set([
   "partner-documents",
   "prelaunch/courier-documents",
   "prelaunch/partner-documents",
+  "professional/documents",
 ]);
 
 const publicPrelaunchRoutes = new Set([
@@ -108,6 +115,9 @@ const publicPrelaunchRoutes = new Set([
   "prelaunch/courier-documents",
   "prelaunch/partner-documents",
   "prelaunch/activate",
+  "professional/documents",
+  "professional/register",
+  "request-service-area",
   "stripe-webhook",
   "rotate-advantages",
 ]);
@@ -134,10 +144,11 @@ const routeRoleAllowlist = {
   "create-subscription": ["partner"],
   "delete-account": ["admin", "client", "courier", "partner"],
   "financial-document": ["admin", "client", "courier", "partner"],
-  "foodiz-plus": ["partner"],
+  "weello-plus": ["partner"],
   "get-subscription": ["partner"],
   "partner-order-action": ["partner"],
   "partner-documents": ["partner"],
+  "request-service-area": ["client"],
   "support-diagnostic": ["courier", "partner"],
   "track-marketing-notification": ["admin", "client", "courier", "partner"],
   "verify-delivery-code": ["courier"],
@@ -165,6 +176,8 @@ const apiRateLimits: Record<string, ApiRateLimit> = {
   "create-payment-intent": { limit: 30, windowMs: 5 * 60 * 1000 },
   "prelaunch/activate": { limit: 20, windowMs: 10 * 60 * 1000 },
   "prelaunch/register": { limit: 12, windowMs: 10 * 60 * 1000 },
+  "professional/documents": { limit: 30, windowMs: 10 * 60 * 1000 },
+  "professional/register": { limit: 8, windowMs: 10 * 60 * 1000 },
   "support-diagnostic": { limit: 30, windowMs: 5 * 60 * 1000 },
   "verify-delivery-code": { limit: 12, windowMs: 5 * 60 * 1000 },
 };
@@ -194,7 +207,7 @@ function jsonWithSecurityHeaders(body: Record<string, unknown>, init: ResponseIn
 function maxBodyBytesForRoute(functionName: string) {
   if (LARGE_UPLOAD_ROUTES.has(functionName)) return 16 * 1024 * 1024;
   if (functionName === "stripe-webhook") return 2 * 1024 * 1024;
-  if (functionName === "prelaunch/register") return 128 * 1024;
+  if (functionName === "prelaunch/register" || functionName === "professional/register") return 128 * 1024;
   return 1024 * 1024;
 }
 

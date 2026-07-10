@@ -109,7 +109,7 @@ BEGIN
       coalesce(
         nullif(NEW.raw_user_meta_data ->> 'business_name', ''),
         nullif(NEW.raw_user_meta_data ->> 'full_name', ''),
-        'Établissement Foodiz'
+        'Établissement Weello'
       ),
       nullif(NEW.raw_user_meta_data ->> 'siret', ''),
       nullif(NEW.raw_user_meta_data ->> 'phone', ''),
@@ -128,7 +128,7 @@ BEGIN
       coalesce(
         nullif(NEW.raw_user_meta_data ->> 'business_name', ''),
         nullif(NEW.raw_user_meta_data ->> 'full_name', ''),
-        'Établissement Foodiz'
+        'Établissement Weello'
       ),
       nullif(NEW.raw_user_meta_data ->> 'siret', ''),
       nullif(NEW.raw_user_meta_data ->> 'phone', ''),
@@ -371,7 +371,7 @@ AS $$
     coalesce(
       nullif(client.full_name, ''),
       nullif(concat_ws(' ', client.first_name, client.last_name), ''),
-      'Client Foodiz'
+      'Client Weello'
     ),
     CASE
       WHEN orders.status IN ('pending', 'preparing', 'ready', 'pickup', 'picked_up', 'delivering')
@@ -416,7 +416,7 @@ AS $$
     coalesce(
       nullif(client.full_name, ''),
       nullif(concat_ws(' ', client.first_name, client.last_name), ''),
-      'Client Foodiz'
+      'Client Weello'
     ),
     client.first_name,
     client.phone
@@ -446,7 +446,7 @@ AS $$
     coalesce(
       nullif(courier.full_name, ''),
       nullif(concat_ws(' ', courier.first_name, courier.last_name), ''),
-      'Livreur Foodiz'
+      'Livreur Weello'
     ),
     courier.first_name,
     courier.last_name,

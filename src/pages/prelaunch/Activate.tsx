@@ -42,23 +42,23 @@ export default function ActivatePrelaunch() {
   const Icon = state === "loading" ? LoaderCircle : state === "success" ? CheckCircle2 : CircleAlert;
 
   return (
-    <main className="min-h-screen bg-foodiz-black px-5 py-10 flex items-center justify-center">
-      <section className="w-full max-w-lg foodiz-card p-8 sm:p-10 text-center">
+    <main className="min-h-screen bg-weello-black px-5 py-10 flex items-center justify-center">
+      <section className="w-full max-w-lg weello-card p-8 sm:p-10 text-center">
         <div className="flex justify-center mb-8">
           <img src="/images/weello-wordmark.png" alt="Weello" className="w-72 max-w-full h-auto rounded-2xl" />
         </div>
-        <div className="w-20 h-20 rounded-[1.7rem] border border-foodiz-gold/25 bg-foodiz-gold/10 mx-auto flex items-center justify-center text-foodiz-gold">
+        <div className="w-20 h-20 rounded-[1.7rem] border border-weello-gold/25 bg-weello-gold/10 mx-auto flex items-center justify-center text-weello-gold">
           <Icon size={36} className={state === "loading" ? "animate-spin" : ""} />
         </div>
-        <h1 className="foodiz-title text-3xl mt-7">
+        <h1 className="weello-title text-3xl mt-7">
           {state === "success" ? "Bienvenue chez Weello" : state === "error" ? "Activation impossible" : "Un instant…"}
         </h1>
-        <p className="text-foodiz-gray mt-4 leading-relaxed">{message}</p>
+        <p className="text-weello-gray mt-4 leading-relaxed">{message}</p>
         {state === "success" && (
-          <Link to={loginPath} className="foodiz-btn inline-flex mt-8">Me connecter maintenant</Link>
+          <Link to={loginPath} className="weello-btn inline-flex mt-8">Me connecter maintenant</Link>
         )}
         {state === "error" && (
-          <Link to="/waitlist" className="foodiz-btn-outline inline-flex mt-8">Retour</Link>
+          <Link to="/waitlist" className="weello-btn-outline inline-flex mt-8">Retour</Link>
         )}
       </section>
     </main>

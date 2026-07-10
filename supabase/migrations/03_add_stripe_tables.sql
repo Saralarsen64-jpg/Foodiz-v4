@@ -1,5 +1,5 @@
 -- ============================================================
--- FOODIZ - STRIPE INTEGRATION TABLES
+-- WEELLO - STRIPE INTEGRATION TABLES
 -- ============================================================
 
 -- 1. ORDER PAYMENTS (Suivi des paiements par commande)
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.order_payments (
 CREATE INDEX IF NOT EXISTS idx_order_payments_order ON public.order_payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_payments_stripe_id ON public.order_payments(stripe_payment_intent_id);
 
--- 2. PARTNER SUBSCRIPTIONS (Souscriptions Foodiz+ pour partenaires)
+-- 2. PARTNER SUBSCRIPTIONS (Souscriptions Weello+ pour partenaires)
 CREATE TABLE IF NOT EXISTS public.partner_subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   restaurant_id uuid NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE,

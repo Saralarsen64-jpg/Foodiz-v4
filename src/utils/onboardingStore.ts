@@ -20,8 +20,8 @@ export type CourierApplication = {
   createdAt: string;
 };
 
-const PARTNER_KEY = "foodiz_partner_applications_v1";
-const COURIER_KEY = "foodiz_courier_applications_v1";
+const PARTNER_KEY = "weello_partner_applications_v1";
+const COURIER_KEY = "weello_courier_applications_v1";
 
 export function loadPartnerApplications(): PartnerApplication[] {
   try {

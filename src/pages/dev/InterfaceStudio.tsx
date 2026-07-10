@@ -94,7 +94,7 @@ function PhoneStatus({ dark = false }: { dark?: boolean }) {
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-[430px] overflow-hidden rounded-[2.5rem] border border-foodiz-gold/25 bg-[#030303] text-white shadow-[0_45px_100px_rgba(0,0,0,.72),0_0_45px_rgba(216,168,79,.08)]">
+    <div className="mx-auto w-full max-w-[430px] overflow-hidden rounded-[2.5rem] border border-weello-gold/25 bg-[#030303] text-white shadow-[0_45px_100px_rgba(0,0,0,.72),0_0_45px_rgba(216,168,79,.08)]">
       {children}
     </div>
   );

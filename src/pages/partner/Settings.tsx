@@ -163,13 +163,13 @@ export default function PartnerSettings() {
   ];
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24 relative border-x-2 border-foodiz-gold/20">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+    <div className="min-h-screen bg-weello-black pb-24 relative border-x-2 border-weello-gold/20">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
 
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-foodiz-gold md:hidden"><Menu size={22} /></button>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-weello-gold md:hidden"><Menu size={22} /></button>
           <Logo size="md" />
           <div className="w-6" />
         </div>
@@ -178,15 +178,15 @@ export default function PartnerSettings() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 flex">
           <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
-          <div className="relative w-72 bg-foodiz-card border-r border-foodiz-gold/10 p-6 overflow-y-auto">
+          <div className="relative w-72 bg-weello-card border-r border-weello-gold/10 p-6 overflow-y-auto">
             <Logo size="md" className="mb-8" />
             <nav className="space-y-2">
               {menuItems.map((item) => (
-                <button key={item.label} onClick={() => { navigate(item.path); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-gray hover:text-foodiz-cream hover:bg-foodiz-gold/5 transition-all">
-                  <item.icon size={18} className="text-foodiz-gold" /> {item.label}
+                <button key={item.label} onClick={() => { navigate(item.path); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-weello-gray hover:text-weello-cream hover:bg-weello-gold/5 transition-all">
+                  <item.icon size={18} className="text-weello-gold" /> {item.label}
                 </button>
               ))}
-              <button onClick={() => { supabase.auth.signOut(); navigate("/auth"); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-red hover:bg-foodiz-red/5 transition-all mt-8">
+              <button onClick={() => { supabase.auth.signOut(); navigate("/auth"); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-weello-red hover:bg-weello-red/5 transition-all mt-8">
                 <LogOut size={18} /> Déconnexion
               </button>
             </nav>
@@ -195,31 +195,31 @@ export default function PartnerSettings() {
       )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="foodiz-title text-2xl text-foodiz-cream mb-2">Paramètres de l'établissement</h1>
-        <p className="text-foodiz-gray text-sm mb-8">Mettez à jour les informations visibles et utilisées pour vos commandes.</p>
+        <h1 className="weello-title text-2xl text-weello-cream mb-2">Paramètres de l'établissement</h1>
+        <p className="text-weello-gray text-sm mb-8">Mettez à jour les informations visibles et utilisées pour vos commandes.</p>
 
         {message && (
-          <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 border ${message.type === "success" ? "bg-foodiz-green/10 text-foodiz-green border-foodiz-green/20" : "bg-foodiz-red/10 text-foodiz-red border-foodiz-red/20"}`}>
+          <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 border ${message.type === "success" ? "bg-weello-green/10 text-weello-green border-weello-green/20" : "bg-weello-red/10 text-weello-red border-weello-red/20"}`}>
             {message.type === "success" ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
             {message.text}
           </div>
         )}
 
-        <form onSubmit={handleSave} className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-foodiz-gold/10">
-            <div className="p-3 rounded-xl bg-foodiz-gold/10 border border-foodiz-gold/20"><Building2 size={24} className="text-foodiz-gold" /></div>
+        <form onSubmit={handleSave} className="weello-card p-6 bg-[#0A0A0A] border-weello-gold/20">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-weello-gold/10">
+            <div className="p-3 rounded-xl bg-weello-gold/10 border border-weello-gold/20"><Building2 size={24} className="text-weello-gold" /></div>
             <div>
-              <h2 className="text-lg font-bold text-foodiz-cream">Informations publiques</h2>
-              <p className="text-xs text-foodiz-gray">Nom, contact et adresse de votre établissement.</p>
+              <h2 className="text-lg font-bold text-weello-cream">Informations publiques</h2>
+              <p className="text-xs text-weello-gray">Nom, contact et adresse de votre établissement.</p>
             </div>
           </div>
 
-          {loading ? <p className="text-sm text-foodiz-gray">Chargement...</p> : (
+          {loading ? <p className="text-sm text-weello-gray">Chargement...</p> : (
             <div className="space-y-5">
               <div className="space-y-3">
-                <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Photo de couverture</label>
-                {coverImage && <img src={coverImage} alt="Couverture de l'établissement" className="h-52 w-full rounded-2xl border border-foodiz-gold/15 object-cover" />}
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-foodiz-gold/30 bg-foodiz-gold/5 px-4 py-3 text-sm text-foodiz-gold hover:bg-foodiz-gold/10">
+                <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">Photo de couverture</label>
+                {coverImage && <img src={coverImage} alt="Couverture de l'établissement" className="h-52 w-full rounded-2xl border border-weello-gold/15 object-cover" />}
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-weello-gold/30 bg-weello-gold/5 px-4 py-3 text-sm text-weello-gold hover:bg-weello-gold/10">
                   {uploadingCover ? <Loader size={17} className="animate-spin"/> : <ImagePlus size={17}/>}
                   {uploadingCover ? "Chargement..." : "Choisir une photo"}
                   <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingCover} onChange={(event) => void uploadCover(event.target.files?.[0])} className="hidden" />
@@ -235,11 +235,11 @@ export default function PartnerSettings() {
                 <Field label="Ville" value={form.city} onChange={(value) => updateField("city", value)} required />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Description</label>
-                <textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} rows={4} className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors resize-none" />
+                <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">Description</label>
+                <textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} rows={4} className="w-full bg-weello-black border border-weello-gold/30 rounded-xl px-4 py-3 text-weello-cream outline-none focus:border-weello-gold transition-colors resize-none" />
               </div>
               <div className="pt-2 flex justify-end">
-                <button type="submit" disabled={saving || !restaurantId} className="foodiz-btn flex items-center gap-2 px-8 py-3 disabled:opacity-50">
+                <button type="submit" disabled={saving || !restaurantId} className="weello-btn flex items-center gap-2 px-8 py-3 disabled:opacity-50">
                   <Save size={18} /> {saving ? "Enregistrement..." : "Enregistrer"}
                 </button>
               </div>
@@ -247,17 +247,17 @@ export default function PartnerSettings() {
           )}
         </form>
 
-        <section className="foodiz-card p-6 mt-6 bg-[#0A0A0A] border-foodiz-gold/20">
+        <section className="weello-card p-6 mt-6 bg-[#0A0A0A] border-weello-gold/20">
           <div className="flex items-start gap-3">
-            <div className="p-3 rounded-xl bg-foodiz-gold/10 border border-foodiz-gold/20"><ShieldAlert size={23} className="text-foodiz-gold" /></div>
+            <div className="p-3 rounded-xl bg-weello-gold/10 border border-weello-gold/20"><ShieldAlert size={23} className="text-weello-gold" /></div>
             <div>
-              <h2 className="text-lg font-bold text-foodiz-cream">Versements bancaires</h2>
+              <h2 className="text-lg font-bold text-weello-cream">Versements bancaires</h2>
               {legacyBankAccount ? (
-                <p className="text-sm text-foodiz-gray mt-2">Un ancien compte est enregistré pour {legacyBankAccount.holder_name || "votre établissement"} ({maskedIban}). Aucune nouvelle coordonnée bancaire n'est acceptée ici.</p>
+                <p className="text-sm text-weello-gray mt-2">Un ancien compte est enregistré pour {legacyBankAccount.holder_name || "votre établissement"} ({maskedIban}). Aucune nouvelle coordonnée bancaire n'est acceptée ici.</p>
               ) : (
-                <p className="text-sm text-foodiz-gray mt-2">Aucun compte de versement n'est encore connecté.</p>
+                <p className="text-sm text-weello-gray mt-2">Aucun compte de versement n'est encore connecté.</p>
               )}
-              <p className="text-xs text-foodiz-gray/70 mt-3">Les virements seront activés avec une connexion bancaire Stripe sécurisée. Tant que cette connexion n'est pas disponible, aucun virement automatique n'est annoncé.</p>
+              <p className="text-xs text-weello-gray/70 mt-3">Les virements seront activés avec une connexion bancaire Stripe sécurisée. Tant que cette connexion n'est pas disponible, aucun virement automatique n'est annoncé.</p>
             </div>
           </div>
         </section>
@@ -269,8 +269,8 @@ export default function PartnerSettings() {
 function Field({ label, value, onChange, required = false, type = "text" }: { label: string; value: string; onChange: (value: string) => void; required?: boolean; type?: string }) {
   return (
     <div className="space-y-2">
-      <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">{label}</label>
-      <input type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)} className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors" />
+      <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">{label}</label>
+      <input type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)} className="w-full bg-weello-black border border-weello-gold/30 rounded-xl px-4 py-3 text-weello-cream outline-none focus:border-weello-gold transition-colors" />
     </div>
   );
 }

@@ -11,7 +11,7 @@ export default function GoldIcon({ icon: Icon, size = 20, className }: GoldIconP
   return (
     <Icon
       size={size}
-      className={cn("text-foodiz-gold", className)}
+      className={cn("text-weello-gold", className)}
       strokeWidth={1.5}
     />
   );

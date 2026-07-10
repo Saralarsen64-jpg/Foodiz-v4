@@ -83,11 +83,11 @@ export default function PartnerOrdersCurrent() {
   };
 
   return (
-    <div className="min-h-screen bg-foodiz-black">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+    <div className="min-h-screen bg-weello-black">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/partner")} className="text-foodiz-gold"><ChevronLeft size={20} /></button>
-          <h1 className="foodiz-title text-lg">Commandes en cours</h1>
+          <button onClick={() => navigate("/partner")} className="text-weello-gold"><ChevronLeft size={20} /></button>
+          <h1 className="weello-title text-lg">Commandes en cours</h1>
         </div>
       </header>
 
@@ -98,7 +98,7 @@ export default function PartnerOrdersCurrent() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all ${
-                tab === activeTab ? "bg-foodiz-gold text-foodiz-black" : "bg-foodiz-card border border-foodiz-gold/15 text-foodiz-gray"
+                tab === activeTab ? "bg-weello-gold text-weello-black" : "bg-weello-card border border-weello-gold/15 text-weello-gray"
               }`}
             >
               {tab}
@@ -108,47 +108,47 @@ export default function PartnerOrdersCurrent() {
 
         <div className="space-y-3">
           {visibleOrders.map((order) => (
-            <div key={order.id} className="foodiz-card p-4 hover:border-foodiz-gold/30 transition-all">
+            <div key={order.id} className="weello-card p-4 hover:border-weello-gold/30 transition-all">
               <button onClick={() => navigate(`/partner/orders/${order.id}`)} className="w-full text-left">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="text-sm font-medium text-foodiz-cream">{order.client}</h3>
-                    <p className="text-[11px] text-foodiz-gray mt-0.5">{order.items}</p>
+                    <h3 className="text-sm font-medium text-weello-cream">{order.client}</h3>
+                    <p className="text-[11px] text-weello-gray mt-0.5">{order.items}</p>
                   </div>
                   <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${
                     order.status === "pending"
-                      ? "bg-foodiz-gold/20 text-foodiz-gold"
+                      ? "bg-weello-gold/20 text-weello-gold"
                       : order.status === "preparing"
-                      ? "bg-foodiz-gold/10 text-foodiz-gold/70"
-                      : "bg-foodiz-green/10 text-foodiz-green"
+                      ? "bg-weello-gold/10 text-weello-gold/70"
+                      : "bg-weello-green/10 text-weello-green"
                   }`}>
                     {order.status === "pending" ? "Nouvelle" : order.status === "preparing" ? "En préparation" : "Prête"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-foodiz-gray mb-3">
+                <div className="flex items-center justify-between text-xs text-weello-gray mb-3">
                   <span className="flex items-center gap-1"><Clock size={12} /> {order.time}</span>
-                  <span className="text-foodiz-gold font-semibold" title="Montant partenaire">{order.total.toFixed(2).replace(".", ",")} € partenaire</span>
+                  <span className="text-weello-gold font-semibold" title="Montant partenaire">{order.total.toFixed(2).replace(".", ",")} € partenaire</span>
                 </div>
               </button>
 
               <div className="flex gap-2">
                 {order.status === "pending" && (
                   <>
-                    <button onClick={() => acceptOrder(order.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-foodiz-green text-white text-xs font-medium hover:bg-foodiz-green/90 transition-all">
+                    <button onClick={() => acceptOrder(order.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-weello-green text-white text-xs font-medium hover:bg-weello-green/90 transition-all">
                       <CheckCircle size={14} /> Accepter
                     </button>
-                    <button onClick={() => refuseOrder(order.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-foodiz-red/40 text-foodiz-red text-xs font-medium hover:bg-foodiz-red/5 transition-all">
+                    <button onClick={() => refuseOrder(order.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-weello-red/40 text-weello-red text-xs font-medium hover:bg-weello-red/5 transition-all">
                       <XCircle size={14} /> Refuser
                     </button>
                   </>
                 )}
                 {order.status === "preparing" && (
-                  <button onClick={() => markReady(order.id)} className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-foodiz-gold text-foodiz-black text-xs font-medium hover:bg-foodiz-gold-light transition-all">
+                  <button onClick={() => markReady(order.id)} className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-weello-gold text-weello-black text-xs font-medium hover:bg-weello-gold-light transition-all">
                     <CheckCircle size={14} /> Marquer comme prête
                   </button>
                 )}
                 {order.status === "ready" && (
-                  <button onClick={() => navigate(`/partner/orders/${order.id}`)} className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-foodiz-green/10 text-foodiz-green text-xs font-medium border border-foodiz-green/30">
+                  <button onClick={() => navigate(`/partner/orders/${order.id}`)} className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-weello-green/10 text-weello-green text-xs font-medium border border-weello-green/30">
                     En attente livreur
                   </button>
                 )}

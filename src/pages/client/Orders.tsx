@@ -27,9 +27,9 @@ export default function OrdersPage() {
   }, []);
 
   const getStatusColor = (status: string) => {
-    if (status === 'delivered') return 'text-foodiz-green';
-    if (status === 'pending' || status === 'preparing') return 'text-foodiz-gold';
-    return 'text-foodiz-gray';
+    if (status === 'delivered') return 'text-weello-green';
+    if (status === 'pending' || status === 'preparing') return 'text-weello-gold';
+    return 'text-weello-gray';
   };
 
   const getStatusLabel = (status: string) => {
@@ -40,47 +40,47 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+    <div className="min-h-screen bg-weello-black pb-24 animate-fade-in-up border-x-2 border-weello-gold/20 relative">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
       
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-          <h1 className="foodiz-title text-lg">Mes Commandes</h1>
+          <button onClick={() => navigate("/client/account")} className="text-weello-gold"><ChevronLeft size={24} /></button>
+          <h1 className="weello-title text-lg">Mes Commandes</h1>
           <div className="w-6" />
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {loading ? (
-          <div className="text-center py-10 text-foodiz-gray animate-pulse">Chargement de l'historique...</div>
+          <div className="text-center py-10 text-weello-gray animate-pulse">Chargement de l'historique...</div>
         ) : orders.length === 0 ? (
-          <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
-            <ShoppingBag size={48} className="mx-auto text-foodiz-gray/20 mb-4" />
-            <h3 className="text-foodiz-cream text-lg font-medium mb-2">Aucune commande</h3>
-            <p className="text-foodiz-gray text-sm mb-6">Vous n'avez pas encore commandé sur Weello.</p>
-            <button onClick={() => navigate("/client/restaurants")} className="foodiz-btn px-6 py-3 text-sm">Découvrir les restaurants</button>
+          <div className="weello-card p-12 text-center bg-[#0A0A0A] border-weello-gold/10">
+            <ShoppingBag size={48} className="mx-auto text-weello-gray/20 mb-4" />
+            <h3 className="text-weello-cream text-lg font-medium mb-2">Aucune commande</h3>
+            <p className="text-weello-gray text-sm mb-6">Vous n'avez pas encore commandé sur Weello.</p>
+            <button onClick={() => navigate("/client/restaurants")} className="weello-btn px-6 py-3 text-sm">Découvrir les restaurants</button>
           </div>
         ) : (
           orders.map((order) => (
             <button 
               key={order.id} 
               onClick={() => navigate(`/client/orders/${order.id}`)}
-              className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group bg-[#0A0A0A]"
+              className="w-full weello-card p-4 flex items-center justify-between hover:border-weello-gold/30 transition-all group bg-[#0A0A0A]"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-foodiz-black border border-foodiz-gold/20 flex items-center justify-center text-foodiz-gold">
+                <div className="w-12 h-12 rounded-xl bg-weello-black border border-weello-gold/20 flex items-center justify-center text-weello-gold">
                   <Clock size={20} />
                 </div>
                 <div className="text-left">
-                  <p className="text-foodiz-cream font-bold text-sm">Commande #{order.id.slice(0, 8)}</p>
-                  <p className="text-foodiz-gray text-xs">{new Date(order.created_at).toLocaleDateString('fr-FR')} · {(order.final_client_total_cents / 100).toFixed(2)} €</p>
+                  <p className="text-weello-cream font-bold text-sm">Commande #{order.id.slice(0, 8)}</p>
+                  <p className="text-weello-gray text-xs">{new Date(order.created_at).toLocaleDateString('fr-FR')} · {(order.final_client_total_cents / 100).toFixed(2)} €</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className={`text-xs font-bold uppercase ${getStatusColor(order.status)}`}>{getStatusLabel(order.status)}</p>
-                <ChevronRight size={16} className="text-foodiz-gray/50 ml-auto mt-1 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={16} className="text-weello-gray/50 ml-auto mt-1 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
           ))

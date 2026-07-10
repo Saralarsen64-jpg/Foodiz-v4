@@ -4,8 +4,26 @@ import * as TaskManager from 'expo-task-manager';
 
 import { supabase } from '@/lib/supabase';
 
-export const DELIVERY_LOCATION_TASK = 'foodiz-active-delivery-location';
-const ACTIVE_ORDER_KEY = 'foodiz_active_delivery_order';
+export const DELIVERY_LOCATION_TASK = 'weello-active-delivery-location';
+const LEGACY_DELIVERY_LOCATION_TASK = 'foodiz-active-delivery-location';
+const ACTIVE_ORDER_KEY = 'weello_active_delivery_order';
+const LEGACY_ACTIVE_ORDER_KEY = 'foodiz_active_delivery_order';
+
+// Migrate legacy active order key to new Weello key (best-effort)
+(async () => {
+  try {
+    const exists = await SecureStore.getItemAsync(ACTIVE_ORDER_KEY);
+    if (!exists) {
+      const legacy = await SecureStore.getItemAsync(LEGACY_ACTIVE_ORDER_KEY);
+      if (legacy) {
+        await SecureStore.setItemAsync(ACTIVE_ORDER_KEY, legacy);
+        await SecureStore.deleteItemAsync(LEGACY_ACTIVE_ORDER_KEY);
+      }
+    }
+  } catch {
+    // best-effort migration: ignore failures
+  }
+})();
 
 type LocationTaskData = {
   locations?: Location.LocationObject[];
@@ -13,6 +31,9 @@ type LocationTaskData = {
 
 async function stopTaskAndClearOrder() {
   await SecureStore.deleteItemAsync(ACTIVE_ORDER_KEY);
+  if (await Location.hasStartedLocationUpdatesAsync(LEGACY_DELIVERY_LOCATION_TASK)) {
+    await Location.stopLocationUpdatesAsync(LEGACY_DELIVERY_LOCATION_TASK);
+  }
   if (await Location.hasStartedLocationUpdatesAsync(DELIVERY_LOCATION_TASK)) {
     await Location.stopLocationUpdatesAsync(DELIVERY_LOCATION_TASK);
   }

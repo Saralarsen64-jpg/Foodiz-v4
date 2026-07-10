@@ -50,7 +50,6 @@ type CourierApplicationRow = {
   availability_days?: string[] | null;
   availability_flexible?: boolean | null;
   service_area?: { id: string; city: string; department_code?: string | null; status: string } | null;
-  prelaunch?: { access_enabled: boolean } | null;
   profiles?: { first_name?: string | null; last_name?: string | null; email?: string | null; phone?: string | null } | null;
   documents: CourierDocument[];
 };
@@ -166,23 +165,6 @@ export default function AdminCourierApplicationsPage() {
     });
   };
 
-  const setAccess = async (item: CourierApplicationRow, enabled: boolean) => {
-    setBusy(item.id);
-    try {
-      await adminCourierRequest("POST", {
-        action: "set_access",
-        userId: item.user_id,
-        enabled,
-      });
-      toast.success(enabled ? "Accès pilote livreur autorisé." : "Accès pilote retiré.");
-      await loadItems();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setBusy("");
-    }
-  };
-
   const cities = useMemo(
     () => Array.from(new Set(items.map((item) => item.service_area?.city || item.city).filter(Boolean) as string[])).sort(),
     [items],
@@ -209,36 +191,36 @@ export default function AdminCourierApplicationsPage() {
     <AdminShell title="Livreurs" subtitle="Contrôle privé de l’identité, de l’activité et de l’accès aux courses">
       <section className="grid gap-4 md:grid-cols-3">
         {[
-          { label: "À vérifier", value: stats.pending, Icon: AlertCircle, color: "text-foodiz-gold" },
-          { label: "Validés", value: stats.validated, Icon: CheckCircle2, color: "text-foodiz-green" },
-          { label: "Incomplets", value: stats.incomplete, Icon: FileText, color: "text-foodiz-red" },
+          { label: "À vérifier", value: stats.pending, Icon: AlertCircle, color: "text-weello-gold" },
+          { label: "Validés", value: stats.validated, Icon: CheckCircle2, color: "text-weello-green" },
+          { label: "Incomplets", value: stats.incomplete, Icon: FileText, color: "text-weello-red" },
         ].map(({ label, value, Icon, color }) => (
-          <article key={label} className="foodiz-card border-foodiz-gold/15 p-5">
+          <article key={label} className="weello-card border-weello-gold/15 p-5">
             <Icon size={20} className={color} />
-            <p className="mt-4 text-[10px] uppercase tracking-widest text-foodiz-gray">{label}</p>
-            <p className="mt-2 text-3xl font-serif italic text-foodiz-cream">{value}</p>
+            <p className="mt-4 text-[10px] uppercase tracking-widest text-weello-gray">{label}</p>
+            <p className="mt-2 text-3xl font-serif italic text-weello-cream">{value}</p>
           </article>
         ))}
       </section>
 
       <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
-        <label className="foodiz-card flex items-center gap-3 px-4 py-3">
-          <Search size={17} className="text-foodiz-gold" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom, ville, email ou SIRET" className="w-full bg-transparent text-sm outline-none placeholder:text-foodiz-gray" />
+        <label className="weello-card flex items-center gap-3 px-4 py-3">
+          <Search size={17} className="text-weello-gold" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom, ville, email ou SIRET" className="w-full bg-transparent text-sm outline-none placeholder:text-weello-gray" />
         </label>
-        <select value={city} onChange={(event) => setCity(event.target.value)} className="foodiz-card bg-foodiz-card px-4 py-3 text-sm text-foodiz-cream outline-none">
+        <select value={city} onChange={(event) => setCity(event.target.value)} className="weello-card bg-weello-card px-4 py-3 text-sm text-weello-cream outline-none">
           <option value="all">Toutes les villes</option>
           {cities.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <button onClick={() => void loadItems()} className="flex items-center gap-2 text-xs text-foodiz-gold">
+        <button onClick={() => void loadItems()} className="flex items-center gap-2 text-xs text-weello-gold">
           <RefreshCw size={15} />Actualiser
         </button>
       </div>
 
       {loading ? (
-        <div className="foodiz-card animate-pulse p-8 text-center text-foodiz-gray">Chargement des dossiers privés…</div>
+        <div className="weello-card animate-pulse p-8 text-center text-weello-gray">Chargement des dossiers privés…</div>
       ) : filtered.length === 0 ? (
-        <div className="foodiz-card p-5 text-sm text-foodiz-gray">Aucune demande livreur.</div>
+        <div className="weello-card p-5 text-sm text-weello-gray">Aucune demande livreur.</div>
       ) : (
         <section className="grid gap-5 xl:grid-cols-2">
           {filtered.map((item) => {
@@ -247,22 +229,22 @@ export default function AdminCourierApplicationsPage() {
             const legalComplete = Boolean(item.legal_name && item.siret && item.address && item.postal_code);
             const canApprove = documentsComplete && legalComplete;
             return (
-              <article key={item.id} className="foodiz-card border-foodiz-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.10),transparent_40%)] p-5">
+              <article key={item.id} className="weello-card border-weello-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.10),transparent_40%)] p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Bike size={18} className="text-foodiz-gold" />
-                      <h2 className="font-semibold text-foodiz-cream">{fullName || item.profiles?.email || "Livreur"}</h2>
+                      <Bike size={18} className="text-weello-gold" />
+                      <h2 className="font-semibold text-weello-cream">{fullName || item.profiles?.email || "Livreur"}</h2>
                     </div>
-                    <p className="mt-1 text-xs text-foodiz-gray">{item.service_area?.city || item.city || "Ville non précisée"} · {item.vehicle_type || "Véhicule non précisé"}</p>
-                    <p className="mt-1 text-[10px] text-foodiz-gray">{item.profiles?.email} · {item.profiles?.phone}</p>
+                    <p className="mt-1 text-xs text-weello-gray">{item.service_area?.city || item.city || "Ville non précisée"} · {item.vehicle_type || "Véhicule non précisé"}</p>
+                    <p className="mt-1 text-[10px] text-weello-gray">{item.profiles?.email} · {item.profiles?.phone}</p>
                   </div>
                   <span className={`rounded-full border px-3 py-1 text-[10px] uppercase ${
                     item.status === "validated"
-                      ? "border-foodiz-green/20 bg-foodiz-green/5 text-foodiz-green"
+                      ? "border-weello-green/20 bg-weello-green/5 text-weello-green"
                       : item.status === "rejected"
-                        ? "border-foodiz-red/20 bg-foodiz-red/5 text-foodiz-red"
-                        : "border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"
+                        ? "border-weello-red/20 bg-weello-red/5 text-weello-red"
+                        : "border-weello-gold/20 bg-weello-gold/10 text-weello-gold"
                   }`}>
                     {item.document_review_status || item.status || "pending"}
                   </span>
@@ -270,29 +252,29 @@ export default function AdminCourierApplicationsPage() {
 
                 <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs">
                   <div>
-                    <p className="flex items-center gap-2 text-foodiz-gray"><MapPin size={13} />Ville opérationnelle</p>
-                    <p className="mt-1 text-foodiz-cream">{item.service_area?.status || "non classée"}</p>
+                    <p className="flex items-center gap-2 text-weello-gray"><MapPin size={13} />Ville opérationnelle</p>
+                    <p className="mt-1 text-weello-cream">{item.service_area?.status || "non classée"}</p>
                   </div>
                   <div>
-                    <p className="text-foodiz-gray">Accès pilote</p>
-                    <p className={item.prelaunch?.access_enabled ? "mt-1 text-foodiz-green" : "mt-1 text-foodiz-gray"}>{item.prelaunch?.access_enabled ? "Autorisé" : "Bloqué"}</p>
+                    <p className="text-weello-gray">Dossier</p>
+                    <p className={item.status === "validated" ? "mt-1 text-weello-green" : "mt-1 text-weello-gold"}>{item.status === "validated" ? "Validé" : "À contrôler"}</p>
                   </div>
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs">
-                  <p className="font-semibold text-foodiz-cream">Disponibilités souhaitées</p>
-                  <p className="mt-2 text-foodiz-gray">
+                  <p className="font-semibold text-weello-cream">Disponibilités souhaitées</p>
+                  <p className="mt-2 text-weello-gray">
                     Créneaux : {(item.availability_slots || []).map((slot) => slotLabels[slot] || slot).join(", ") || "non précisés"}
                   </p>
-                  <p className="mt-1 text-foodiz-gray">
+                  <p className="mt-1 text-weello-gray">
                     Jours : {(item.availability_days || []).map((day) => dayLabels[day] || day).join(", ") || "non précisés"}
                   </p>
-                  {item.availability_flexible && <p className="mt-2 text-foodiz-gold">Profil flexible : peut accepter d’autres créneaux.</p>}
+                  {item.availability_flexible && <p className="mt-2 text-weello-gold">Profil flexible : peut accepter d’autres créneaux.</p>}
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs text-foodiz-gray">
-                  <p className="flex items-center gap-2 text-foodiz-cream">
-                    <ShieldCheck size={14} className={legalComplete ? "text-foodiz-green" : "text-foodiz-red"} />
+                <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs text-weello-gray">
+                  <p className="flex items-center gap-2 text-weello-cream">
+                    <ShieldCheck size={14} className={legalComplete ? "text-weello-green" : "text-weello-red"} />
                     {item.legal_name || "Identité légale manquante"}
                   </p>
                   <p className="mt-2">SIRET : {item.siret || "manquant"}</p>
@@ -305,22 +287,22 @@ export default function AdminCourierApplicationsPage() {
                     const document = item.documents.find((candidate) => candidate.document_type === documentType);
                     const replacementSelected = (replacementDocuments[item.id] || []).includes(documentType);
                     return (
-                      <div key={documentType} className={`flex items-center gap-3 rounded-2xl border p-3 ${document ? "border-foodiz-gold/15 bg-black/25" : "border-foodiz-red/20 bg-foodiz-red/5"}`}>
+                      <div key={documentType} className={`flex items-center gap-3 rounded-2xl border p-3 ${document ? "border-weello-gold/15 bg-black/25" : "border-weello-red/20 bg-weello-red/5"}`}>
                         <button
                           type="button"
                           disabled={!document?.signed_url}
                           onClick={() => document?.signed_url && window.open(document.signed_url, "_blank", "noopener,noreferrer")}
                           className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-50"
                         >
-                          {document ? <FileCheck2 size={17} className="shrink-0 text-foodiz-green" /> : <XCircle size={17} className="shrink-0 text-foodiz-red" />}
+                          {document ? <FileCheck2 size={17} className="shrink-0 text-weello-green" /> : <XCircle size={17} className="shrink-0 text-weello-red" />}
                           <span className="min-w-0">
-                            <span className="block text-xs text-foodiz-cream">{documentLabels[documentType]}</span>
-                            <span className="mt-1 block truncate text-[9px] text-foodiz-gray">{document?.original_name || "Document absent"}</span>
+                            <span className="block text-xs text-weello-cream">{documentLabels[documentType]}</span>
+                            <span className="mt-1 block truncate text-[9px] text-weello-gray">{document?.original_name || "Document absent"}</span>
                           </span>
-                          {document?.signed_url && <ExternalLink size={14} className="ml-auto shrink-0 text-foodiz-gold" />}
+                          {document?.signed_url && <ExternalLink size={14} className="ml-auto shrink-0 text-weello-gold" />}
                         </button>
                         {document && (
-                          <label className="flex shrink-0 items-center gap-2 text-[9px] text-foodiz-gray">
+                          <label className="flex shrink-0 items-center gap-2 text-[9px] text-weello-gray">
                             <input type="checkbox" checked={replacementSelected} onChange={() => toggleReplacement(item.id, documentType)} className="accent-[#D8A84F]" />
                             À remplacer
                           </label>
@@ -331,11 +313,11 @@ export default function AdminCourierApplicationsPage() {
                 </div>
 
                 <div className="mt-4 grid gap-2 text-xs">
-                  <label className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-foodiz-gray">
+                  <label className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-weello-gray">
                     <input type="checkbox" checked={identityChecks[item.id] || false} onChange={(event) => setIdentityChecks((current) => ({ ...current, [item.id]: event.target.checked }))} className="mt-0.5 accent-[#D8A84F]" />
                     Le nom de la pièce d’identité correspond au profil déclaré.
                   </label>
-                  <label className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-foodiz-gray">
+                  <label className="flex items-start gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-weello-gray">
                     <input type="checkbox" checked={businessChecks[item.id] || false} onChange={(event) => setBusinessChecks((current) => ({ ...current, [item.id]: event.target.checked }))} className="mt-0.5 accent-[#D8A84F]" />
                     Le justificatif d’activité correspond au nom et au SIRET déclarés.
                   </label>
@@ -345,33 +327,33 @@ export default function AdminCourierApplicationsPage() {
                   value={comments[item.id] ?? item.document_review_comment ?? ""}
                   onChange={(event) => setComments((current) => ({ ...current, [item.id]: event.target.value }))}
                   placeholder="Commentaire de contrôle ou motif précis du refus…"
-                  className="mt-4 min-h-24 w-full rounded-2xl border border-foodiz-gold/15 bg-black/30 px-4 py-3 text-xs text-foodiz-cream outline-none focus:border-foodiz-gold"
+                  className="mt-4 min-h-24 w-full rounded-2xl border border-weello-gold/15 bg-black/30 px-4 py-3 text-xs text-weello-cream outline-none focus:border-weello-gold"
                 />
                 {replacementLinks[item.id] && (
                   <button
                     type="button"
                     onClick={() => void navigator.clipboard.writeText(replacementLinks[item.id]).then(() => toast.success("Lien copié.")).catch(() => toast.error("Copiez le lien manuellement."))}
-                    className="mt-3 w-full break-all rounded-xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-3 text-left text-[10px] text-foodiz-gold"
+                    className="mt-3 w-full break-all rounded-xl border border-weello-gold/20 bg-weello-gold/5 p-3 text-left text-[10px] text-weello-gold"
                   >
                     Lien privé à transmettre manuellement : {replacementLinks[item.id]}
                   </button>
                 )}
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  <button disabled={busy === item.id || !canApprove} onClick={() => void review(item, "approve")} className="foodiz-btn flex items-center justify-center gap-2 py-3 text-xs disabled:opacity-40">
+                  <button disabled={busy === item.id || !canApprove} onClick={() => void review(item, "approve")} className="weello-btn flex items-center justify-center gap-2 py-3 text-xs disabled:opacity-40">
                     <CheckCircle2 size={15} />Valider
                   </button>
-                  <button disabled={busy === item.id} onClick={() => void review(item, "request_replacement")} className="rounded-xl border border-foodiz-gold/25 px-3 py-3 text-xs text-foodiz-gold disabled:opacity-40">
+                  <button disabled={busy === item.id} onClick={() => void review(item, "request_replacement")} className="rounded-xl border border-weello-gold/25 px-3 py-3 text-xs text-weello-gold disabled:opacity-40">
                     Demander un remplacement
                   </button>
-                  <button disabled={busy === item.id} onClick={() => void review(item, "reject")} className="rounded-xl border border-foodiz-red/25 px-3 py-3 text-xs text-foodiz-red disabled:opacity-40">
+                  <button disabled={busy === item.id} onClick={() => void review(item, "reject")} className="rounded-xl border border-weello-red/25 px-3 py-3 text-xs text-weello-red disabled:opacity-40">
                     Refuser
                   </button>
                 </div>
                 {item.status === "validated" && item.document_review_status === "approved" && (
-                  <button disabled={busy === item.id} onClick={() => void setAccess(item, !item.prelaunch?.access_enabled)} className="mt-3 w-full rounded-xl border border-foodiz-gold/20 px-3 py-3 text-xs text-foodiz-gold disabled:opacity-40">
-                    {item.prelaunch?.access_enabled ? "Retirer l’accès pilote" : "Autoriser l’accès pilote aux courses"}
-                  </button>
+                  <p className="mt-3 rounded-xl border border-weello-green/20 bg-weello-green/5 px-3 py-3 text-xs text-weello-green">
+                    Livreur validé. Les courses seront proposées dès que sa ville sera opérationnelle.
+                  </p>
                 )}
               </article>
             );

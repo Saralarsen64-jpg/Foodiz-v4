@@ -133,67 +133,67 @@ export default function HelpCenterPage() {
   };
 
   return (
-    <div className="relative min-h-screen border-x-2 border-foodiz-gold/20 bg-foodiz-black pb-24 animate-fade-in-up">
+    <div className="relative min-h-screen border-x-2 border-weello-gold/20 bg-weello-black pb-24 animate-fade-in-up">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(216,168,79,.13),transparent_35%)]" />
-      <header className="sticky top-0 z-30 border-b border-foodiz-gold/10 bg-foodiz-card/90 px-4 py-3 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-weello-gold/10 bg-weello-card/90 px-4 py-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-between">
-          <button onClick={() => navigate('/client/account')} className="text-foodiz-gold">
+          <button onClick={() => navigate('/client/account')} className="text-weello-gold">
             <ChevronLeft size={24}/>
           </button>
-          <h1 className="foodiz-title text-lg">Centre d'aide</h1>
+          <h1 className="weello-title text-lg">Centre d'aide</h1>
           <div className="w-6"/>
         </div>
       </header>
 
       <main className="relative mx-auto max-w-lg space-y-8 px-4 py-8">
-        <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,.16),rgba(17,17,17,.98)_48%,rgba(7,7,7,.98))] p-6 shadow-[0_25px_70px_rgba(0,0,0,.38)]">
+        <section className="rounded-[2rem] border border-weello-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,.16),rgba(17,17,17,.98)_48%,rgba(7,7,7,.98))] p-6 shadow-[0_25px_70px_rgba(0,0,0,.38)]">
           <div className="flex items-start gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-foodiz-gold/25 bg-foodiz-gold/10 text-foodiz-gold">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-weello-gold/25 bg-weello-gold/10 text-weello-gold">
               <Sparkles size={24}/>
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[.25em] text-foodiz-gold">Support Weello</p>
-              <h2 className="foodiz-title mt-2 text-2xl">On vous aide sans vous faire tourner en rond.</h2>
-              <p className="mt-3 text-sm leading-relaxed text-foodiz-gray">
+              <p className="text-[10px] font-black uppercase tracking-[.25em] text-weello-gold">Support Weello</p>
+              <h2 className="weello-title mt-2 text-2xl">On vous aide sans vous faire tourner en rond.</h2>
+              <p className="mt-3 text-sm leading-relaxed text-weello-gray">
                 Weello vérifie d'abord les informations disponibles puis crée une demande claire, priorisée et exploitable.
               </p>
             </div>
           </div>
           <div className="mt-5 grid grid-cols-3 gap-2">
             {SUPPORT_PROMISES.map(({ label, icon: Icon }) => (
-              <div key={label} className="rounded-2xl border border-foodiz-gold/10 bg-black/25 p-3 text-center">
-                <Icon size={17} className="mx-auto text-foodiz-gold"/>
-                <p className="mt-2 text-[10px] font-semibold text-foodiz-gray">{label}</p>
+              <div key={label} className="rounded-2xl border border-weello-gold/10 bg-black/25 p-3 text-center">
+                <Icon size={17} className="mx-auto text-weello-gold"/>
+                <p className="mt-2 text-[10px] font-semibold text-weello-gray">{label}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section>
-          <h2 className="foodiz-title text-xl">Que se passe-t-il ?</h2>
-          <p className="mt-2 text-sm text-foodiz-gray">Choisissez le sujet : Weello vous guide étape par étape.</p>
+          <h2 className="weello-title text-xl">Que se passe-t-il ?</h2>
+          <p className="mt-2 text-sm text-weello-gray">Choisissez le sujet : Weello vous guide étape par étape.</p>
           <div className="mt-5 grid grid-cols-2 gap-3">
             {CATEGORIES.map((item) => (
               <button
                 key={item.key}
                 onClick={() => { setCategory(item.key); setDiagnosis(null); }}
-                className={`foodiz-card p-4 text-left transition-all ${category === item.key ? 'border-foodiz-gold bg-foodiz-gold/5' : 'border-foodiz-gold/10'}`}
+                className={`weello-card p-4 text-left transition-all ${category === item.key ? 'border-weello-gold bg-weello-gold/5' : 'border-weello-gold/10'}`}
               >
-                <item.icon size={19} className="text-foodiz-gold"/>
-                <p className="mt-3 text-sm text-foodiz-cream">{item.label}</p>
+                <item.icon size={19} className="text-weello-gold"/>
+                <p className="mt-3 text-sm text-weello-cream">{item.label}</p>
               </button>
             ))}
           </div>
         </section>
 
         {category && (
-          <section className="foodiz-card space-y-4 p-5">
-            <h3 className="foodiz-title text-base">Diagnostic guidé</h3>
+          <section className="weello-card space-y-4 p-5">
+            <h3 className="weello-title text-base">Diagnostic guidé</h3>
             {selectedCategory?.needsOrder && (
               <select
                 value={orderId}
                 onChange={(e) => { setOrderId(e.target.value); setDiagnosis(null); }}
-                className="w-full rounded-xl border border-foodiz-gold/20 bg-foodiz-black p-3 text-sm text-foodiz-cream"
+                className="w-full rounded-xl border border-weello-gold/20 bg-weello-black p-3 text-sm text-weello-cream"
               >
                 <option value="">Choisir la commande concernée</option>
                 {orders.map((order) => (
@@ -203,7 +203,7 @@ export default function HelpCenterPage() {
                 ))}
               </select>
             )}
-            <button onClick={runDiagnosis} disabled={selectedCategory?.needsOrder && !orderId} className="foodiz-btn flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40">
+            <button onClick={runDiagnosis} disabled={selectedCategory?.needsOrder && !orderId} className="weello-btn flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40">
               <RefreshCw size={15}/>
               Analyser ma situation
             </button>
@@ -211,23 +211,23 @@ export default function HelpCenterPage() {
         )}
 
         {diagnosis && (
-          <section className={`foodiz-card border p-5 ${diagnosis.resolved ? 'border-foodiz-green/20 bg-foodiz-green/5' : 'border-foodiz-gold/20'}`}>
+          <section className={`weello-card border p-5 ${diagnosis.resolved ? 'border-weello-green/20 bg-weello-green/5' : 'border-weello-gold/20'}`}>
             <div className="flex gap-3">
-              {diagnosis.resolved ? <CheckCircle2 className="shrink-0 text-foodiz-green"/> : <AlertCircle className="shrink-0 text-foodiz-gold"/>}
+              {diagnosis.resolved ? <CheckCircle2 className="shrink-0 text-weello-green"/> : <AlertCircle className="shrink-0 text-weello-gold"/>}
               <div>
-                <h3 className="font-semibold text-foodiz-cream">{diagnosis.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{diagnosis.explanation}</p>
+                <h3 className="font-semibold text-weello-cream">{diagnosis.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-weello-gray">{diagnosis.explanation}</p>
               </div>
             </div>
             {diagnosis.action && (
-              <button onClick={() => navigate(diagnosis.action.path)} className="mt-4 flex items-center gap-1 text-xs text-foodiz-gold">
+              <button onClick={() => navigate(diagnosis.action.path)} className="mt-4 flex items-center gap-1 text-xs text-weello-gold">
                 {diagnosis.action.label}<ChevronRight size={14}/>
               </button>
             )}
             <div className="mt-5 border-t border-white/10 pt-4">
-              <p className="mb-3 text-xs text-foodiz-gray">Le problème n'est pas résolu ? Décrivez uniquement ce qui manque.</p>
-              <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Précisez le problème rencontré..." className="h-24 w-full resize-none rounded-xl border border-foodiz-gold/20 bg-foodiz-black p-3 text-sm text-foodiz-cream outline-none"/>
-              <button disabled={sending || !message.trim()} onClick={createTicket} className="foodiz-btn mt-3 flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40">
+              <p className="mb-3 text-xs text-weello-gray">Le problème n'est pas résolu ? Décrivez uniquement ce qui manque.</p>
+              <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Précisez le problème rencontré..." className="h-24 w-full resize-none rounded-xl border border-weello-gold/20 bg-weello-black p-3 text-sm text-weello-cream outline-none"/>
+              <button disabled={sending || !message.trim()} onClick={createTicket} className="weello-btn mt-3 flex w-full items-center justify-center gap-2 py-3 disabled:opacity-40">
                 <Send size={15}/>{sending ? 'Envoi...' : 'Transmettre au support'}
               </button>
             </div>
@@ -235,40 +235,40 @@ export default function HelpCenterPage() {
         )}
 
         <section className="space-y-3">
-          <h2 className="foodiz-title text-lg">Réponses rapides</h2>
+          <h2 className="weello-title text-lg">Réponses rapides</h2>
           {FAQ_ITEMS.map((item) => (
-            <article key={item.title} className="rounded-2xl border border-foodiz-gold/10 bg-white/[0.02] p-4">
-              <h3 className="text-sm font-semibold text-foodiz-cream">{item.title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{item.text}</p>
+            <article key={item.title} className="rounded-2xl border border-weello-gold/10 bg-white/[0.02] p-4">
+              <h3 className="text-sm font-semibold text-weello-cream">{item.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-weello-gray">{item.text}</p>
             </article>
           ))}
         </section>
 
         <section>
-          <h2 className="foodiz-title mb-4 flex items-center gap-2 text-lg">
-            <LifeBuoy size={18} className="text-foodiz-gold"/>
+          <h2 className="weello-title mb-4 flex items-center gap-2 text-lg">
+            <LifeBuoy size={18} className="text-weello-gold"/>
             Mes demandes
           </h2>
           {loading ? (
-            <p className="animate-pulse text-sm text-foodiz-gray">Chargement...</p>
+            <p className="animate-pulse text-sm text-weello-gray">Chargement...</p>
           ) : tickets.length === 0 ? (
-            <div className="foodiz-card p-5 text-center text-xs text-foodiz-gray">Aucune demande en cours.</div>
+            <div className="weello-card p-5 text-center text-xs text-weello-gray">Aucune demande en cours.</div>
           ) : (
             <div className="space-y-3">
               {tickets.map((ticket) => (
-                <div key={ticket.id} className="foodiz-card p-4">
+                <div key={ticket.id} className="weello-card p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-foodiz-cream">{ticket.subject}</p>
-                      <p className="mt-1 text-[10px] text-foodiz-gray">{new Date(ticket.created_at).toLocaleString('fr-FR')}</p>
+                      <p className="text-sm font-semibold text-weello-cream">{ticket.subject}</p>
+                      <p className="mt-1 text-[10px] text-weello-gray">{new Date(ticket.created_at).toLocaleString('fr-FR')}</p>
                     </div>
-                    <span className={`rounded-full border px-2 py-1 text-[9px] uppercase ${ticket.status === 'closed' || ticket.status === 'resolved' ? 'border-foodiz-green/20 text-foodiz-green' : 'border-foodiz-gold/20 text-foodiz-gold'}`}>{ticket.status}</span>
+                    <span className={`rounded-full border px-2 py-1 text-[9px] uppercase ${ticket.status === 'closed' || ticket.status === 'resolved' ? 'border-weello-green/20 text-weello-green' : 'border-weello-gold/20 text-weello-gold'}`}>{ticket.status}</span>
                   </div>
-                  <p className="mt-3 text-xs text-foodiz-gray">{ticket.message}</p>
+                  <p className="mt-3 text-xs text-weello-gray">{ticket.message}</p>
                   {ticket.admin_response && (
-                    <div className="mt-3 rounded-xl border border-foodiz-green/15 bg-foodiz-green/5 p-3">
-                      <p className="mb-1 text-[9px] uppercase text-foodiz-green">Réponse Weello</p>
-                      <p className="text-xs text-foodiz-cream">{ticket.admin_response}</p>
+                    <div className="mt-3 rounded-xl border border-weello-green/15 bg-weello-green/5 p-3">
+                      <p className="mb-1 text-[9px] uppercase text-weello-green">Réponse Weello</p>
+                      <p className="text-xs text-weello-cream">{ticket.admin_response}</p>
                     </div>
                   )}
                 </div>

@@ -1,4 +1,4 @@
--- Foodiz pre-launch mode:
+-- Weello pre-launch mode:
 -- - public launch status;
 -- - Auth-linked pre-registrations;
 -- - admin-only global visibility;

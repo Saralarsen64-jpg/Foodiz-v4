@@ -421,7 +421,7 @@ const handler: Handler = async (event) => {
             orderId: order.id,
             clientId: authData.user.id,
             restaurantId,
-            source: "foodiz_mobile",
+            source: "weello_mobile",
           },
           description: `Commande Weello #${order.id.slice(0, 8)}`,
         },

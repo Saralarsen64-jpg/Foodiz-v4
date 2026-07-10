@@ -2,18 +2,19 @@
 
 /* ===== Tailwind v4 Theme ===== */
 @theme {
-  --color-foodiz-black: #050505;
-  --color-foodiz-dark: #0A0A0A;
-  --color-foodiz-card: #111111;
-  --color-foodiz-gold: #D8A84F;
-  --color-foodiz-gold-light: #E0B45C;
-  --color-foodiz-gold-dark: #C9A45C;
-  --color-foodiz-kraft: #D8B98F;
-  --color-foodiz-kraft-dark: #C6A06A;
-  --color-foodiz-cream: #FFF8EA;
-  --color-foodiz-gray: #B8B8B8;
-  --color-foodiz-green: #3FA76D;
-  --color-foodiz-red: #B84444;
+  --color-weello-black: #050505;
+  --color-weello-dark: #0A0A0A;
+  --color-weello-card: #111111;
+  --color-weello-gold: #D8A84F;
+  --color-weello-gold-light: #E0B45C;
+  --color-weello-gold-dark: #C9A45C;
+  --color-weello-kraft: #D8B98F;
+  --color-weello-kraft-dark: #C6A06A;
+  --color-weello-cream: #FFF8EA;
+  --color-weello-gray: #B8B8B8;
+  --color-weello-green: #3FA76D;
+  --color-weello-red: #B84444;
+
 
   --font-serif: 'Playfair Display', serif;
   --font-sans: 'Nunito Sans', sans-serif;
@@ -48,12 +49,96 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes weelloAuthReveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes weelloButtonShine {
+  0% {
+    transform: translateX(-180%) skewX(-22deg);
+  }
+  100% {
+    transform: translateX(360%) skewX(-22deg);
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out forwards;
 }
 
+.weello-auth-panel {
+  isolation: isolate;
+  animation: weelloAuthReveal 560ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.weello-auth-reveal {
+  animation: weelloAuthReveal 520ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.weello-auth-delay-1 {
+  animation-delay: 70ms;
+}
+
+.weello-auth-delay-2 {
+  animation-delay: 130ms;
+}
+
+.weello-auth-delay-3 {
+  animation-delay: 190ms;
+}
+
+.weello-auth-delay-4 {
+  animation-delay: 250ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weello-auth-panel,
+  .weello-auth-reveal,
+  .weello-btn,
+  .weello-btn,
+  .weello-btn-outline,
+  .weello-btn-outline,
+  .weello-premium-button,
+  .weello-premium-button-outline {
+    animation: none;
+    transition: none;
+  }
+
+  .weello-btn:hover::before,
+  .weello-btn:hover::before,
+  .weello-premium-button:hover::before {
+    animation: none;
+  }
+}
+
 /* ===== Utility Classes ===== */
-.foodiz-card {
+button,
+[role='button'],
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']) {
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+[role='button']:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(232, 204, 136, 0.92);
+  outline-offset: 3px;
+}
+
+.weello-card,
+.weello-card {
   background:
     radial-gradient(circle at top right, rgba(216, 168, 79, 0.06), transparent 38%),
     #111111;
@@ -62,54 +147,232 @@ body {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
-.foodiz-card:hover {
+.weello-card:hover,
+.weello-card:hover {
   border-color: rgba(216, 168, 79, 0.35);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
-.foodiz-gradient-gold {
+.weello-gradient-gold,
+.weello-gradient-gold {
   background: linear-gradient(135deg, rgba(216, 168, 79, 0.1), rgba(216, 168, 79, 0.03));
 }
 
-.foodiz-border-gold {
+.weello-border-gold,
+.weello-border-gold {
   border: 1px solid rgba(216, 168, 79, 0.25);
 }
 
-.foodiz-btn {
-  background: linear-gradient(135deg, #D8A84F, #C9A45C);
+.weello-btn,
+.weello-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 236, 187, 0.7);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 250, 226, 0.62), transparent 31%),
+    linear-gradient(145deg, #F0C86F 0%, #D8A84F 47%, #B98535 100%);
   color: #050505;
-  font-weight: 600;
-  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.012em;
+  border-radius: 16px;
   padding: 12px 24px;
-  transition: all 0.3s ease;
-}
-.foodiz-btn:hover {
-  background: linear-gradient(135deg, #E0B45C, #D8A84F);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(216, 168, 79, 0.3);
+  box-shadow:
+    0 12px 30px rgba(216, 168, 79, 0.24),
+    0 3px 8px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 253, 235, 0.72),
+    inset 0 -1px 0 rgba(92, 53, 10, 0.35);
+  text-shadow: 0 1px 0 rgba(255, 247, 218, 0.28);
+  transition:
+    transform 220ms cubic-bezier(.22, 1, .36, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    filter 220ms ease;
 }
 
-.foodiz-btn-outline {
-  border: 1px solid rgba(216, 168, 79, 0.4);
-  color: #D8A84F;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-weight: 600;
-  transition: all 0.3s ease;
+.weello-btn::before,
+.weello-btn::before,
+.weello-premium-button::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: -35%;
+  bottom: -35%;
+  left: 0;
+  width: 34%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.42),
+    transparent
+  );
+  transform: translateX(-180%) skewX(-22deg);
 }
-.foodiz-btn-outline:hover {
-  border-color: #D8A84F;
-  background: rgba(216, 168, 79, 0.05);
+
+.weello-btn::after,
+.weello-btn::after,
+.weello-premium-button::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 1px 10px auto;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 252, 230, 0.92), transparent);
+  opacity: 0.78;
+}
+
+.weello-btn:hover,
+.weello-btn:hover {
+  transform: translateY(-2px) scale(1.008);
+  border-color: rgba(255, 245, 209, 0.96);
+  filter: saturate(1.06) brightness(1.035);
+  box-shadow:
+    0 18px 42px rgba(216, 168, 79, 0.34),
+    0 6px 14px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 253, 235, 0.86),
+    inset 0 -1px 0 rgba(92, 53, 10, 0.3);
+}
+
+.weello-btn:hover::before,
+.weello-btn:hover::before,
+.weello-premium-button:hover::before {
+  animation: weelloButtonShine 760ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.weello-btn:active,
+.weello-btn:active {
+  transform: translateY(1px) scale(0.987);
+  box-shadow:
+    0 6px 16px rgba(216, 168, 79, 0.2),
+    inset 0 2px 5px rgba(83, 48, 8, 0.24);
+}
+
+.weello-btn:disabled,
+.weello-btn:disabled {
+  cursor: not-allowed;
+  transform: none;
+  filter: grayscale(0.18) saturate(0.7);
+  box-shadow: none;
+}
+
+.weello-btn-outline,
+.weello-btn-outline {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(224, 180, 92, 0.52);
+  background:
+    radial-gradient(circle at 50% -60%, rgba(216, 168, 79, 0.16), transparent 58%),
+    rgba(255, 255, 255, 0.015);
+  color: #E8C66E;
+  border-radius: 16px;
+  padding: 12px 24px;
+  font-weight: 750;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 22px rgba(0, 0, 0, 0.24);
+  transition:
+    transform 220ms cubic-bezier(.22, 1, .36, 1),
+    color 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+.weello-btn-outline:hover,
+.weello-btn-outline:hover {
+  transform: translateY(-1px);
+  border-color: rgba(240, 200, 111, 0.88);
+  background:
+    radial-gradient(circle at 50% -40%, rgba(240, 200, 111, 0.22), transparent 62%),
+    rgba(216, 168, 79, 0.055);
+  color: #F0C86F;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.34),
+    0 0 24px rgba(216, 168, 79, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.weello-btn-outline:active,
+.weello-btn-outline:active {
+  transform: translateY(1px) scale(0.988);
+}
+
+.weello-premium-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 238, 194, 0.74);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 250, 226, 0.6), transparent 30%),
+    linear-gradient(145deg, #F0C86F 0%, #D8A84F 47%, #B98535 100%);
+  box-shadow:
+    0 14px 36px rgba(216, 168, 79, 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 253, 235, 0.76),
+    inset 0 -1px 0 rgba(92, 53, 10, 0.34);
+  transition:
+    transform 220ms cubic-bezier(.22, 1, .36, 1),
+    box-shadow 220ms ease,
+    filter 220ms ease;
+}
+
+.weello-premium-button:hover {
+  transform: translateY(-2px) scale(1.008);
+  filter: brightness(1.035) saturate(1.06);
+  box-shadow:
+    0 20px 46px rgba(216, 168, 79, 0.38),
+    0 7px 15px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 253, 235, 0.88);
+}
+
+.weello-premium-button:active {
+  transform: translateY(1px) scale(0.987);
+}
+
+.weello-premium-button-outline {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(224, 180, 92, 0.54);
+  background:
+    radial-gradient(circle at 50% -65%, rgba(216, 168, 79, 0.18), transparent 60%),
+    rgba(255, 255, 255, 0.014);
+  color: #E8C66E;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 8px 20px rgba(0, 0, 0, 0.24);
+  transition:
+    transform 220ms cubic-bezier(.22, 1, .36, 1),
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.weello-premium-button-outline:hover {
+  transform: translateY(-1px);
+  border-color: rgba(240, 200, 111, 0.9);
+  background:
+    radial-gradient(circle at 50% -45%, rgba(240, 200, 111, 0.24), transparent 62%),
+    rgba(216, 168, 79, 0.05);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.34),
+    0 0 22px rgba(216, 168, 79, 0.08);
+}
+
+.weello-premium-button-outline:active {
+  transform: translateY(1px) scale(0.988);
 }
 
 /* ===== Typography ===== */
-.foodiz-title {
+.weello-title,
+.weello-title {
   font-family: 'Playfair Display', serif;
   font-weight: 600;
   color: #FFF8EA;
 }
 
-.foodiz-logo {
+.weello-logo,
+.weello-logo {
   font-family: 'Playfair Display', serif;
   font-style: italic;
   font-weight: 600;
@@ -118,10 +381,12 @@ body {
 }
 
 /* Gold underline for logo */
-.foodiz-logo-underline {
+.weello-logo-underline,
+.weello-logo-underline {
   position: relative;
 }
-.foodiz-logo-underline::after {
+.weello-logo-underline::after,
+.weello-logo-underline::after {
   content: '';
   position: absolute;
   bottom: -2px;

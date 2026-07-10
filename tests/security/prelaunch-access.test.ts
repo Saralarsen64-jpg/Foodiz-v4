@@ -111,20 +111,19 @@ test("l’activation renvoie la connexion correspondant au rôle", () => {
   assert.match(activateApi, /role === "partenaire" \? "partner"/);
 });
 
-test("la route exacte /admin et ses sous-routes restent accessibles avant lancement", () => {
-  assert.match(launchBoundary, /pathname === "\/admin"/);
-  assert.match(launchBoundary, /pathname\.startsWith\("\/admin\/"\)/);
-  assert.match(launchBoundary, /isAdminPath\(location\.pathname\)/);
+test("la fin de la préinscription ne contourne pas la protection admin", () => {
+  assert.match(
+    appRoutes,
+    /<ProtectedRoute allowedRoles=\{\["admin"\]\} requireAdminLogin \/>/,
+  );
+  assert.match(appRoutes, /path="\/admin" element=\{<AdminDashboardPage \/>}/);
+  assert.doesNotMatch(launchBoundary, /Navigate to="\/admin"/);
 });
 
-test("la page publique reste la waitlist même avec une session admin", () => {
-  assert.match(appRoutes, /path="\/" element=\{<Navigate to="\/waitlist" replace \/>}/);
-  assert.match(launchBoundary, /location\.pathname === "\/"/);
-  assert.match(launchBoundary, /sessionRole === "admin"\) return <Navigate to="\/waitlist"/);
-  assert.doesNotMatch(
-    launchBoundary,
-    /sessionRole === "admin"\) return <Navigate to="\/admin"/,
-  );
+test("l’inscription publique remplace désormais proprement la waitlist", () => {
+  assert.match(appRoutes, /path="\/" element=\{<Navigate to="\/auth" replace \/>}/);
+  assert.match(appRoutes, /path="\/waitlist" element=\{<Navigate to="\/auth" replace \/>}/);
+  assert.match(launchBoundary, /return <>\{children\}<\/>/);
 });
 
 test("les formats français équivalents partagent une identité téléphonique", () => {

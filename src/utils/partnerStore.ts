@@ -19,7 +19,7 @@ export type PartnerProfile = {
   products: PartnerProduct[];
 };
 
-const STORAGE_KEY = "foodiz_partner_profile_r1_v1";
+const STORAGE_KEY = "weello_partner_profile_r1_v1";
 
 export const DEFAULT_PARTNER_PROFILE: PartnerProfile = {
   establishmentId: "r1",

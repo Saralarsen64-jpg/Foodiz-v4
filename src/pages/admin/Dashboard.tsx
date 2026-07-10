@@ -1,449 +1,784 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, ArrowRight, BarChart3, Bike, ClipboardCheck, CreditCard, Euro, FileText, Gauge, Hourglass, LifeBuoy, MapPin, ShoppingBag, Store, Users } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  Bike,
+  CalendarDays,
+  ChevronRight,
+  CircleDollarSign,
+  Headphones,
+  MapPin,
+  ShoppingBag,
+  Store,
+  Users,
+} from "lucide-react";
+
 import AdminShell from "../../components/AdminShell";
 import { supabase } from "../../lib/supabase";
 
-const euros = (cents: number) => `${((cents || 0) / 100).toFixed(2)} €`;
+const euros = (cents: number) =>
+  new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 2,
+  }).format((cents || 0) / 100);
+
+type ProfileRow = {
+  id: string;
+  role: string;
+  city: string | null;
+  status: string | null;
+  courier_online: boolean | null;
+};
+
+type RestaurantRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  cuisine_type: string | null;
+  status: string;
+  is_active: boolean;
+};
+
+type OrderRestaurant = {
+  id: string;
+  name: string;
+  city: string | null;
+  cuisine_type: string | null;
+};
+
+type OrderRow = {
+  id: string;
+  status: string;
+  final_client_total_cents: number;
+  created_at: string;
+  restaurant: OrderRestaurant | OrderRestaurant[] | null;
+};
+
+type LedgerRow = {
+  client_collected_cents: number;
+  created_at: string;
+};
 
 type CityArea = {
   id: string;
   city: string;
-  department_code?: string | null;
-  status: "recruiting" | "preparing" | "pilot" | "open" | "paused" | "closed";
-  delivery_radius_km?: number | null;
+  status: string;
   counts: {
-    partnerApplications: number;
-    approvedPartners: number;
-    partnerApplicationsToReview?: number;
-    partnerDocumentsToReview?: number;
-    activeRestaurants: number;
-    courierApplications: number;
-    approvedCouriers: number;
-    courierApplicationsToReview?: number;
-    courierDocumentsToReview?: number;
+    approvedPartners?: number;
+    approvedCouriers?: number;
+    activeRestaurants?: number;
     documentsToReview?: number;
+    clients?: number;
+    partners?: number;
+    couriers?: number;
+    serviceAreaRequests?: number;
   };
 };
 
-const areaStatusLabels: Record<CityArea["status"], string> = {
-  recruiting: "Recrutement",
-  preparing: "Préparation",
-  pilot: "Pilote",
-  open: "Ouverte",
-  paused: "En pause",
-  closed: "Fermée",
+type AreaRequest = {
+  id: string;
+  city: string;
+  postal_code: string | null;
+  status: string;
 };
 
-const areaReadiness = (area: CityArea) => {
-  let score = 0;
-  if (area.counts.approvedPartners > 0) score += 32;
-  if (area.counts.activeRestaurants > 0) score += 18;
-  if (area.counts.approvedCouriers >= 2) score += 32;
-  else if (area.counts.approvedCouriers === 1) score += 16;
-  if ((area.counts.documentsToReview || 0) === 0) score += 10;
-  if (["pilot", "open"].includes(area.status)) score += 8;
-  return Math.min(100, score);
+type DashboardData = {
+  profileRows: ProfileRow[];
+  restaurantRows: RestaurantRow[];
+  orderRows: OrderRow[];
+  ledgerRows: LedgerRow[];
+  areas: CityArea[];
+  areaRequests: AreaRequest[];
+  totalOrders: number;
+  totalCollected: number;
+  tickets: number;
 };
+
+const emptyData: DashboardData = {
+  profileRows: [],
+  restaurantRows: [],
+  orderRows: [],
+  ledgerRows: [],
+  areas: [],
+  areaRequests: [],
+  totalOrders: 0,
+  totalCollected: 0,
+  tickets: 0,
+};
+
+function restaurantOf(order: OrderRow) {
+  return Array.isArray(order.restaurant) ? order.restaurant[0] || null : order.restaurant;
+}
+
+function cityKey(value: string | null | undefined) {
+  return value?.trim() || "Ville non renseignée";
+}
+
+function shortOrder(id: string) {
+  return `#${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+}
+
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    pending: "À confirmer",
+    preparing: "En préparation",
+    ready: "Prête",
+    pickup: "Retrait",
+    picked_up: "Récupérée",
+    delivering: "En livraison",
+    delivered: "Livrée",
+    cancelled: "Annulée",
+  };
+  return labels[status] || status;
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ users: 0, orders: 0, collected: 0, foodiz: 0, tickets: 0, partners: 0, subscriptions: 0, payable: 0, incidents: 0 });
-  const [ledger, setLedger] = useState<any[]>([]);
-  const [areas, setAreas] = useState<CityArea[]>([]);
-  const [prelaunch, setPrelaunch] = useState<{
-    counts: { total: number; clients: number; drivers: number; partners: number };
-    cities: { city: string; count: number }[];
-    statuses: Record<string, number>;
-  } | null>(null);
+  const [data, setData] = useState<DashboardData>(emptyData);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  useEffect(() => { void (async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const [users, orders, tickets, partners, subscriptions, balances, payables, ledgerRows, prelaunchResponse, serviceAreasResponse] = await Promise.all([
-      supabase.from("profiles").select("*", { count: "exact", head: true }).neq("role", "admin"),
-      supabase.from("orders").select("*", { count: "exact", head: true }),
-      supabase.from("support_tickets").select("*", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
-      supabase.from("restaurants").select("*", { count: "exact", head: true }).eq("status", "active"),
-      supabase.from("partner_subscriptions").select("status"),
-      supabase.from("admin_financial_account_balances").select("*").single(),
-      supabase.from("admin_weekly_payables").select("amount_cents"),
-      supabase.from("order_financial_ledger").select("client_collected_cents,foodiz_revenue_cents,partner_cents,courier_earnings_cents,courier_prime_cents,courier_penalty_cents,delivery_fee_cents,loyalty_fund_cents,created_at").order("created_at", { ascending: false }).limit(200),
-      fetch("/api/admin/prelaunch", {
-        headers: { Authorization: `Bearer ${session?.access_token || ""}` },
-      }),
-      fetch("/api/admin/service-areas", {
-        headers: { Authorization: `Bearer ${session?.access_token || ""}` },
-      }),
-    ]);
-    const subscriptionRows = subscriptions.data || [];
-    setStats({
-      users: users.count || 0,
-      orders: orders.count || 0,
-      collected: Number(balances.data?.client_collected_cents || 0),
-      foodiz: Number(balances.data?.foodiz_revenue_cents || 0),
-      tickets: tickets.count || 0,
-      partners: partners.count || 0,
-      subscriptions: subscriptionRows.filter((row) => ["active", "trialing"].includes(row.status)).length,
-      payable: (payables.data || []).reduce((sum, row) => sum + Number(row.amount_cents || 0), 0),
-      incidents: subscriptionRows.filter((row) => ["past_due", "unpaid", "incomplete"].includes(row.status)).length,
-    });
-    setLedger(ledgerRows.data || []);
-    if (prelaunchResponse.ok) {
-      const payload = await prelaunchResponse.json();
-      setPrelaunch({
-        counts: payload.counts,
-        cities: payload.cities || [],
-        statuses: payload.statuses || {},
-      });
-    }
-    if (serviceAreasResponse.ok) {
-      const payload = await serviceAreasResponse.json();
-      setAreas(payload.areas || []);
-    }
-    setLoading(false);
-  })(); }, []);
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const [
+          profiles,
+          restaurants,
+          orders,
+          orderCount,
+          ledger,
+          balances,
+          tickets,
+          areasResponse,
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id,role,city,status,courier_online")
+            .neq("role", "admin"),
+          supabase
+            .from("restaurants")
+            .select("id,name,city,cuisine_type,status,is_active"),
+          supabase
+            .from("orders")
+            .select(
+              "id,status,final_client_total_cents,created_at,restaurant:restaurants(id,name,city,cuisine_type)",
+            )
+            .order("created_at", { ascending: false })
+            .limit(1000),
+          supabase.from("orders").select("id", { count: "exact", head: true }),
+          supabase
+            .from("order_financial_ledger")
+            .select("client_collected_cents,created_at")
+            .order("created_at", { ascending: false })
+            .limit(1000),
+          supabase
+            .from("admin_financial_account_balances")
+            .select("client_collected_cents")
+            .maybeSingle(),
+          supabase
+            .from("support_tickets")
+            .select("id", { count: "exact", head: true })
+            .in("status", ["open", "in_progress"]),
+          fetch("/api/admin/service-areas", {
+            headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+          }),
+        ]);
 
-  const chart = useMemo(() => {
+        if (profiles.error) throw profiles.error;
+        if (restaurants.error) throw restaurants.error;
+        if (orders.error) throw orders.error;
+        if (ledger.error) throw ledger.error;
+
+        let areas: CityArea[] = [];
+        let areaRequests: AreaRequest[] = [];
+        if (areasResponse.ok) {
+          const payload = await areasResponse.json();
+          areas = payload.areas || [];
+          areaRequests = payload.requests || [];
+        }
+
+        if (!active) return;
+        setData({
+          profileRows: (profiles.data || []) as ProfileRow[],
+          restaurantRows: (restaurants.data || []) as RestaurantRow[],
+          orderRows: (orders.data || []) as unknown as OrderRow[],
+          ledgerRows: (ledger.data || []) as LedgerRow[],
+          areas,
+          areaRequests,
+          totalOrders: orderCount.count || 0,
+          totalCollected: Number(balances.data?.client_collected_cents || 0),
+          tickets: tickets.count || 0,
+        });
+      } catch (caught) {
+        if (!active) return;
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Les indicateurs ne peuvent pas être chargés.",
+        );
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const metrics = useMemo(() => {
+    const activePartners = data.restaurantRows.filter(
+      (restaurant) => restaurant.is_active && restaurant.status === "active",
+    ).length;
+    const clients = data.profileRows.filter(
+      (profile) => profile.role === "client" && profile.status !== "suspended",
+    ).length;
+    const couriersOnline = data.profileRows.filter(
+      (profile) => profile.role === "courier" && profile.courier_online,
+    ).length;
+    return { activePartners, clients, couriersOnline };
+  }, [data.profileRows, data.restaurantRows]);
+
+  const revenueChart = useMemo(() => {
     const days = Array.from({ length: 7 }, (_, offset) => {
-      const day = new Date();
-      day.setDate(day.getDate() - (6 - offset));
-      day.setHours(0, 0, 0, 0);
-      return { key: day.toISOString().slice(0, 10), label: day.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", ""), value: 0 };
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - offset));
+      date.setHours(0, 0, 0, 0);
+      return {
+        key: date.toISOString().slice(0, 10),
+        label: date
+          .toLocaleDateString("fr-FR", { weekday: "short" })
+          .replace(".", ""),
+        value: 0,
+      };
     });
-    for (const row of ledger) {
-      const key = new Date(row.created_at).toISOString().slice(0, 10);
-      const target = days.find((day) => day.key === key);
-      if (target) target.value += Number(row.client_collected_cents || 0);
-    }
-    const max = Math.max(1, ...days.map((day) => day.value));
-    return { days, max };
-  }, [ledger]);
+    data.ledgerRows.forEach((row) => {
+      const day = days.find(
+        (candidate) =>
+          candidate.key === new Date(row.created_at).toISOString().slice(0, 10),
+      );
+      if (day) day.value += Number(row.client_collected_cents || 0);
+    });
+    return {
+      days,
+      max: Math.max(1, ...days.map((day) => day.value)),
+    };
+  }, [data.ledgerRows]);
 
-  const allocation = useMemo(() => {
-    const totals = ledger.reduce((acc, row) => ({
-      partner: acc.partner + Number(row.partner_cents || 0),
-      courier: acc.courier + Number(row.delivery_fee_cents || 0) + Number(row.courier_earnings_cents || 0) + Number(row.courier_prime_cents || 0) - Number(row.courier_penalty_cents || 0),
-      foodiz: acc.foodiz + Number(row.foodiz_revenue_cents || 0),
-      loyalty: acc.loyalty + Number(row.loyalty_fund_cents || 0),
-    }), { partner: 0, courier: 0, foodiz: 0, loyalty: 0 });
-    const max = Math.max(1, ...Object.values(totals).map(Number));
-    return { totals, max };
-  }, [ledger]);
+  const cityStats = useMemo(() => {
+    const stats = new Map<
+      string,
+      {
+        city: string;
+        revenue: number;
+        orders: number;
+        partners: number;
+        couriers: number;
+        clients: number;
+        requests: number;
+      }
+    >();
+    const ensure = (city: string) => {
+      const current = stats.get(city);
+      if (current) return current;
+      const created = {
+        city,
+        revenue: 0,
+        orders: 0,
+        partners: 0,
+        couriers: 0,
+        clients: 0,
+        requests: 0,
+      };
+      stats.set(city, created);
+      return created;
+    };
+
+    data.orderRows.forEach((order) => {
+      const row = ensure(cityKey(restaurantOf(order)?.city));
+      row.orders += 1;
+      if (order.status !== "cancelled") {
+        row.revenue += Number(order.final_client_total_cents || 0);
+      }
+    });
+    data.profileRows.forEach((profile) => {
+      const row = ensure(cityKey(profile.city));
+      if (profile.role === "client") row.clients += 1;
+      if (profile.role === "partner") row.partners += 1;
+      if (profile.role === "courier") row.couriers += 1;
+    });
+    data.areaRequests.forEach((request) => {
+      ensure(cityKey(request.city)).requests += 1;
+    });
+    data.areas.forEach((area) => {
+      const row = ensure(cityKey(area.city));
+      row.partners = Math.max(
+        row.partners,
+        Number(area.counts.partners || area.counts.activeRestaurants || area.counts.approvedPartners || 0),
+      );
+      row.couriers = Math.max(
+        row.couriers,
+        Number(area.counts.couriers || area.counts.approvedCouriers || 0),
+      );
+      row.clients = Math.max(row.clients, Number(area.counts.clients || 0));
+      row.requests = Math.max(row.requests, Number(area.counts.serviceAreaRequests || 0));
+    });
+    return [...stats.values()]
+      .filter((row) => row.city !== "Ville non renseignée" || row.orders > 0)
+      .sort((a, b) => b.orders - a.orders || b.clients - a.clients || b.requests - a.requests);
+  }, [data.areaRequests, data.areas, data.orderRows, data.profileRows]);
+
+  const categoryStats = useMemo(() => {
+    const categories = new Map<string, number>();
+    data.restaurantRows
+      .filter((restaurant) => restaurant.is_active)
+      .forEach((restaurant) => {
+        const label = restaurant.cuisine_type?.trim() || "Autres";
+        categories.set(label, (categories.get(label) || 0) + 1);
+      });
+    return [...categories.entries()]
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [data.restaurantRows]);
+
+  const orderStatus = useMemo(() => {
+    const status = {
+      delivered: 0,
+      active: 0,
+      cancelled: 0,
+    };
+    data.orderRows.forEach((order) => {
+      if (order.status === "delivered") status.delivered += 1;
+      else if (order.status === "cancelled") status.cancelled += 1;
+      else status.active += 1;
+    });
+    return status;
+  }, [data.orderRows]);
+
+  const totalRecentOrders = Math.max(1, data.orderRows.length);
+  const topCity = Math.max(1, ...cityStats.map((city) => city.orders));
+  const topCategory = Math.max(1, ...categoryStats.map((category) => category.value));
+  const deliveredDegrees = Math.round(
+    (orderStatus.delivered / totalRecentOrders) * 360,
+  );
+  const activeDegrees = Math.round(
+    (orderStatus.active / totalRecentOrders) * 360,
+  );
 
   const cards = [
-    ["Utilisateurs", stats.users, Users, "text-blue-400", "/admin/users"],
-    ["Commandes", stats.orders, ShoppingBag, "text-foodiz-gold", "/admin/orders"],
-    ["Encaissé clients", euros(stats.collected), Euro, "text-foodiz-green", "/admin/economics"],
-    ["À reverser", euros(stats.payable), FileText, "text-amber-300", "/admin/payouts"],
-    ["Partenaires actifs", stats.partners, Store, "text-foodiz-cream", "/admin/partner-applications"],
-    ["Weello+ actifs", stats.subscriptions, CreditCard, "text-foodiz-gold", "/admin/subscriptions"],
-    ["Tickets à traiter", stats.tickets, LifeBuoy, "text-foodiz-red", "/admin/support"],
-    ["Incidents abonnements", stats.incidents, AlertTriangle, stats.incidents ? "text-foodiz-red" : "text-foodiz-green", "/admin/subscriptions"],
-  ] as const;
-
-  const prelaunchRoles = [
-    { label: "Clients", value: prelaunch?.counts.clients || 0, icon: Users, color: "bg-blue-400" },
-    { label: "Livreurs", value: prelaunch?.counts.drivers || 0, icon: Bike, color: "bg-foodiz-green" },
-    { label: "Partenaires", value: prelaunch?.counts.partners || 0, icon: Store, color: "bg-foodiz-gold" },
-  ];
-  const prelaunchMaxRole = Math.max(1, ...prelaunchRoles.map((item) => item.value));
-  const prelaunchMaxCity = Math.max(1, ...(prelaunch?.cities || []).map((item) => item.count));
-  const priorityAreas = useMemo(() => (
-    [...areas].sort((a, b) => {
-      const aMont = a.city.toLowerCase().includes("mont-de-marsan") || a.city.toLowerCase().includes("mont de marsan");
-      const bMont = b.city.toLowerCase().includes("mont-de-marsan") || b.city.toLowerCase().includes("mont de marsan");
-      if (aMont !== bMont) return aMont ? -1 : 1;
-      const aDocs = a.counts.documentsToReview || 0;
-      const bDocs = b.counts.documentsToReview || 0;
-      if (aDocs !== bDocs) return bDocs - aDocs;
-      return areaReadiness(b) - areaReadiness(a);
-    }).slice(0, 6)
-  ), [areas]);
-  const areaTotals = useMemo(() => areas.reduce((acc, area) => ({
-    cities: acc.cities + 1,
-    openOrPilot: acc.openOrPilot + (["open", "pilot"].includes(area.status) ? 1 : 0),
-    approvedPartners: acc.approvedPartners + Number(area.counts.approvedPartners || 0),
-    approvedCouriers: acc.approvedCouriers + Number(area.counts.approvedCouriers || 0),
-    documentsToReview: acc.documentsToReview + Number(area.counts.documentsToReview || 0),
-  }), { cities: 0, openOrPilot: 0, approvedPartners: 0, approvedCouriers: 0, documentsToReview: 0 }), [areas]);
-  const areaSummaryCards = [
-    { label: "Villes suivies", value: areaTotals.cities, icon: MapPin },
-    { label: "Pilotes / ouvertes", value: areaTotals.openOrPilot, icon: Gauge },
-    { label: "Partenaires validés", value: areaTotals.approvedPartners, icon: Store },
-    { label: "Livreurs validés", value: areaTotals.approvedCouriers, icon: Bike },
-    { label: "Documents à traiter", value: areaTotals.documentsToReview, icon: ClipboardCheck },
-  ];
-  const launchChecklist = [
     {
-      label: "1. Parcours commande complet",
-      detail: "Client → panier → paiement test → restaurant → livreur → suivi live → code client.",
-      status: stats.orders > 0 ? "À rejouer sur build mobile" : "À faire",
+      label: "Chiffre d’affaires encaissé",
+      value: euros(data.totalCollected),
+      icon: CircleDollarSign,
+      path: "/admin/economics",
+    },
+    {
+      label: "Commandes",
+      value: data.totalOrders.toLocaleString("fr-FR"),
       icon: ShoppingBag,
       path: "/admin/orders",
-      ready: stats.orders > 0,
     },
     {
-      label: "2. Partenaires Mont-de-Marsan",
-      detail: "Dossiers, documents, carte, statut opérationnel et ville pilote.",
-      status: areaTotals.approvedPartners > 0 ? `${areaTotals.approvedPartners} validé(s)` : "À valider",
+      label: "Partenaires actifs",
+      value: metrics.activePartners.toLocaleString("fr-FR"),
       icon: Store,
       path: "/admin/partner-applications",
-      ready: areaTotals.approvedPartners > 0,
     },
     {
-      label: "3. Livreurs + GPS",
-      detail: "Documents validés, position récente, ETA serveur, chrono et pénalités visibles.",
-      status: areaTotals.approvedCouriers > 0 ? `${areaTotals.approvedCouriers} validé(s)` : "À valider",
+      label: "Livreurs en ligne",
+      value: metrics.couriersOnline.toLocaleString("fr-FR"),
       icon: Bike,
       path: "/admin/courier-applications",
-      ready: areaTotals.approvedCouriers > 0,
     },
     {
-      label: "4. Cockpit admin sécurisé",
-      detail: "Support, documents, villes, paiements manuels et incidents au même endroit.",
-      status: "Actif",
-      icon: Gauge,
-      path: "/admin/support",
-      ready: true,
-    },
-    {
-      label: "5. Help center pilotable",
-      detail: "Tickets guidés, diagnostic, SLA et réponse admin historisée.",
-      status: stats.tickets ? `${stats.tickets} ticket(s)` : "Prêt",
-      icon: LifeBuoy,
-      path: "/admin/support",
-      ready: true,
-    },
-    {
-      label: "6. Builds iOS / Android",
-      detail: "À confirmer avec EAS : build dev iPhone puis preview Android/iOS avant stores.",
-      status: "À tester sur appareil",
-      icon: CreditCard,
-      path: "/admin/service-areas",
-      ready: false,
+      label: "Clients actifs",
+      value: metrics.clients.toLocaleString("fr-FR"),
+      icon: Users,
+      path: "/admin/users",
     },
   ];
 
-  return <AdminShell title="Dashboard administrateur" subtitle="Pilotage réel de l’activité, des partenaires et des flux financiers">
-    {loading ? <div className="foodiz-card p-8 text-foodiz-gray animate-pulse">Chargement des indicateurs...</div> : <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label, value, Icon, color, path]) => <button key={label} onClick={() => navigate(path)} className="foodiz-card group border-foodiz-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.12),transparent_42%)] p-5 text-left shadow-[0_0_45px_rgba(216,168,79,0.04)] transition-all hover:-translate-y-0.5 hover:border-foodiz-gold/35 hover:shadow-[0_0_55px_rgba(216,168,79,0.11)]"><Icon size={20} className={color}/><p className="mt-4 text-[10px] uppercase tracking-widest text-foodiz-gray">{label}</p><p className="mt-2 text-2xl font-semibold text-foodiz-cream">{value}</p></button>)}</section>}
-
-    <section className="foodiz-card overflow-hidden border-foodiz-gold/25 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.14),transparent_34%),#080808]">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
+  return (
+    <AdminShell
+      title="Tableau de bord"
+      subtitle="Activité Weello, mise à jour à partir des données opérationnelles"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Recette pré-lancement</p>
-          <h2 className="foodiz-title mt-1 text-2xl">Les 6 points avant App Store & Google Play</h2>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-foodiz-gray">
-            Cette checklist garde Weello disciplinée : beau, utile, sécurisé, testé sur une vraie commande et prêt à être piloté ville par ville.
+          <p className="text-[10px] font-bold uppercase tracking-[.24em] text-weello-gold">
+            Centre de pilotage
           </p>
+          <h2 className="weello-title mt-1 text-2xl text-weello-cream lg:text-3xl">
+            Votre réseau en un regard
+          </h2>
         </div>
-        <button onClick={() => navigate("/admin/service-areas")} className="rounded-2xl border border-foodiz-gold/25 px-4 py-3 text-xs font-bold text-foodiz-gold transition hover:bg-foodiz-gold hover:text-foodiz-black">
-          Voir la ville pilote
-        </button>
-      </div>
-      <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3 lg:p-6">
-        {launchChecklist.map(({ label, detail, status, icon: Icon, path, ready }) => (
-          <button key={label} onClick={() => navigate(path)} className="group rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-4 text-left transition hover:-translate-y-0.5 hover:border-foodiz-gold/30">
-            <div className="flex items-start gap-3">
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${ready ? "border-foodiz-green/20 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"}`}>
-                <Icon size={19} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foodiz-cream">{label}</p>
-                <p className="mt-1 text-[11px] leading-relaxed text-foodiz-gray">{detail}</p>
-                <span className={`mt-3 inline-flex rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-widest ${ready ? "border-foodiz-green/20 text-foodiz-green" : "border-foodiz-gold/20 text-foodiz-gold"}`}>
-                  {status}
-                </span>
-              </div>
-            </div>
+        <div className="flex gap-2">
+          <span className="inline-flex items-center gap-2 rounded-xl border border-weello-gold/20 bg-white/[.02] px-3 py-2 text-xs text-weello-gray">
+            <CalendarDays size={15} className="text-weello-gold" />
+            Aujourd’hui
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/service-areas")}
+            className="inline-flex items-center gap-2 rounded-xl border border-weello-gold/20 bg-white/[.02] px-3 py-2 text-xs text-weello-gray transition hover:text-weello-gold"
+          >
+            <MapPin size={15} className="text-weello-gold" />
+            Toutes les villes
           </button>
-        ))}
-      </div>
-    </section>
-
-    <section className="foodiz-card overflow-hidden border-foodiz-gold/30 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.16),transparent_38%),#0a0a0a]">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-foodiz-gold/30 bg-foodiz-gold/10 text-foodiz-gold">
-            <Hourglass size={23} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.2em] text-foodiz-gold">Avant lancement</p>
-            <h2 className="foodiz-title mt-1 text-2xl">Pré-inscriptions Weello</h2>
-            <p className="mt-1 text-xs text-foodiz-gray">{prelaunch?.counts.total || 0} personne(s) attendent l’ouverture.</p>
-          </div>
         </div>
-        <button onClick={() => navigate("/admin/prelaunch")} className="foodiz-btn flex items-center gap-2 !px-4 !py-2.5">
-          Gérer les inscriptions <ArrowRight size={16} />
-        </button>
       </div>
 
-      <div className="grid gap-6 p-5 lg:grid-cols-[.8fr_1.2fr_.7fr] lg:p-6">
-        <article>
-          <div className="mb-4 flex items-center gap-2">
-            <Users size={17} className="text-foodiz-gold" />
-            <h3 className="text-sm font-semibold text-foodiz-cream">Par type d’utilisateur</h3>
+      {error ? (
+        <div className="rounded-2xl border border-weello-red/30 bg-weello-red/5 p-4 text-sm text-weello-red">
+          Impossible de charger le cockpit : {error}
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="weello-card p-8 text-weello-gray animate-pulse">
+          Chargement des indicateurs…
+        </div>
+      ) : (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {cards.map(({ label, value, icon: Icon, path }) => (
+            <button
+              type="button"
+              key={label}
+              onClick={() => navigate(path)}
+              className="weello-card group min-h-40 border-weello-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.12),transparent_45%)] p-5 text-left transition hover:-translate-y-0.5 hover:border-weello-gold/35"
+            >
+              <Icon size={20} className="text-weello-gold" />
+              <p className="mt-5 text-[9px] uppercase tracking-[.16em] text-weello-gray">
+                {label}
+              </p>
+              <p className="mt-2 font-serif text-2xl text-weello-cream">{value}</p>
+              <span className="mt-4 inline-flex items-center gap-1 text-[10px] text-weello-gold opacity-70 transition group-hover:opacity-100">
+                Ouvrir <ChevronRight size={12} />
+              </span>
+            </button>
+          ))}
+        </section>
+      )}
+
+      <section className="grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
+        <article className="weello-card overflow-hidden border-weello-gold/20">
+          <div className="flex items-center justify-between border-b border-weello-gold/10 p-5">
+            <div>
+              <h3 className="weello-title text-xl">Activité encaissée</h3>
+              <p className="mt-1 text-xs text-weello-gray">Sept derniers jours</p>
+            </div>
+            <BarChart3 size={20} className="text-weello-gold" />
           </div>
-          <div className="space-y-4">
-            {prelaunchRoles.map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-foodiz-gray"><item.icon size={14} />{item.label}</span>
-                  <span className="font-semibold text-foodiz-cream">{item.value}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.value ? Math.max(7, item.value / prelaunchMaxRole * 100) : 0}%` }} />
-                </div>
+          <div className="flex h-64 items-end gap-3 p-5">
+            {revenueChart.days.map((day) => (
+              <div key={day.key} className="flex h-full flex-1 flex-col justify-end gap-2">
+                <span className="truncate text-center text-[8px] text-weello-gray">
+                  {day.value ? euros(day.value) : "—"}
+                </span>
+                <div
+                  className="min-h-1 rounded-t-xl border border-weello-gold/25 bg-gradient-to-t from-weello-gold/75 to-weello-gold/10 shadow-[0_0_22px_rgba(216,168,79,.12)]"
+                  style={{
+                    height: `${Math.max(2, (day.value / revenueChart.max) * 100)}%`,
+                  }}
+                />
+                <span className="text-center text-[10px] capitalize text-weello-gray">
+                  {day.label}
+                </span>
               </div>
             ))}
           </div>
         </article>
 
-        <article className="lg:border-x lg:border-foodiz-gold/10 lg:px-6">
-          <div className="mb-4 flex items-center gap-2">
-            <MapPin size={17} className="text-foodiz-gold" />
-            <h3 className="text-sm font-semibold text-foodiz-cream">Répartition par ville</h3>
+        <article className="weello-card border-weello-gold/20 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="weello-title text-xl">Répartition des commandes</h3>
+              <p className="mt-1 text-xs text-weello-gray">
+                {data.orderRows.length} commande(s) récente(s)
+              </p>
+            </div>
+            <Activity size={20} className="text-weello-gold" />
           </div>
-          {(prelaunch?.cities || []).length ? (
-            <div className="space-y-3">
-              {prelaunch!.cities.slice(0, 6).map((item) => (
-                <div key={item.city} className="grid grid-cols-[minmax(90px,.8fr)_2fr_32px] items-center gap-3">
-                  <span className="truncate text-xs text-foodiz-gray">{item.city}</span>
-                  <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                    <div className="h-full rounded-full bg-gradient-to-r from-foodiz-gold/50 to-foodiz-gold" style={{ width: `${Math.max(7, item.count / prelaunchMaxCity * 100)}%` }} />
-                  </div>
-                  <span className="text-right text-xs font-semibold text-foodiz-cream">{item.count}</span>
+          <div className="mt-7 flex flex-col items-center gap-6 sm:flex-row xl:flex-col 2xl:flex-row">
+            <div
+              className="relative flex h-40 w-40 shrink-0 items-center justify-center rounded-full"
+              style={{
+                background: `conic-gradient(#d8a84f 0deg ${deliveredDegrees}deg, #4f9f62 ${deliveredDegrees}deg ${deliveredDegrees + activeDegrees}deg, #8d3030 ${deliveredDegrees + activeDegrees}deg 360deg)`,
+              }}
+            >
+              <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-[#0b0b0b]">
+                <strong className="font-serif text-2xl text-weello-cream">
+                  {data.orderRows.length}
+                </strong>
+                <span className="text-[9px] uppercase text-weello-gray">commandes</span>
+              </div>
+            </div>
+            <div className="w-full space-y-3">
+              {[
+                ["Livrées", orderStatus.delivered, "bg-weello-gold"],
+                ["En cours", orderStatus.active, "bg-weello-green"],
+                ["Annulées", orderStatus.cancelled, "bg-weello-red"],
+              ].map(([label, value, color]) => (
+                <div key={String(label)} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 text-weello-gray">
+                    <i className={`h-2 w-2 rounded-full ${color}`} />
+                    {label}
+                  </span>
+                  <strong className="text-weello-cream">{value}</strong>
                 </div>
               ))}
             </div>
-          ) : <p className="text-sm text-foodiz-gray">Aucune ville enregistrée pour le moment.</p>}
-        </article>
-
-        <article>
-          <div className="mb-4 flex items-center gap-2">
-            <BarChart3 size={17} className="text-foodiz-gold" />
-            <h3 className="text-sm font-semibold text-foodiz-cream">État des accès</h3>
-          </div>
-          <div className="space-y-3">
-            {[
-              ["En attente", prelaunch?.statuses.prelaunch_pending || 0, "text-amber-300"],
-              ["Accès envoyés", prelaunch?.statuses.launch_email_sent || 0, "text-blue-300"],
-              ["Activés", prelaunch?.statuses.activated || 0, "text-foodiz-green"],
-              ["Refusés", prelaunch?.statuses.rejected || 0, "text-foodiz-red"],
-            ].map(([label, value, color]) => (
-              <div key={String(label)} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[.025] px-3 py-2.5">
-                <span className="text-xs text-foodiz-gray">{label}</span>
-                <span className={`text-sm font-semibold ${color}`}>{value}</span>
-              </div>
-            ))}
           </div>
         </article>
-      </div>
-    </section>
+      </section>
 
-    <section className="foodiz-card overflow-hidden border-foodiz-gold/30 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.16),transparent_36%),#090909]">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-foodiz-gold/15 p-5 lg:p-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-foodiz-gold/30 bg-foodiz-gold/10 text-foodiz-gold">
-            <Gauge size={23} />
+      <section className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
+        <article className="weello-card border-weello-gold/20 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="weello-title text-xl">Vue par ville</h3>
+              <p className="mt-1 text-xs text-weello-gray">
+                Commandes récentes et capacité opérationnelle
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/admin/service-areas")}
+              className="text-xs text-weello-gold"
+            >
+              Piloter les villes ›
+            </button>
           </div>
+          {cityStats.length ? (
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
+              {cityStats.slice(0, 8).map((city, index) => (
+                <button
+                  type="button"
+                  key={city.city}
+                  onClick={() => navigate("/admin/service-areas")}
+                  className="group rounded-2xl border border-white/8 bg-white/[.02] p-4 text-left transition hover:border-weello-gold/25"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-serif text-lg text-weello-cream">{city.city}</p>
+                      <p className="mt-1 text-[10px] text-weello-gray">
+                        {city.clients} client(s) · {city.partners} partenaire(s) · {city.couriers} livreur(s)
+                      </p>
+                    </div>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-weello-gold/25 bg-weello-gold/10 text-xs text-weello-gold">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
+                      <div
+                        className="h-full rounded-full bg-weello-gold"
+                        style={{ width: `${Math.max(4, (city.orders / topCity) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-weello-cream">{city.orders} cmd.</span>
+                  </div>
+                  {city.requests > 0 ? (
+                    <p className="mt-3 text-[10px] font-semibold text-weello-gold">
+                      {city.requests} demande(s) d’ouverture
+                    </p>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-dashed border-weello-gold/20 p-8 text-center text-sm text-weello-gray">
+              Les villes apparaîtront ici dès les premières commandes réelles.
+            </div>
+          )}
+        </article>
+
+        <article className="weello-card border-weello-gold/20 p-5">
+          <h3 className="weello-title text-xl">Catégories du réseau</h3>
+          <p className="mt-1 text-xs text-weello-gray">Établissements actuellement actifs</p>
+          <div className="mt-6 space-y-5">
+            {categoryStats.length ? (
+              categoryStats.map((category) => (
+                <div key={category.label}>
+                  <div className="mb-2 flex items-center justify-between text-xs">
+                    <span className="text-weello-cream">{category.label}</span>
+                    <span className="text-weello-gray">{category.value}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-weello-gold/50 to-weello-gold"
+                      style={{
+                        width: `${Math.max(5, (category.value / topCategory) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-weello-gray">
+                Aucune catégorie active pour le moment.
+              </p>
+            )}
+          </div>
+        </article>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-3">
+        <article className="weello-card border-weello-gold/20 p-5 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <h3 className="weello-title text-xl">Activité en temps réel</h3>
+            <button
+              type="button"
+              onClick={() => navigate("/admin/orders")}
+              className="text-xs text-weello-gold"
+            >
+              Voir tout ›
+            </button>
+          </div>
+          <div className="mt-5 divide-y divide-white/5">
+            {data.orderRows.slice(0, 6).map((order) => {
+              const restaurant = restaurantOf(order);
+              return (
+                <button
+                  type="button"
+                  key={order.id}
+                  onClick={() => navigate("/admin/orders")}
+                  className="flex w-full items-center gap-3 py-3 text-left"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-weello-gold/10 text-weello-gold">
+                    <ShoppingBag size={15} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block truncate text-xs text-weello-cream">
+                      {shortOrder(order.id)} · {restaurant?.name || "Établissement"}
+                    </strong>
+                    <span className="mt-1 block text-[10px] text-weello-gray">
+                      {[restaurant?.city, new Date(order.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  <span className={`rounded-full border px-2 py-1 text-[9px] ${
+                    order.status === "delivered"
+                      ? "border-weello-green/20 text-weello-green"
+                      : order.status === "cancelled"
+                        ? "border-weello-red/20 text-weello-red"
+                        : "border-weello-gold/20 text-weello-gold"
+                  }`}>
+                    {statusLabel(order.status)}
+                  </span>
+                </button>
+              );
+            })}
+            {!data.orderRows.length ? (
+              <p className="py-8 text-center text-sm text-weello-gray">
+                Aucune activité récente.
+              </p>
+            ) : null}
+          </div>
+        </article>
+
+        <article className="weello-card border-weello-gold/20 p-5">
+          <h3 className="weello-title text-xl">À traiter</h3>
+          <p className="mt-1 text-xs text-weello-gray">Priorités opérationnelles</p>
+          <div className="mt-5 space-y-3">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/support")}
+              className="flex w-full items-center gap-3 rounded-2xl border border-white/8 bg-white/[.02] p-4 text-left"
+            >
+              <Headphones className="text-weello-gold" size={19} />
+              <span className="flex-1">
+                <strong className="block text-sm text-weello-cream">Support</strong>
+                <span className="text-[10px] text-weello-gray">Tickets ouverts</span>
+              </span>
+              <strong className="text-xl text-weello-gold">{data.tickets}</strong>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/admin/partner-applications")}
+              className="flex w-full items-center gap-3 rounded-2xl border border-white/8 bg-white/[.02] p-4 text-left"
+            >
+              <Store className="text-weello-gold" size={19} />
+              <span className="flex-1">
+                <strong className="block text-sm text-weello-cream">Partenaires</strong>
+                <span className="text-[10px] text-weello-gray">Dossiers et documents</span>
+              </span>
+              <ChevronRight size={17} className="text-weello-gold" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/admin/courier-applications")}
+              className="flex w-full items-center gap-3 rounded-2xl border border-white/8 bg-white/[.02] p-4 text-left"
+            >
+              <Bike className="text-weello-gold" size={19} />
+              <span className="flex-1">
+                <strong className="block text-sm text-weello-cream">Livreurs</strong>
+                <span className="text-[10px] text-weello-gray">Validations et disponibilité</span>
+              </span>
+              <ChevronRight size={17} className="text-weello-gold" />
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section className="weello-card overflow-hidden border-weello-gold/20">
+        <div className="flex items-center justify-between border-b border-weello-gold/10 p-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.2em] text-foodiz-gold">Déploiement ville par ville</p>
-            <h2 className="foodiz-title mt-1 text-2xl">Cockpit des villes Weello</h2>
-            <p className="mt-1 text-xs text-foodiz-gray">Mont-de-Marsan d’abord, puis chaque ville dès qu’elle a ses partenaires et livreurs validés.</p>
+            <h3 className="weello-title text-xl">Performances par ville</h3>
+            <p className="mt-1 text-xs text-weello-gray">
+              Données issues des commandes chargées et de la capacité active
+            </p>
           </div>
+          <MapPin size={20} className="text-weello-gold" />
         </div>
-        <button onClick={() => navigate("/admin/service-areas")} className="foodiz-btn flex items-center gap-2 !px-4 !py-2.5">
-          Piloter les villes <ArrowRight size={16} />
-        </button>
-      </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[920px] text-left text-xs">
+            <thead className="text-[9px] uppercase tracking-wider text-weello-gray">
+              <tr>
+                {["Ville", "CA récent", "Commandes", "Clients", "Partenaires", "Livreurs", "Demandes", "Activité"].map((label) => (
+                  <th key={label} className="px-5 py-4 font-medium">{label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {cityStats.slice(0, 10).map((city) => (
+                <tr key={city.city} className="text-weello-cream">
+                  <td className="px-5 py-4 font-serif text-base">{city.city}</td>
+                  <td className="px-5 py-4">{euros(city.revenue)}</td>
+                  <td className="px-5 py-4">{city.orders}</td>
+                  <td className="px-5 py-4">{city.clients}</td>
+                  <td className="px-5 py-4">{city.partners}</td>
+                  <td className="px-5 py-4">{city.couriers}</td>
+                  <td className="px-5 py-4 text-weello-gold">{city.requests}</td>
+                  <td className="px-5 py-4">
+                    <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/5">
+                      <div
+                        className="h-full rounded-full bg-weello-green"
+                        style={{ width: `${Math.max(4, (city.orders / topCity) * 100)}%` }}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!cityStats.length ? (
+            <p className="p-8 text-center text-sm text-weello-gray">
+              Le tableau se remplira avec les premières villes actives.
+            </p>
+          ) : null}
+        </div>
+      </section>
 
-      <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-5 lg:p-6">
-        {areaSummaryCards.map(({ label, value, icon: Icon }) => (
-          <article key={label} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
-            <Icon size={17} className="text-foodiz-gold" />
-            <p className="mt-3 text-[9px] uppercase tracking-widest text-foodiz-gray">{label}</p>
-            <p className="mt-1 text-2xl font-serif italic text-foodiz-cream">{value}</p>
-          </article>
-        ))}
-      </div>
-
-      <div className="grid gap-4 px-5 pb-6 xl:grid-cols-3 lg:px-6">
-        {priorityAreas.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-sm text-foodiz-gray xl:col-span-3">Aucune ville classée pour le moment. Les villes apparaissent quand une pré-inscription professionnelle contient une ville exploitable.</div>
-        ) : priorityAreas.map((area) => {
-          const readiness = areaReadiness(area);
-          const documentsToReview = area.counts.documentsToReview || 0;
-          const statusIsLive = ["open", "pilot"].includes(area.status);
-          return (
-            <article key={area.id} className="rounded-[1.6rem] border border-foodiz-gold/15 bg-black/25 p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-foodiz-cream">{area.city}</h3>
-                  <p className="mt-1 text-[10px] uppercase tracking-widest text-foodiz-gray">Département {area.department_code || "—"}</p>
-                </div>
-                <span className={`rounded-full border px-3 py-1 text-[9px] uppercase ${statusIsLive ? "border-foodiz-green/20 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"}`}>
-                  {areaStatusLabels[area.status]}
-                </span>
-              </div>
-
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-2xl bg-white/[0.03] p-3">
-                  <p className="text-xl font-serif italic text-foodiz-cream">{area.counts.approvedPartners}</p>
-                  <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Partenaires</p>
-                </div>
-                <div className="rounded-2xl bg-white/[0.03] p-3">
-                  <p className="text-xl font-serif italic text-foodiz-cream">{area.counts.approvedCouriers}</p>
-                  <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Livreurs</p>
-                </div>
-                <div className={`rounded-2xl p-3 ${documentsToReview ? "bg-foodiz-red/10" : "bg-white/[0.03]"}`}>
-                  <p className={`text-xl font-serif italic ${documentsToReview ? "text-foodiz-red" : "text-foodiz-cream"}`}>{documentsToReview}</p>
-                  <p className="mt-1 text-[8px] uppercase text-foodiz-gray">Docs</p>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="text-foodiz-gray">Prêt au lancement</span>
-                  <span className="font-semibold text-foodiz-gold">{readiness}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                  <div className="h-full rounded-full bg-gradient-to-r from-foodiz-gold/50 to-foodiz-gold" style={{ width: `${readiness}%` }} />
-                </div>
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-2">
-                <button onClick={() => navigate("/admin/partner-applications")} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-foodiz-gray hover:border-foodiz-gold/40 hover:text-foodiz-cream">Partenaires</button>
-                <button onClick={() => navigate("/admin/courier-applications")} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-foodiz-gray hover:border-foodiz-gold/40 hover:text-foodiz-cream">Livreurs</button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </section>
-
-    <section className="grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
-      <article className="foodiz-card border-foodiz-gold/20 p-6">
-        <div className="mb-6 flex items-center justify-between"><div><h2 className="foodiz-title text-xl">Encaissements 7 jours</h2><p className="mt-1 text-xs text-foodiz-gray">Basé sur le journal financier réel.</p></div><BarChart3 className="text-foodiz-gold"/></div>
-        <div className="flex h-56 items-end gap-3">{chart.days.map((day) => <div key={day.key} className="flex flex-1 flex-col items-center gap-2"><span className="text-[9px] text-foodiz-gray">{euros(day.value).replace(",00", "")}</span><div className="w-full rounded-t-2xl border border-foodiz-gold/20 bg-gradient-to-t from-foodiz-gold/70 to-foodiz-gold/10 shadow-[0_0_28px_rgba(216,168,79,0.18)]" style={{ height: `${Math.max(4, (day.value / chart.max) * 100)}%` }}/><span className="text-[10px] capitalize text-foodiz-gray">{day.label}</span></div>)}</div>
-      </article>
-      <article className="foodiz-card border-foodiz-gold/20 p-6">
-        <h2 className="foodiz-title text-xl">Répartition récente</h2><p className="mt-1 text-xs text-foodiz-gray">Sur les 200 dernières écritures.</p>
-        <div className="mt-6 space-y-4">{[
-          ["Partenaires", allocation.totals.partner],
-          ["Livreurs", allocation.totals.courier],
-          ["Weello", allocation.totals.foodiz],
-          ["Fidélité", allocation.totals.loyalty],
-        ].map(([label, value]) => <div key={String(label)}><div className="mb-2 flex justify-between text-xs"><span className="text-foodiz-gray">{label}</span><span className="text-foodiz-cream">{euros(Number(value))}</span></div><div className="h-2 overflow-hidden rounded-full bg-white/5"><div className="h-full rounded-full bg-foodiz-gold shadow-[0_0_20px_rgba(216,168,79,0.45)]" style={{ width: `${Math.max(3, (Number(value) / allocation.max) * 100)}%` }}/></div></div>)}</div>
-      </article>
-    </section>
-
-    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">{[
-      ["Comptabilité", "Répartitions, réserves et journal", "/admin/economics"],
-      ["Règlements", "Bordereaux hebdomadaires", "/admin/payouts"],
-      ["Support", "Tickets et historique traité", "/admin/support"],
-      ["Campagnes", "Weello+ et performances", "/admin/marketing-campaigns"],
-      ["Diffusion", "Notification globale", "/admin/broadcast"],
-    ].map(([title, detail, path]) => <button key={path} onClick={() => navigate(path)} className="foodiz-card p-5 text-left transition-all hover:border-foodiz-gold/35 hover:bg-foodiz-gold/[0.03]"><p className="font-semibold text-foodiz-cream">{title}</p><p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{detail}</p></button>)}</section>
-  </AdminShell>;
+      <p className="flex items-center justify-center gap-2 pb-3 text-[10px] text-weello-gray">
+        <i className="h-2 w-2 rounded-full bg-weello-green" />
+        Données opérationnelles Weello — aucune valeur de démonstration
+      </p>
+    </AdminShell>
+  );
 }

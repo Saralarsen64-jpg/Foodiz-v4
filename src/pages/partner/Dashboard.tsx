@@ -330,16 +330,16 @@ export default function PartnerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-foodiz-black">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+    <div className="min-h-screen bg-weello-black">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-foodiz-gold md:hidden">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-weello-gold md:hidden">
             <Menu size={22} />
           </button>
           <Logo size="md" />
           <button onClick={() => navigate("/partner/orders/current")} className="relative">
-            <Bell size={20} className="text-foodiz-gold" />
-            <span className="absolute -top-1 -right-1 bg-foodiz-gold text-foodiz-black text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+            <Bell size={20} className="text-weello-gold" />
+            <span className="absolute -top-1 -right-1 bg-weello-gold text-weello-black text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
               {activeOrders.length}
             </span>
           </button>
@@ -349,7 +349,7 @@ export default function PartnerDashboard() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 flex">
           <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
-          <div className="relative w-72 bg-foodiz-card border-r border-foodiz-gold/10 p-6 overflow-y-auto">
+          <div className="relative w-72 bg-weello-card border-r border-weello-gold/10 p-6 overflow-y-auto">
             <Logo size="md" className="mb-8" />
             <nav className="space-y-2">
               {sidebarItems.map((item) => (
@@ -359,7 +359,7 @@ export default function PartnerDashboard() {
                     navigate(item.path);
                     setSidebarOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-foodiz-gray hover:text-foodiz-cream hover:bg-foodiz-gold/5 transition-all"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-weello-gray hover:text-weello-cream hover:bg-weello-gold/5 transition-all"
                 >
                   <GoldIcon icon={item.icon} size={18} />
                   {item.label}
@@ -373,25 +373,25 @@ export default function PartnerDashboard() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
         <div className="flex justify-between items-center mb-2 gap-4 flex-wrap">
           <div>
-            <h1 className="foodiz-title text-2xl mb-1">Bonjour, {ownerName}</h1>
-            <p className="text-foodiz-gray text-sm">
-              Tableau de bord de <span className="text-foodiz-gold italic">{restaurantName}</span>
+            <h1 className="weello-title text-2xl mb-1">Bonjour, {ownerName}</h1>
+            <p className="text-weello-gray text-sm">
+              Tableau de bord de <span className="text-weello-gold italic">{restaurantName}</span>
             </p>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-foodiz-gray hover:text-foodiz-red transition-colors text-sm bg-foodiz-card px-4 py-2 rounded-xl border border-foodiz-gold/10"
+            className="flex items-center gap-2 text-weello-gray hover:text-weello-red transition-colors text-sm bg-weello-card px-4 py-2 rounded-xl border border-weello-gold/10"
           >
             <LogOut size={16} /> Déconnexion
           </button>
         </div>
 
-        <div className="foodiz-card overflow-hidden p-0 border-foodiz-gold/20 bg-[linear-gradient(135deg,rgba(216,168,79,0.12),rgba(17,17,17,0.96)_28%,rgba(5,5,5,1)_100%)] shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
+        <div className="weello-card overflow-hidden p-0 border-weello-gold/20 bg-[linear-gradient(135deg,rgba(216,168,79,0.12),rgba(17,17,17,0.96)_28%,rgba(5,5,5,1)_100%)] shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
           <div className="grid lg:grid-cols-[1.25fr_0.75fr] gap-0">
             <div className="p-6">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-foodiz-gold font-bold mb-2">Espace Partenaire Weello</p>
-              <h2 className="foodiz-title text-3xl mb-2">Bonjour, {restaurantName}</h2>
-              <p className="text-foodiz-gray text-sm max-w-xl leading-relaxed">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-weello-gold font-bold mb-2">Espace Partenaire Weello</p>
+              <h2 className="weello-title text-3xl mb-2">Bonjour, {restaurantName}</h2>
+              <p className="text-weello-gray text-sm max-w-xl leading-relaxed">
                 Pilotez votre activité, votre carte, vos visuels et vos revenus depuis un cockpit unique pensé pour la performance et l’image premium de votre établissement.
               </p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
@@ -401,13 +401,13 @@ export default function PartnerDashboard() {
                   { label: "Note moyenne", value: rating, icon: Star, change: "Avis clients" },
                   { label: "Délai moyen complet", value: averageDeliveryMinutes === null ? "-" : `${averageDeliveryMinutes} min`, icon: Clock, change: "Création à livraison" },
                 ].map((stat) => (
-                  <div key={stat.label} className="rounded-[1.2rem] border border-foodiz-gold/10 bg-white/[0.03] p-4">
+                  <div key={stat.label} className="rounded-[1.2rem] border border-weello-gold/10 bg-white/[0.03] p-4">
                     <div className="flex items-center justify-between mb-2">
                       <GoldIcon icon={stat.icon} size={18} />
-                      <span className="text-[10px] text-foodiz-green font-medium">{stat.change}</span>
+                      <span className="text-[10px] text-weello-green font-medium">{stat.change}</span>
                     </div>
-                    <p className="text-2xl font-bold font-serif text-foodiz-cream">{stat.value}</p>
-                    <p className="text-[10px] text-foodiz-gray mt-1">{stat.label}</p>
+                    <p className="text-2xl font-bold font-serif text-weello-cream">{stat.value}</p>
+                    <p className="text-[10px] text-weello-gray mt-1">{stat.label}</p>
                   </div>
                 ))}
               </div>
@@ -417,13 +417,13 @@ export default function PartnerDashboard() {
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold font-bold">Fiche établissement</p>
-                  <p className="text-sm text-foodiz-cream mt-1">Établissement Weello</p>
-                  <p className="text-[11px] text-foodiz-gray mt-1">{location}</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-weello-gold font-bold">Fiche établissement</p>
+                  <p className="text-sm text-weello-cream mt-1">Établissement Weello</p>
+                  <p className="text-[11px] text-weello-gray mt-1">{location}</p>
                 </div>
                 <button
                   onClick={() => navigate("/partner/settings")}
-                  className="shrink-0 px-4 py-2 rounded-full bg-foodiz-gold text-foodiz-black text-xs font-bold"
+                  className="shrink-0 px-4 py-2 rounded-full bg-weello-gold text-weello-black text-xs font-bold"
                 >
                   Modifier
                 </button>
@@ -433,56 +433,56 @@ export default function PartnerDashboard() {
         </div>
 
         <section className="grid gap-4 xl:grid-cols-[1.05fr_.95fr]">
-          <article className="foodiz-card border-foodiz-gold/25 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.14),transparent_35%),#080808] p-5">
+          <article className="weello-card border-weello-gold/25 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.14),transparent_35%),#080808] p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Tour de contrôle</p>
-                <h2 className="foodiz-title mt-1 text-2xl">Commandes à piloter maintenant</h2>
-                <p className="mt-2 max-w-xl text-xs leading-relaxed text-foodiz-gray">
+                <p className="text-[10px] font-black uppercase tracking-[.24em] text-weello-gold">Tour de contrôle</p>
+                <h2 className="weello-title mt-1 text-2xl">Commandes à piloter maintenant</h2>
+                <p className="mt-2 max-w-xl text-xs leading-relaxed text-weello-gray">
                   Une commande bien rythmée rassure le client, protège le livreur et donne envie de revenir.
                 </p>
               </div>
-              <button onClick={() => navigate("/partner/orders/current")} className="rounded-2xl bg-foodiz-gold px-4 py-3 text-xs font-black text-foodiz-black transition hover:scale-[1.02]">
+              <button onClick={() => navigate("/partner/orders/current")} className="rounded-2xl bg-weello-gold px-4 py-3 text-xs font-black text-weello-black transition hover:scale-[1.02]">
                 Ouvrir les commandes
               </button>
             </div>
             <div className="mt-5 grid grid-cols-3 gap-3">
               {[
-                ["Nouvelles", activeBreakdown.pending, "text-foodiz-gold"],
+                ["Nouvelles", activeBreakdown.pending, "text-weello-gold"],
                 ["En préparation", activeBreakdown.preparing, "text-amber-300"],
-                ["Prêtes", activeBreakdown.ready, "text-foodiz-green"],
+                ["Prêtes", activeBreakdown.ready, "text-weello-green"],
               ].map(([label, value, color]) => (
                 <div key={String(label)} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-center">
                   <p className={`text-3xl font-serif italic ${color}`}>{value}</p>
-                  <p className="mt-1 text-[9px] uppercase tracking-widest text-foodiz-gray">{label}</p>
+                  <p className="mt-1 text-[9px] uppercase tracking-widest text-weello-gray">{label}</p>
                 </div>
               ))}
             </div>
             {activeOrders.length === 0 && (
-              <div className="mt-4 rounded-2xl border border-foodiz-gold/10 bg-foodiz-gold/[0.04] p-4">
-                <p className="text-sm font-semibold text-foodiz-cream">Tout est calme pour le moment.</p>
-                <p className="mt-1 text-xs leading-relaxed text-foodiz-gray">
+              <div className="mt-4 rounded-2xl border border-weello-gold/10 bg-weello-gold/[0.04] p-4">
+                <p className="text-sm font-semibold text-weello-cream">Tout est calme pour le moment.</p>
+                <p className="mt-1 text-xs leading-relaxed text-weello-gray">
                   Profitez-en pour améliorer une photo, une description ou préparer votre prochaine campagne locale.
                 </p>
               </div>
             )}
           </article>
 
-          <article className="foodiz-card border-foodiz-gold/15 p-5">
+          <article className="weello-card border-weello-gold/15 p-5">
             <div className="mb-4">
-              <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Standard Weello</p>
-              <h2 className="foodiz-title mt-1 text-xl">Le rituel qui fait revenir les clients</h2>
+              <p className="text-[10px] font-black uppercase tracking-[.24em] text-weello-gold">Standard Weello</p>
+              <h2 className="weello-title mt-1 text-xl">Le rituel qui fait revenir les clients</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {partnerStandards.map((standard) => (
-                <div key={standard.title} className={`rounded-2xl border p-4 ${standard.ready ? "border-foodiz-green/20 bg-foodiz-green/[0.035]" : "border-foodiz-gold/15 bg-white/[0.025]"}`}>
+                <div key={standard.title} className={`rounded-2xl border p-4 ${standard.ready ? "border-weello-green/20 bg-weello-green/[0.035]" : "border-weello-gold/15 bg-white/[0.025]"}`}>
                   <div className="flex items-start gap-3">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${standard.ready ? "border-foodiz-green/20 bg-foodiz-green/10 text-foodiz-green" : "border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold"}`}>
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${standard.ready ? "border-weello-green/20 bg-weello-green/10 text-weello-green" : "border-weello-gold/20 bg-weello-gold/10 text-weello-gold"}`}>
                       <standard.icon size={18} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foodiz-cream">{standard.title}</p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-foodiz-gray">{standard.detail}</p>
+                      <p className="text-sm font-semibold text-weello-cream">{standard.title}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-weello-gray">{standard.detail}</p>
                     </div>
                   </div>
                 </div>
@@ -492,38 +492,38 @@ export default function PartnerDashboard() {
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-          <article className="foodiz-card relative overflow-hidden border-foodiz-gold/20 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.18),transparent_35%),linear-gradient(145deg,rgba(11,11,11,.98),rgba(5,5,5,1))] p-6">
-            <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full border border-foodiz-gold/10 bg-foodiz-gold/5 blur-sm" />
+          <article className="weello-card relative overflow-hidden border-weello-gold/20 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,.18),transparent_35%),linear-gradient(145deg,rgba(11,11,11,.98),rgba(5,5,5,1))] p-6">
+            <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full border border-weello-gold/10 bg-weello-gold/5 blur-sm" />
             <div className="relative">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/10">
-                  <Crown size={22} className="text-foodiz-gold" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-weello-gold/20 bg-weello-gold/10">
+                  <Crown size={22} className="text-weello-gold" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-foodiz-gold">Cockpit réussite</p>
-                  <h2 className="foodiz-title text-2xl">Votre niveau de préparation</h2>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-weello-gold">Cockpit réussite</p>
+                  <h2 className="weello-title text-2xl">Votre niveau de préparation</h2>
                 </div>
               </div>
 
               <div className="mt-6 flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-6xl font-serif italic text-foodiz-cream">{readinessScore}%</p>
-                  <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">
+                  <p className="text-6xl font-serif italic text-weello-cream">{readinessScore}%</p>
+                  <p className="mt-2 text-xs leading-relaxed text-weello-gray">
                     Score calculé sur la fiche, le menu, les visuels, le support et les signaux de vente.
                   </p>
                 </div>
-                <div className="hidden h-24 w-24 shrink-0 items-center justify-center rounded-full border border-foodiz-gold/30 bg-black/35 sm:flex">
-                  <Sparkles size={30} className="text-foodiz-gold" />
+                <div className="hidden h-24 w-24 shrink-0 items-center justify-center rounded-full border border-weello-gold/30 bg-black/35 sm:flex">
+                  <Sparkles size={30} className="text-weello-gold" />
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-foodiz-gold/15 bg-black/30 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-foodiz-gold">Action prioritaire</p>
-                <p className="mt-2 text-base font-semibold text-foodiz-cream">{priorityItem.label}</p>
-                <p className="mt-1 text-xs leading-relaxed text-foodiz-gray">{priorityItem.detail}</p>
+              <div className="mt-6 rounded-2xl border border-weello-gold/15 bg-black/30 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-weello-gold">Action prioritaire</p>
+                <p className="mt-2 text-base font-semibold text-weello-cream">{priorityItem.label}</p>
+                <p className="mt-1 text-xs leading-relaxed text-weello-gray">{priorityItem.detail}</p>
                 <button
                   onClick={() => navigate(priorityItem.path)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-foodiz-gold px-4 py-2 text-xs font-bold text-foodiz-black transition hover:scale-[1.02]"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-weello-gold px-4 py-2 text-xs font-bold text-weello-black transition hover:scale-[1.02]"
                 >
                   Améliorer maintenant <ChevronRight size={14} />
                 </button>
@@ -531,13 +531,13 @@ export default function PartnerDashboard() {
             </div>
           </article>
 
-          <article className="foodiz-card border-foodiz-gold/15 p-5">
+          <article className="weello-card border-weello-gold/15 p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h2 className="foodiz-title text-xl">Plan d’action partenaire</h2>
-                <p className="mt-1 text-xs text-foodiz-gray">Les détails qui transforment une fiche en vraie vitrine Weello.</p>
+                <h2 className="weello-title text-xl">Plan d’action partenaire</h2>
+                <p className="mt-1 text-xs text-weello-gray">Les détails qui transforment une fiche en vraie vitrine Weello.</p>
               </div>
-              <span className="rounded-full border border-foodiz-gold/20 px-3 py-1 text-[10px] uppercase tracking-widest text-foodiz-gold">
+              <span className="rounded-full border border-weello-gold/20 px-3 py-1 text-[10px] uppercase tracking-widest text-weello-gold">
                 {readinessItems.filter((item) => item.ready).length}/{readinessItems.length}
               </span>
             </div>
@@ -548,23 +548,23 @@ export default function PartnerDashboard() {
                   onClick={() => navigate(item.path)}
                   className={`group rounded-2xl border p-4 text-left transition-all ${
                     item.ready
-                      ? "border-foodiz-green/20 bg-foodiz-green/[0.04]"
-                      : "border-foodiz-gold/15 bg-white/[0.025] hover:border-foodiz-gold/35"
+                      ? "border-weello-green/20 bg-weello-green/[0.04]"
+                      : "border-weello-gold/15 bg-white/[0.025] hover:border-weello-gold/35"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
-                      item.ready ? "border-foodiz-green/20 bg-foodiz-green/10" : "border-foodiz-gold/20 bg-foodiz-gold/10"
+                      item.ready ? "border-weello-green/20 bg-weello-green/10" : "border-weello-gold/20 bg-weello-gold/10"
                     }`}>
                       {item.ready ? (
-                        <CheckCircle2 size={18} className="text-foodiz-green" />
+                        <CheckCircle2 size={18} className="text-weello-green" />
                       ) : (
-                        <item.icon size={18} className="text-foodiz-gold" />
+                        <item.icon size={18} className="text-weello-gold" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foodiz-cream">{item.label}</p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-foodiz-gray">{item.detail}</p>
+                      <p className="text-sm font-semibold text-weello-cream">{item.label}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-weello-gray">{item.detail}</p>
                     </div>
                   </div>
                 </button>
@@ -597,12 +597,12 @@ export default function PartnerDashboard() {
             <button
               key={tip.title}
               onClick={() => navigate(tip.path)}
-              className="foodiz-card group border-foodiz-gold/15 bg-[linear-gradient(145deg,rgba(216,168,79,.08),rgba(10,10,10,.98)_34%)] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-foodiz-gold/35"
+              className="weello-card group border-weello-gold/15 bg-[linear-gradient(145deg,rgba(216,168,79,.08),rgba(10,10,10,.98)_34%)] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-weello-gold/35"
             >
               <GoldIcon icon={tip.icon} size={20} />
-              <h3 className="mt-4 font-semibold text-foodiz-cream">{tip.title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-foodiz-gray">{tip.text}</p>
-              <p className="mt-4 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-foodiz-gold">
+              <h3 className="mt-4 font-semibold text-weello-cream">{tip.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-weello-gray">{tip.text}</p>
+              <p className="mt-4 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-weello-gold">
                 Optimiser <ChevronRight size={12} />
               </p>
             </button>
@@ -611,31 +611,31 @@ export default function PartnerDashboard() {
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="foodiz-title text-lg">Outils de gestion</h2>
-            <span className="text-[10px] text-foodiz-gray uppercase tracking-widest">Menu, visuels, revenus</span>
+            <h2 className="weello-title text-lg">Outils de gestion</h2>
+            <span className="text-[10px] text-weello-gray uppercase tracking-widest">Menu, visuels, revenus</span>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {quickActions.map((action) => (
               <button
                 key={action.label}
                 onClick={() => navigate(action.path)}
-                className="foodiz-card p-4 text-left hover:border-foodiz-gold/35 transition-all bg-[linear-gradient(145deg,rgba(216,168,79,0.05),rgba(17,17,17,0.98)_25%,rgba(10,10,10,1)_100%)]"
+                className="weello-card p-4 text-left hover:border-weello-gold/35 transition-all bg-[linear-gradient(145deg,rgba(216,168,79,0.05),rgba(17,17,17,0.98)_25%,rgba(10,10,10,1)_100%)]"
               >
-                <div className="w-11 h-11 rounded-2xl bg-foodiz-gold/10 border border-foodiz-gold/15 flex items-center justify-center mb-3">
+                <div className="w-11 h-11 rounded-2xl bg-weello-gold/10 border border-weello-gold/15 flex items-center justify-center mb-3">
                   <GoldIcon icon={action.icon} size={18} />
                 </div>
-                <p className="text-sm font-medium text-foodiz-cream">{action.label}</p>
-                <p className="text-[10px] text-foodiz-gray mt-1">{action.desc}</p>
+                <p className="text-sm font-medium text-weello-cream">{action.label}</p>
+                <p className="text-[10px] text-weello-gray mt-1">{action.desc}</p>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="foodiz-card p-5">
+        <div className="weello-card p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
             <div>
-              <h3 className="foodiz-title text-lg">Graphique intelligent</h3>
-              <p className="text-foodiz-gray text-xs mt-1">Évolution du chiffre d’affaires de la journée à l’année</p>
+              <h3 className="weello-title text-lg">Graphique intelligent</h3>
+              <p className="text-weello-gray text-xs mt-1">Évolution du chiffre d’affaires de la journée à l’année</p>
             </div>
             <div className="flex gap-2 overflow-x-auto scrollbar-none">
               {[
@@ -649,8 +649,8 @@ export default function PartnerDashboard() {
                   onClick={() => setPeriod(btn.key as PeriodKey)}
                   className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
                     period === btn.key
-                      ? "bg-foodiz-gold text-foodiz-black"
-                      : "bg-foodiz-card border border-foodiz-gold/15 text-foodiz-gray hover:border-foodiz-gold/30"
+                      ? "bg-weello-gold text-weello-black"
+                      : "bg-weello-card border border-weello-gold/15 text-weello-gray hover:border-weello-gold/30"
                   }`}
                 >
                   {btn.label}
@@ -664,23 +664,23 @@ export default function PartnerDashboard() {
               <div className="flex items-end gap-2 h-44">
                 {chartPoints.map((d) => (
                   <div key={d.label} className="flex-1 flex flex-col items-center gap-2">
-                    <span className="text-[9px] text-foodiz-gray">{d.value}€</span>
+                    <span className="text-[9px] text-weello-gray">{d.value}€</span>
                     <div
-                      className="w-full rounded-t-xl bg-gradient-to-t from-foodiz-gold/55 to-foodiz-gold/18 hover:from-foodiz-gold/70 transition-all shadow-[0_0_18px_rgba(216,168,79,0.1)]"
+                      className="w-full rounded-t-xl bg-gradient-to-t from-weello-gold/55 to-weello-gold/18 hover:from-weello-gold/70 transition-all shadow-[0_0_18px_rgba(216,168,79,0.1)]"
                       style={{ height: `${(d.value / chartMax) * 100}%` }}
                     />
-                    <span className="text-[10px] text-foodiz-gray">{d.label}</span>
+                    <span className="text-[10px] text-weello-gray">{d.label}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="rounded-[1.4rem] border border-foodiz-gold/10 bg-white/[0.02] p-5">
-              <div className="w-12 h-12 rounded-2xl bg-foodiz-gold/10 border border-foodiz-gold/15 flex items-center justify-center mb-4">
+            <div className="rounded-[1.4rem] border border-weello-gold/10 bg-white/[0.02] p-5">
+              <div className="w-12 h-12 rounded-2xl bg-weello-gold/10 border border-weello-gold/15 flex items-center justify-center mb-4">
                 <GoldIcon icon={BarChart3} size={18} />
               </div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gray font-bold mb-2">Période sélectionnée</p>
-              <p className="text-3xl font-serif italic text-foodiz-gold font-bold">{currentRevenue.toFixed(0)}€</p>
-              <p className="text-foodiz-gray text-xs mt-2">Lecture intelligente du chiffre d’affaires selon l’horizon choisi.</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-weello-gray font-bold mb-2">Période sélectionnée</p>
+              <p className="text-3xl font-serif italic text-weello-gold font-bold">{currentRevenue.toFixed(0)}€</p>
+              <p className="text-weello-gray text-xs mt-2">Lecture intelligente du chiffre d’affaires selon l’horizon choisi.</p>
             </div>
           </div>
         </div>
@@ -688,17 +688,17 @@ export default function PartnerDashboard() {
         <div className="grid lg:grid-cols-2 gap-6">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="foodiz-title text-lg">Commandes en cours</h2>
+              <h2 className="weello-title text-lg">Commandes en cours</h2>
               <button
                 onClick={() => navigate("/partner/orders/current")}
-                className="text-foodiz-gold text-xs font-semibold flex items-center gap-1"
+                className="text-weello-gold text-xs font-semibold flex items-center gap-1"
               >
                 Voir tout <ChevronRight size={12} />
               </button>
             </div>
             <div className="space-y-3">
               {activeOrders.length === 0 && (
-                <div className="foodiz-card border-foodiz-gold/10 p-5 text-sm text-foodiz-gray">
+                <div className="weello-card border-weello-gold/10 p-5 text-sm text-weello-gray">
                   Aucune commande active. Votre cockpit reste prêt dès qu’une commande arrive.
                 </div>
               )}
@@ -706,56 +706,56 @@ export default function PartnerDashboard() {
                 <button
                   key={order.id}
                   onClick={() => navigate(`/partner/orders/${order.id}`)}
-                  className="w-full foodiz-card p-4 flex items-center gap-4 text-left hover:border-foodiz-gold/30 transition-all"
+                  className="w-full weello-card p-4 flex items-center gap-4 text-left hover:border-weello-gold/30 transition-all"
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    order.status === "pending" ? "bg-foodiz-gold/20" : order.status === "preparing" ? "bg-foodiz-gold/15" : "bg-foodiz-green/10"
+                    order.status === "pending" ? "bg-weello-gold/20" : order.status === "preparing" ? "bg-weello-gold/15" : "bg-weello-green/10"
                   }`}>
-                    <ShoppingBag size={18} className={order.status === "ready" ? "text-foodiz-green" : "text-foodiz-gold"} />
+                    <ShoppingBag size={18} className={order.status === "ready" ? "text-weello-green" : "text-weello-gold"} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-foodiz-cream">{order.client}</h3>
-                      <span className={`text-[10px] font-medium ${order.status === "ready" ? "text-foodiz-green" : "text-foodiz-gold"}`}>
+                      <h3 className="text-sm font-medium text-weello-cream">{order.client}</h3>
+                      <span className={`text-[10px] font-medium ${order.status === "ready" ? "text-weello-green" : "text-weello-gold"}`}>
                         {order.status === "pending" ? "Nouvelle" : order.status === "preparing" ? "En préparation" : "Prête"}
                       </span>
                     </div>
-                    <p className="text-[11px] text-foodiz-gray mt-0.5">{order.items}</p>
+                    <p className="text-[11px] text-weello-gray mt-0.5">{order.items}</p>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-foodiz-gold text-xs font-semibold">{order.total.toFixed(2).replace(".", ",")} €</span>
-                      <span className="text-[10px] text-foodiz-gray">• {order.time}</span>
+                      <span className="text-weello-gold text-xs font-semibold">{order.total.toFixed(2).replace(".", ",")} €</span>
+                      <span className="text-[10px] text-weello-gray">• {order.time}</span>
                     </div>
                   </div>
-                  <ChevronRight size={16} className="text-foodiz-gold/30" />
+                  <ChevronRight size={16} className="text-weello-gold/30" />
                 </button>
               ))}
             </div>
 
             <div className="mt-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="foodiz-title text-lg">Historique récent</h2>
+                <h2 className="weello-title text-lg">Historique récent</h2>
                 <button
                   onClick={() => navigate("/partner/orders/history")}
-                  className="text-foodiz-gold text-xs font-semibold flex items-center gap-1"
+                  className="text-weello-gold text-xs font-semibold flex items-center gap-1"
                 >
                   Historique complet <ChevronRight size={12} />
                 </button>
               </div>
               <div className="space-y-2">
                 {historyOrders.length === 0 && (
-                  <div className="foodiz-card border-foodiz-gold/10 p-5 text-sm text-foodiz-gray">
+                  <div className="weello-card border-weello-gold/10 p-5 text-sm text-weello-gray">
                     Aucune commande livrée pour le moment. Les premières ventes apparaîtront ici.
                   </div>
                 )}
                 {historyOrders.slice(0, 4).map((order) => (
-                  <div key={order.id} className="foodiz-card p-4 flex items-center justify-between gap-4">
+                  <div key={order.id} className="weello-card p-4 flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm text-foodiz-cream font-medium">{order.client}</p>
-                      <p className="text-[10px] text-foodiz-gray mt-1">{order.date}</p>
+                      <p className="text-sm text-weello-cream font-medium">{order.client}</p>
+                      <p className="text-[10px] text-weello-gray mt-1">{order.date}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-foodiz-gold text-sm font-semibold">{order.total.toFixed(2).replace(".", ",")} €</p>
-                      <p className="text-[10px] text-foodiz-gray">Reçu {order.partnerTotal.toFixed(2).replace(".", ",")} €</p>
+                      <p className="text-weello-gold text-sm font-semibold">{order.total.toFixed(2).replace(".", ",")} €</p>
+                      <p className="text-[10px] text-weello-gray">Reçu {order.partnerTotal.toFixed(2).replace(".", ",")} €</p>
                     </div>
                   </div>
                 ))}
@@ -765,31 +765,31 @@ export default function PartnerDashboard() {
 
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="foodiz-title text-lg">Top 10 meilleurs clients</h2>
+              <h2 className="weello-title text-lg">Top 10 meilleurs clients</h2>
               <button
                 onClick={() => navigate("/partner/customers")}
-                className="text-foodiz-gold text-xs font-semibold flex items-center gap-1"
+                className="text-weello-gold text-xs font-semibold flex items-center gap-1"
               >
                 Voir tout <ChevronRight size={12} />
               </button>
             </div>
             <div className="space-y-3">
-              {topCustomers.length === 0 && <div className="foodiz-card p-4 text-sm text-foodiz-gray">Aucune donnée client disponible.</div>}
+              {topCustomers.length === 0 && <div className="weello-card p-4 text-sm text-weello-gray">Aucune donnée client disponible.</div>}
               {topCustomers.map((customer, index) => (
-                <div key={customer.name} className="foodiz-card p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 border border-foodiz-gold/15 flex items-center justify-center text-foodiz-gold font-bold shrink-0">
+                <div key={customer.name} className="weello-card p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-weello-gold/10 border border-weello-gold/15 flex items-center justify-center text-weello-gold font-bold shrink-0">
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm text-foodiz-cream font-medium">{customer.name}</p>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-foodiz-gold/10 border border-foodiz-gold/15 text-foodiz-gold uppercase tracking-widest">
+                      <p className="text-sm text-weello-cream font-medium">{customer.name}</p>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-weello-gold/10 border border-weello-gold/15 text-weello-gold uppercase tracking-widest">
                         {customer.score}
                       </span>
                     </div>
-                    <p className="text-[10px] text-foodiz-gray mt-1">{customer.orders} commandes • panier moyen {customer.avgBasket.toFixed(2).replace(".", ",")} €</p>
+                    <p className="text-[10px] text-weello-gray mt-1">{customer.orders} commandes • panier moyen {customer.avgBasket.toFixed(2).replace(".", ",")} €</p>
                   </div>
-                  <Users size={16} className="text-foodiz-gold/40" />
+                  <Users size={16} className="text-weello-gold/40" />
                 </div>
               ))}
             </div>

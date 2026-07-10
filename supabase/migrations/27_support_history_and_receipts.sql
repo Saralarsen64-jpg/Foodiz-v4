@@ -77,7 +77,7 @@ BEGIN
     user_id, title, message, type, link, is_read
   ) VALUES (
     ticket.user_id,
-    'Réponse du support Foodiz',
+    'Réponse du support Weello',
     'Votre demande "' || ticket.subject || '" a été traitée.',
     'support',
     CASE ticket.user_role WHEN 'partner' THEN '/partner/support' WHEN 'courier' THEN '/courier/support' ELSE '/client/help-center' END,

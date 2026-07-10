@@ -32,11 +32,11 @@ export default function PartnerOrdersHistory() {
   const filtered = useMemo(() => orders.filter((order) => `${order.id} ${order.client?.full_name || order.client?.first_name || ""}`.toLowerCase().includes(search.toLowerCase())), [orders, search]);
 
   return (
-    <div className="min-h-screen bg-foodiz-black">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+    <div className="min-h-screen bg-weello-black">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/partner")} className="text-foodiz-gold"><ChevronLeft size={20} /></button>
-          <h1 className="foodiz-title text-lg">Historique des commandes</h1>
+          <button onClick={() => navigate("/partner")} className="text-weello-gold"><ChevronLeft size={20} /></button>
+          <h1 className="weello-title text-lg">Historique des commandes</h1>
         </div>
       </header>
 
@@ -45,36 +45,36 @@ export default function PartnerOrdersHistory() {
           <GoldIcon icon={Search} size={16} className="absolute left-4 top-1/2 -translate-y-1/2" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher une commande..."
-            className="w-full bg-foodiz-card border border-foodiz-gold/15 rounded-2xl py-3 pl-10 pr-4 text-foodiz-cream placeholder-foodiz-gray/50 text-sm outline-none focus:border-foodiz-gold/40"
+            className="w-full bg-weello-card border border-weello-gold/15 rounded-2xl py-3 pl-10 pr-4 text-weello-cream placeholder-weello-gray/50 text-sm outline-none focus:border-weello-gold/40"
           />
         </div>
 
         <div className="space-y-2">
           {filtered.map((h) => (
             <button key={h.id} onClick={() => navigate(`/partner/orders/${h.id}`)}
-              className="w-full foodiz-card p-4 flex items-center gap-4 text-left hover:border-foodiz-gold/30 transition-all"
+              className="w-full weello-card p-4 flex items-center gap-4 text-left hover:border-weello-gold/30 transition-all"
             >
-              <div className="w-10 h-10 rounded-xl bg-foodiz-gradient-gold flex items-center justify-center shrink-0">
-                <Clock size={18} className="text-foodiz-gold" />
+              <div className="w-10 h-10 rounded-xl bg-weello-gradient-gold flex items-center justify-center shrink-0">
+                <Clock size={18} className="text-weello-gold" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-foodiz-cream">{h.client_name}</h3>
-                  <span className={`text-[10px] font-medium ${h.status === "delivered" ? "text-foodiz-green" : "text-foodiz-red"}`}>
+                  <h3 className="text-sm font-medium text-weello-cream">{h.client_name}</h3>
+                  <span className={`text-[10px] font-medium ${h.status === "delivered" ? "text-weello-green" : "text-weello-red"}`}>
                     {h.status === "delivered" ? "Livrée" : "Annulée"}
                   </span>
                 </div>
-                <p className="text-[11px] text-foodiz-gray mt-0.5">{(h.order_items || []).map((item: any) => `${item.product?.name || "Produit"} x${item.quantity}`).join(", ")}</p>
+                <p className="text-[11px] text-weello-gray mt-0.5">{(h.order_items || []).map((item: any) => `${item.product?.name || "Produit"} x${item.quantity}`).join(", ")}</p>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-foodiz-gold text-xs font-semibold">{(h.final_client_total_cents / 100).toFixed(2).replace(".", ",")} €</span>
-                  <span className="text-[10px] text-foodiz-gray">Client</span>
-                  <span className="text-[10px] text-foodiz-gray">•</span>
-                  <span className="text-foodiz-green text-xs font-semibold">{(h.partner_total_cents / 100).toFixed(2).replace(".", ",")} €</span>
-                  <span className="text-[10px] text-foodiz-gray">Reçu</span>
+                  <span className="text-weello-gold text-xs font-semibold">{(h.final_client_total_cents / 100).toFixed(2).replace(".", ",")} €</span>
+                  <span className="text-[10px] text-weello-gray">Client</span>
+                  <span className="text-[10px] text-weello-gray">•</span>
+                  <span className="text-weello-green text-xs font-semibold">{(h.partner_total_cents / 100).toFixed(2).replace(".", ",")} €</span>
+                  <span className="text-[10px] text-weello-gray">Reçu</span>
                 </div>
-                <p className="text-[10px] text-foodiz-gray/50 mt-1">{new Date(h.created_at).toLocaleDateString("fr-FR")}</p>
+                <p className="text-[10px] text-weello-gray/50 mt-1">{new Date(h.created_at).toLocaleDateString("fr-FR")}</p>
               </div>
-              <ChevronRight size={16} className="text-foodiz-gold/30 shrink-0" />
+              <ChevronRight size={16} className="text-weello-gold/30 shrink-0" />
             </button>
           ))}
         </div>

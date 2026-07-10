@@ -397,7 +397,7 @@ BEGIN
       ) VALUES (
         order_row.client_id,
         'Compensation de livraison',
-        compensation_inserted::text || ' points Foodiz ont été ajoutés à votre fidélité suite au retard constaté.',
+        compensation_inserted::text || ' points Weello ont été ajoutés à votre fidélité suite au retard constaté.',
         'order',
         order_row.id
       );
@@ -566,7 +566,7 @@ UNION ALL
 SELECT
   ledger.courier_id AS beneficiary_id,
   'courier'::text AS beneficiary_type,
-  coalesce(profile.full_name, profile.email, 'Livreur Foodiz') AS beneficiary_name,
+  coalesce(profile.full_name, profile.email, 'Livreur Weello') AS beneficiary_name,
   application.siret AS legal_identifier,
   count(*)::integer AS order_count,
   sum(
@@ -619,7 +619,7 @@ BEGIN
       AND ledger.delivered_at::date BETWEEN target_period_start AND target_period_end
       AND NOT EXISTS (SELECT 1 FROM public.settlement_statement_items i JOIN public.settlement_statements s ON s.id = i.statement_id WHERE i.order_id = ledger.order_id AND i.allocation_type = 'partner' AND s.status <> 'cancelled');
   ELSE
-    SELECT coalesce(p.full_name, p.email, 'Livreur Foodiz'), application.siret
+    SELECT coalesce(p.full_name, p.email, 'Livreur Weello'), application.siret
     INTO beneficiary_name, legal_id
     FROM public.profiles p
     LEFT JOIN public.courier_applications application ON application.user_id = p.id

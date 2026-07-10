@@ -8,7 +8,7 @@ export default function KraftHeader() {
   const { itemCount } = useCart();
 
   return (
-    <header className="bg-gradient-to-b from-foodiz-kraft/15 to-foodiz-kraft/5 border-b border-foodiz-gold/10 px-4 py-3">
+    <header className="bg-gradient-to-b from-weello-kraft/15 to-weello-kraft/5 border-b border-weello-gold/10 px-4 py-3">
       <div className="flex items-center justify-between max-w-lg mx-auto">
         {/* Logo */}
         <button onClick={() => navigate("/client")} className="flex items-center">
@@ -26,7 +26,7 @@ export default function KraftHeader() {
           <button onClick={() => navigate("/client/cart")} className="relative">
             <GoldIcon icon={ShoppingBag} size={20} />
             {itemCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-foodiz-gold text-foodiz-black text-[10px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-1.5 bg-weello-gold text-weello-black text-[10px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center">
                 {itemCount}
               </span>
             )}

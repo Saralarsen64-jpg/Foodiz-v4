@@ -1,4 +1,4 @@
--- Foodiz premium email suite:
+-- Weello premium email suite:
 -- - central audit trail for transactional emails;
 -- - no marketing blast is triggered by this migration;
 -- - launch access emails remain admin-triggered only.

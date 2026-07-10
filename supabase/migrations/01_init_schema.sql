@@ -1,5 +1,5 @@
 -- ============================================================
--- FOODIZ DATABASE SCHEMA - COMPLETE SETUP
+-- WEELLO DATABASE SCHEMA - COMPLETE SETUP
 -- ============================================================
 
 -- 1. PROFILES TABLE (Auth + User Info)
@@ -71,14 +71,14 @@ CREATE TABLE IF NOT EXISTS orders (
   -- PRICING (in cents to avoid float issues)
   final_client_total_cents integer NOT NULL, -- Total that client pays
   partner_total_cents integer NOT NULL,      -- What restaurant gets (before fees)
-  service_fee_cents integer DEFAULT 0,       -- Foodiz platform fee
+  service_fee_cents integer DEFAULT 0,       -- Weello platform fee
   internal_fees_cents integer DEFAULT 0,     -- Internal processing
   delivery_fee_cents integer DEFAULT 0,      -- Delivery cost
   courier_earnings_cents integer DEFAULT 0,  -- Base courier pay
   courier_prime_fund_cents integer DEFAULT 0,-- Prime fund contribution
   loyalty_fund_cents integer DEFAULT 0,      -- Loyalty program fund
   referral_fund_cents integer DEFAULT 0,     -- Referral rewards fund
-  foodiz_revenue_cents integer DEFAULT 0,    -- Foodiz net revenue
+  foodiz_revenue_cents integer DEFAULT 0,    -- Weello net revenue
   system_reserve_cents integer DEFAULT 0,    -- System reserve
   
   -- DELIVERY INFO

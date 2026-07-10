@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [prelaunchNotice, setPrelaunchNotice] = useState("");
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -32,7 +31,6 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setPrelaunchNotice("");
     
     try {
       // 1. Connexion
@@ -59,22 +57,6 @@ export default function LoginPage() {
         return;
       }
 
-      const launchResponse = await fetch("/api/launch-status", {
-        cache: "no-store",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const launchStatus = await launchResponse.json().catch(() => ({}));
-      if (!launchStatus.launched && launchStatus.accessAllowed !== true) {
-        await supabase.auth.signOut();
-        setPrelaunchNotice(
-          launchStatus.role === "client"
-            ? "Weello mijote son arrivée dans votre ville 🍽️ Vous serez informé par e-mail dès l’ouverture du service dans votre secteur."
-            : "Votre espace professionnel est bien préparé, mais il reste verrouillé jusqu’à la validation de votre dossier et l’ouverture pilote de votre ville par Weello.",
-        );
-        setLoading(false);
-        return;
-      }
-
       // 3. Respecter les étapes d'onboarding et de validation du rôle.
       navigate(await resolveRedirectPath());
 
@@ -88,61 +70,56 @@ export default function LoginPage() {
   const roleLabel = role === "partner" ? "Espace partenaire" : role === "courier" ? "Espace livreur" : "Espace client";
 
   return (
-    <div className="min-h-screen bg-foodiz-black flex flex-col">
-      <div className="relative bg-gradient-to-b from-foodiz-kraft/15 to-transparent pt-6 pb-4 px-6">
-        <button onClick={() => navigate("/auth")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6">
+    <div className="min-h-screen bg-weello-black flex flex-col">
+      <div className="relative bg-gradient-to-b from-weello-kraft/15 to-transparent pt-6 pb-4 px-6">
+        <button onClick={() => navigate("/auth")} className="flex items-center gap-1 text-weello-gold text-sm mb-6">
           <ChevronLeft size={18} /> Retour
         </button>
         <div className="flex flex-col items-center">
           <img src="/images/weello-wordmark.png" alt="Weello" className="w-64 max-w-full h-auto rounded-2xl" />
-          <p className="text-foodiz-gray text-[10px] mt-3 tracking-widest uppercase">{roleLabel}</p>
+          <p className="text-weello-gray text-[10px] mt-3 tracking-widest uppercase">{roleLabel}</p>
         </div>
       </div>
 
       <main className="flex-1 max-w-md mx-auto w-full px-6 py-8">
-        <h1 className="foodiz-title text-2xl text-center mb-2">Connexion</h1>
-        <p className="text-foodiz-gray text-sm text-center mb-8">Heureux de vous revoir</p>
+        <h1 className="weello-title text-2xl text-center mb-2">Connexion</h1>
+        <p className="text-weello-gray text-sm text-center mb-8">Heureux de vous revoir</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
-          {prelaunchNotice && (
-            <div className="rounded-2xl border border-foodiz-gold/25 bg-foodiz-gold/[0.07] p-4 text-sm leading-relaxed text-foodiz-cream">
-              {prelaunchNotice}
-            </div>
-          )}
-          <div className="foodiz-card p-4">
-            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">E-mail</label>
+          <div className="weello-card p-4">
+            <label className="text-[10px] font-semibold text-weello-gray uppercase tracking-widest">E-mail</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={Mail} size={16} />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="vous@email.com" className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40" required />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="vous@email.com" className="flex-1 bg-transparent text-weello-cream text-sm outline-none placeholder-weello-gray/40" required />
             </div>
           </div>
 
-          <div className="foodiz-card p-4">
-            <label className="text-[10px] font-semibold text-foodiz-gray uppercase tracking-widest">Mot de passe</label>
+          <div className="weello-card p-4">
+            <label className="text-[10px] font-semibold text-weello-gray uppercase tracking-widest">Mot de passe</label>
             <div className="flex items-center gap-3 mt-2">
               <GoldIcon icon={Lock} size={16} />
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPwd ? "text" : "password"} placeholder="••••••••" className="flex-1 bg-transparent text-foodiz-cream text-sm outline-none placeholder-foodiz-gray/40" required />
-              <button type="button" onClick={() => setShowPwd(!showPwd)} className="text-foodiz-gold/50 hover:text-foodiz-gold">
+              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPwd ? "text" : "password"} placeholder="••••••••" className="flex-1 bg-transparent text-weello-cream text-sm outline-none placeholder-weello-gray/40" required />
+              <button type="button" onClick={() => setShowPwd(!showPwd)} className="text-weello-gold/50 hover:text-weello-gold">
                 {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          <button type="button" onClick={handleForgotPassword} className="text-foodiz-gold text-xs font-medium block ml-auto">Mot de passe oublié ?</button>
+          <button type="button" onClick={handleForgotPassword} className="text-weello-gold text-xs font-medium block ml-auto">Mot de passe oublié ?</button>
 
-          <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4">
+          <button type="submit" disabled={loading} className="w-full weello-btn !py-4">
             {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
 
         <div className="text-center mt-8">
-          <p className="text-foodiz-gray text-xs">
-            Pas encore de compte ? <button onClick={() => navigate(`/auth/signup?role=${role}`)} className="text-foodiz-gold font-semibold hover:underline">S'inscrire</button>
+          <p className="text-weello-gray text-xs">
+            Pas encore de compte ? <button onClick={() => navigate(`/auth/signup?role=${role}`)} className="text-weello-gold font-semibold hover:underline">S'inscrire</button>
           </p>
-          <nav className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] text-foodiz-gray">
-            <Link to="/cgu" className="hover:text-foodiz-gold">CGU</Link>
-            <Link to="/cgv" className="hover:text-foodiz-gold">CGV</Link>
-            <Link to="/confidentialite" className="hover:text-foodiz-gold">Confidentialité</Link>
+          <nav className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] text-weello-gray">
+            <Link to="/cgu" className="hover:text-weello-gold">CGU</Link>
+            <Link to="/cgv" className="hover:text-weello-gold">CGV</Link>
+            <Link to="/confidentialite" className="hover:text-weello-gold">Confidentialité</Link>
           </nav>
         </div>
       </main>

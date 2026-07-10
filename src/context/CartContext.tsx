@@ -32,7 +32,7 @@ type CartContextValue = {
   replaceCart: (item: AddCartItemInput, establishment: { id: string; name: string }) => void;
 };
 
-const STORAGE_KEY = "foodiz_client_cart_v2";
+const STORAGE_KEY = "weello_client_cart_v2";
 
 const CartContext = createContext<CartContextValue | null>(null);
 

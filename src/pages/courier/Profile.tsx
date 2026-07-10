@@ -87,67 +87,67 @@ export default function CourierProfile() {
 
   return (
     <CourierShell title="Mon profil" back="/courier">
-      <section className="rounded-[2rem] border border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.15),rgba(17,17,17,0.97)_40%)] p-6 text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.8rem] border border-foodiz-gold/20 bg-foodiz-gold/10 shadow-[0_0_40px_rgba(216,168,79,0.12)]">
-          <UserRound size={34} className="text-foodiz-gold" />
+      <section className="rounded-[2rem] border border-weello-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,0.15),rgba(17,17,17,0.97)_40%)] p-6 text-center">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.8rem] border border-weello-gold/20 bg-weello-gold/10 shadow-[0_0_40px_rgba(216,168,79,0.12)]">
+          <UserRound size={34} className="text-weello-gold" />
         </div>
-        <h2 className="foodiz-title mt-4 text-2xl">{name || "Livreur Weello"}</h2>
-        <p className="mt-2 text-xs text-foodiz-gray">Votre identité professionnelle</p>
+        <h2 className="weello-title mt-4 text-2xl">{name || "Livreur Weello"}</h2>
+        <p className="mt-2 text-xs text-weello-gray">Votre identité professionnelle</p>
       </section>
 
-      <section className="foodiz-card mt-4 space-y-4 p-5">
+      <section className="weello-card mt-4 space-y-4 p-5">
         <label className="block">
-          <span className="text-[10px] uppercase tracking-widest text-foodiz-gold">Nom complet</span>
+          <span className="text-[10px] uppercase tracking-widest text-weello-gold">Nom complet</span>
           <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4">
-            <UserRound size={17} className="text-foodiz-gold" />
-            <input value={name} onChange={(event) => setName(event.target.value)} className="w-full bg-transparent py-4 text-foodiz-cream outline-none" />
+            <UserRound size={17} className="text-weello-gold" />
+            <input value={name} onChange={(event) => setName(event.target.value)} className="w-full bg-transparent py-4 text-weello-cream outline-none" />
           </div>
         </label>
         <label className="block">
-          <span className="text-[10px] uppercase tracking-widest text-foodiz-gold">Téléphone</span>
+          <span className="text-[10px] uppercase tracking-widest text-weello-gold">Téléphone</span>
           <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4">
-            <Phone size={17} className="text-foodiz-gold" />
-            <input value={phone} onChange={(event) => setPhone(event.target.value)} className="w-full bg-transparent py-4 text-foodiz-cream outline-none" />
+            <Phone size={17} className="text-weello-gold" />
+            <input value={phone} onChange={(event) => setPhone(event.target.value)} className="w-full bg-transparent py-4 text-weello-cream outline-none" />
           </div>
         </label>
         <label className="block">
-          <span className="text-[10px] uppercase tracking-widest text-foodiz-gold">Véhicule</span>
+          <span className="text-[10px] uppercase tracking-widest text-weello-gold">Véhicule</span>
           <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4">
-            <Bike size={17} className="text-foodiz-gold" />
-            <select value={vehicle} onChange={(event) => setVehicle(event.target.value)} className="w-full bg-transparent py-4 text-foodiz-cream outline-none">
-              <option className="bg-foodiz-card" value="velo">Vélo</option>
-              <option className="bg-foodiz-card" value="scooter">Scooter</option>
-              <option className="bg-foodiz-card" value="moto">Moto</option>
-              <option className="bg-foodiz-card" value="voiture">Voiture</option>
-              <option className="bg-foodiz-card" value="autre">Autre</option>
+            <Bike size={17} className="text-weello-gold" />
+            <select value={vehicle} onChange={(event) => setVehicle(event.target.value)} className="w-full bg-transparent py-4 text-weello-cream outline-none">
+              <option className="bg-weello-card" value="velo">Vélo</option>
+              <option className="bg-weello-card" value="scooter">Scooter</option>
+              <option className="bg-weello-card" value="moto">Moto</option>
+              <option className="bg-weello-card" value="voiture">Voiture</option>
+              <option className="bg-weello-card" value="autre">Autre</option>
             </select>
           </div>
         </label>
       </section>
 
-      <section className="foodiz-card mt-4 space-y-4 p-5">
+      <section className="weello-card mt-4 space-y-4 p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/10 text-foodiz-gold">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-weello-gold/20 bg-weello-gold/10 text-weello-gold">
             <Clock3 size={20} />
           </div>
           <div>
-            <h2 className="foodiz-title text-xl">Mes disponibilités</h2>
-            <p className="mt-1 text-xs leading-relaxed text-foodiz-gray">
+            <h2 className="weello-title text-xl">Mes disponibilités</h2>
+            <p className="mt-1 text-xs leading-relaxed text-weello-gray">
               Ces préférences aideront Weello à proposer les courses au bon moment. Vous pourrez toujours vous mettre hors ligne.
             </p>
           </div>
         </div>
 
-        <label className="flex items-start gap-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[0.04] p-4 text-sm text-foodiz-cream">
+        <label className="flex items-start gap-3 rounded-2xl border border-weello-gold/15 bg-weello-gold/[0.04] p-4 text-sm text-weello-cream">
           <input type="checkbox" checked={flexible} onChange={(event) => setFlexible(event.target.checked)} className="mt-0.5 h-5 w-5 accent-[#D8A84F]" />
           <span>
             <span className="block font-semibold">Je suis flexible</span>
-            <span className="mt-1 block text-xs leading-relaxed text-foodiz-gray">Weello peut me proposer des créneaux en dehors de mes préférences si besoin.</span>
+            <span className="mt-1 block text-xs leading-relaxed text-weello-gray">Weello peut me proposer des créneaux en dehors de mes préférences si besoin.</span>
           </span>
         </label>
 
         <div>
-          <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-foodiz-gold">
+          <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-weello-gold">
             <Clock3 size={14} /> Créneaux préférés
           </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -159,7 +159,7 @@ export default function CourierProfile() {
                   type="button"
                   onClick={() => setSlots((current) => toggleValue(current, slot.value))}
                   className={`rounded-xl border px-3 py-3 text-left transition ${
-                    selected ? "border-foodiz-gold bg-foodiz-gold/15 text-foodiz-cream" : "border-white/10 bg-white/[0.03] text-foodiz-gray"
+                    selected ? "border-weello-gold bg-weello-gold/15 text-weello-cream" : "border-white/10 bg-white/[0.03] text-weello-gray"
                   }`}
                 >
                   <span className="block text-xs font-semibold">{slot.label}</span>
@@ -171,7 +171,7 @@ export default function CourierProfile() {
         </div>
 
         <div>
-          <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-foodiz-gold">
+          <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-weello-gold">
             <CalendarDays size={14} /> Jours souhaités
           </p>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
@@ -183,7 +183,7 @@ export default function CourierProfile() {
                   type="button"
                   onClick={() => setDays((current) => toggleValue(current, day.value))}
                   className={`rounded-xl border px-2 py-2 text-xs font-semibold transition ${
-                    selected ? "border-foodiz-gold bg-foodiz-gold/15 text-foodiz-cream" : "border-white/10 bg-white/[0.03] text-foodiz-gray"
+                    selected ? "border-weello-gold bg-weello-gold/15 text-weello-cream" : "border-white/10 bg-white/[0.03] text-weello-gray"
                   }`}
                 >
                   {day.label}
@@ -193,12 +193,12 @@ export default function CourierProfile() {
           </div>
         </div>
 
-        <button onClick={save} className="foodiz-btn flex w-full items-center justify-center gap-2 py-4">
+        <button onClick={save} className="weello-btn flex w-full items-center justify-center gap-2 py-4">
           {saved ? <><CheckCircle2 size={18} />Enregistré</> : <><Save size={18} />Enregistrer</>}
         </button>
       </section>
 
-      <button onClick={logout} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-foodiz-red/20 bg-foodiz-red/5 p-4 text-foodiz-red">
+      <button onClick={logout} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-weello-red/20 bg-weello-red/5 p-4 text-weello-red">
         <LogOut size={17} />Se déconnecter
       </button>
     </CourierShell>

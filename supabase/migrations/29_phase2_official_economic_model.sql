@@ -1,5 +1,5 @@
 -- Phase 2: preserve both the public client price and the private partner price
--- on every order item. New orders write the official Foodiz client price into
+-- on every order item. New orders write the official Weello client price into
 -- unit_price_cents/total_price_cents.
 
 ALTER TABLE public.order_items

@@ -26,7 +26,6 @@ export default function ProtectedRoute({
   const [session, setSession] = useState<any>(undefined);
   const [role, setRole] = useState<AppRole | null | undefined>(undefined);
   const [validationRedirect, setValidationRedirect] = useState<string | null | undefined>(undefined);
-  const [prelaunchBlocked, setPrelaunchBlocked] = useState<boolean | undefined>(undefined);
   const [adminAccessGranted, setAdminAccessGranted] = useState<boolean | undefined>(
     requireAdminLogin ? undefined : true,
   );
@@ -38,7 +37,6 @@ export default function ProtectedRoute({
         clearAdminAccess();
         setRole(null);
         setValidationRedirect(null);
-        setPrelaunchBlocked(false);
         setAdminAccessGranted(!requireAdminLogin);
         return;
       }
@@ -52,7 +50,6 @@ export default function ProtectedRoute({
         setSession(null);
         setRole(null);
         setValidationRedirect(null);
-        setPrelaunchBlocked(false);
         setAdminAccessGranted(!requireAdminLogin);
         return;
       }
@@ -68,28 +65,9 @@ export default function ProtectedRoute({
         setSession(null);
         setRole(null);
         setValidationRedirect(null);
-        setPrelaunchBlocked(false);
         setAdminAccessGranted(!requireAdminLogin);
         return;
       }
-
-      if (currentRole !== "admin") {
-        const { data: prelaunchProfile } = await supabase
-          .from("prelaunch_profiles")
-          .select("status,access_enabled")
-          .eq("user_id", currentSession.user.id)
-          .maybeSingle();
-        if (
-          prelaunchProfile
-          && prelaunchProfile.status !== "activated"
-          && prelaunchProfile.access_enabled !== true
-        ) {
-          setPrelaunchBlocked(true);
-          setValidationRedirect(null);
-          return;
-        }
-      }
-      setPrelaunchBlocked(false);
 
       if (!requireValidated) {
         setValidationRedirect(null);
@@ -150,12 +128,11 @@ export default function ProtectedRoute({
     session === undefined
     || role === undefined
     || validationRedirect === undefined
-    || prelaunchBlocked === undefined
     || adminAccessGranted === undefined
   ) {
     return (
-      <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
-        <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
+      <div className="min-h-screen bg-weello-black flex flex-col items-center justify-center text-weello-gold">
+        <div className="w-16 h-16 rounded-full border-2 border-weello-gold/20 border-t-weello-gold animate-spin mb-4"></div>
         <p className="text-sm animate-pulse">Chargement de votre espace...</p>
       </div>
     );
@@ -163,10 +140,6 @@ export default function ProtectedRoute({
 
   if (!session) {
     return <Navigate to={requireAdminLogin ? "/admin/auth" : "/auth"} replace />;
-  }
-
-  if (prelaunchBlocked) {
-    return <Navigate to="/prelaunch-confirmed" replace />;
   }
 
   if (allowedRoles?.length && (!role || !allowedRoles.includes(role))) {

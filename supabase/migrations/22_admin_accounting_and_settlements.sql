@@ -221,7 +221,7 @@ UNION ALL
 SELECT
   ledger.courier_id AS beneficiary_id,
   'courier'::text AS beneficiary_type,
-  coalesce(profile.full_name, profile.email, 'Livreur Foodiz') AS beneficiary_name,
+  coalesce(profile.full_name, profile.email, 'Livreur Weello') AS beneficiary_name,
   null::text AS legal_identifier,
   count(*)::integer AS order_count,
   sum(ledger.delivery_fee_cents + ledger.courier_earnings_cents + ledger.courier_prime_cents)::bigint AS amount_cents,
@@ -268,7 +268,7 @@ BEGIN
       AND ledger.delivered_at::date BETWEEN target_period_start AND target_period_end
       AND NOT EXISTS (SELECT 1 FROM public.settlement_statement_items i JOIN public.settlement_statements s ON s.id = i.statement_id WHERE i.order_id = ledger.order_id AND i.allocation_type = 'partner' AND s.status <> 'cancelled');
   ELSE
-    SELECT coalesce(p.full_name, p.email, 'Livreur Foodiz') INTO beneficiary_name FROM public.profiles p WHERE p.id = target_beneficiary_id;
+    SELECT coalesce(p.full_name, p.email, 'Livreur Weello') INTO beneficiary_name FROM public.profiles p WHERE p.id = target_beneficiary_id;
     SELECT coalesce(sum(ledger.delivery_fee_cents + ledger.courier_earnings_cents + ledger.courier_prime_cents), 0)::integer INTO total_amount
     FROM public.order_financial_ledger ledger
     WHERE ledger.courier_id = target_beneficiary_id AND ledger.order_status = 'delivered' AND ledger.payment_status = 'completed'

@@ -1,5 +1,5 @@
 -- ============================================================
--- FOODIZ - ADD MISSING TABLES
+-- WEELLO - ADD MISSING TABLES
 -- ============================================================
 
 -- 1. REFERRALS TABLE (Parrainage)

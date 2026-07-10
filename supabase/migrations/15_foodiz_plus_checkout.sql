@@ -1,4 +1,4 @@
--- Stripe Checkout references for reliable Foodiz+ billing and portal access.
+-- Stripe Checkout references for reliable Weello+ billing and portal access.
 
 ALTER TABLE public.partner_subscriptions
   ADD COLUMN IF NOT EXISTS stripe_customer_id text,

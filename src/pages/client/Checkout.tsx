@@ -5,6 +5,8 @@ import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 
+const PENDING_CHECKOUT_KEY = "weello_pending_checkout_order";
+
 type CheckoutQuote = {
   items: Array<{
     productId: string;
@@ -36,7 +38,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") !== "cancelled") return;
-    const orderId = sessionStorage.getItem("foodiz_pending_checkout_order");
+    const orderId = sessionStorage.getItem(PENDING_CHECKOUT_KEY);
     if (!orderId) return;
     void supabase.auth.getSession().then(async ({ data: { session } }) => {
       try {
@@ -49,7 +51,7 @@ export default function CheckoutPage() {
           body: JSON.stringify({ orderId }),
         });
       } finally {
-        sessionStorage.removeItem("foodiz_pending_checkout_order");
+        sessionStorage.removeItem(PENDING_CHECKOUT_KEY);
         window.history.replaceState({}, "", "/client/checkout");
         toast("Paiement annulé. Votre panier a été conservé.");
       }
@@ -167,7 +169,7 @@ export default function CheckoutPage() {
         throw new Error(checkout.error || "Impossible de créer le paiement");
       }
 
-      sessionStorage.setItem("foodiz_pending_checkout_order", checkout.orderId);
+      sessionStorage.setItem(PENDING_CHECKOUT_KEY, checkout.orderId);
       window.location.assign(checkout.url);
 
     } catch (err: any) {
@@ -180,10 +182,10 @@ export default function CheckoutPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-foodiz-black flex items-center justify-center">
+      <div className="min-h-screen bg-weello-black flex items-center justify-center">
         <div className="text-center">
-          <Loader size={32} className="text-foodiz-gold animate-spin mx-auto mb-4" />
-          <p className="text-foodiz-gray">Chargement...</p>
+          <Loader size={32} className="text-weello-gold animate-spin mx-auto mb-4" />
+          <p className="text-weello-gray">Chargement...</p>
         </div>
       </div>
     );
@@ -191,40 +193,40 @@ export default function CheckoutPage() {
 
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-24 h-24 rounded-full bg-foodiz-green/10 flex items-center justify-center mb-6 border border-foodiz-green/30">
-          <CheckCircle size={48} className="text-foodiz-green" />
+      <div className="min-h-screen bg-weello-black flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 rounded-full bg-weello-green/10 flex items-center justify-center mb-6 border border-weello-green/30">
+          <CheckCircle size={48} className="text-weello-green" />
         </div>
-        <h1 className="foodiz-title text-3xl text-foodiz-cream mb-2">Commande Confirmée !</h1>
-        <p className="text-foodiz-gray mb-8">Le restaurant prépare votre commande. Un livreur sera assigné sous peu.</p>
-        <p className="text-foodiz-gold text-sm">Redirection vers le suivi...</p>
+        <h1 className="weello-title text-3xl text-weello-cream mb-2">Commande Confirmée !</h1>
+        <p className="text-weello-gray mb-8">Le restaurant prépare votre commande. Un livreur sera assigné sous peu.</p>
+        <p className="text-weello-gold text-sm">Redirection vers le suivi...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+    <div className="min-h-screen bg-weello-black pb-24">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-foodiz-gold">
+          <button onClick={() => navigate(-1)} className="text-weello-gold">
             <ChevronLeft size={24} />
           </button>
-          <h1 className="foodiz-title text-lg flex-1">Paiement</h1>
+          <h1 className="weello-title text-lg flex-1">Paiement</h1>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Adresse de livraison */}
-        <div className="foodiz-card p-4 flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-foodiz-gold/10 flex items-center justify-center shrink-0">
-            <MapPin size={18} className="text-foodiz-gold" />
+        <div className="weello-card p-4 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-weello-gold/10 flex items-center justify-center shrink-0">
+            <MapPin size={18} className="text-weello-gold" />
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-foodiz-cream">Adresse de livraison</h3>
-            <p className="text-xs text-foodiz-gray mt-2">{deliveryAddress}</p>
+            <h3 className="text-sm font-medium text-weello-cream">Adresse de livraison</h3>
+            <p className="text-xs text-weello-gray mt-2">{deliveryAddress}</p>
             <button 
               onClick={() => navigate("/client/account/addresses")}
-              className="text-[10px] text-foodiz-gold mt-2 hover:underline"
+              className="text-[10px] text-weello-gold mt-2 hover:underline"
             >
               Modifier l'adresse
             </button>
@@ -232,41 +234,41 @@ export default function CheckoutPage() {
         </div>
 
         {/* Résumé commande */}
-        <div className="foodiz-card p-4 space-y-3 border-foodiz-gold/20">
-          <h3 className="foodiz-title text-sm">Résumé de votre commande</h3>
+        <div className="weello-card p-4 space-y-3 border-weello-gold/20">
+          <h3 className="weello-title text-sm">Résumé de votre commande</h3>
           
           {(quote?.items || []).map(item => (
-            <div key={item.productId} className="flex items-center justify-between text-xs text-foodiz-gray py-2 border-b border-foodiz-gold/10">
+            <div key={item.productId} className="flex items-center justify-between text-xs text-weello-gray py-2 border-b border-weello-gold/10">
               <span>{item.quantity}x {item.name}</span>
-              <span className="text-foodiz-cream">{(item.totalPriceCents / 100).toFixed(2)}€</span>
+              <span className="text-weello-cream">{(item.totalPriceCents / 100).toFixed(2)}€</span>
             </div>
           ))}
 
           {quote && (
-            <div className="space-y-2 pt-3 border-t border-foodiz-gold/10">
+            <div className="space-y-2 pt-3 border-t border-weello-gold/10">
               <div className="flex justify-between text-xs">
-                <span className="text-foodiz-gray">Prix articles</span>
-                <span className="text-foodiz-cream">{(quote.clientItemsTotalCents / 100).toFixed(2)}€</span>
+                <span className="text-weello-gray">Prix articles</span>
+                <span className="text-weello-cream">{(quote.clientItemsTotalCents / 100).toFixed(2)}€</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-foodiz-gray">Frais de service</span>
-                <span className="text-foodiz-cream">{(quote.serviceFeeCents / 100).toFixed(2)}€</span>
+                <span className="text-weello-gray">Frais de service</span>
+                <span className="text-weello-cream">{(quote.serviceFeeCents / 100).toFixed(2)}€</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-foodiz-gray">Livraison ({quote.distanceKm.toFixed(1)}km)</span>
-                <span className="text-foodiz-cream">{(quote.deliveryFeeCents / 100).toFixed(2)}€</span>
+                <span className="text-weello-gray">Livraison ({quote.distanceKm.toFixed(1)}km)</span>
+                <span className="text-weello-cream">{(quote.deliveryFeeCents / 100).toFixed(2)}€</span>
               </div>
 
               {useAdvantage && lockedAdvantage && quote.advantageDiscountCents > 0 && (
-                <div className="flex justify-between text-xs text-foodiz-green">
+                <div className="flex justify-between text-xs text-weello-green">
                   <span>Avantage Weello Club</span>
                   <span>-{(quote.advantageDiscountCents / 100).toFixed(2)}€</span>
                 </div>
               )}
 
-              <div className="flex justify-between text-sm font-bold pt-2 border-t border-foodiz-gold/20">
-                <span className="text-foodiz-cream">TOTAL</span>
-                <span className="text-foodiz-gold">
+              <div className="flex justify-between text-sm font-bold pt-2 border-t border-weello-gold/20">
+                <span className="text-weello-cream">TOTAL</span>
+                <span className="text-weello-gold">
                   {(quote.finalClientTotalCents / 100).toFixed(2)}€
                 </span>
               </div>
@@ -275,17 +277,17 @@ export default function CheckoutPage() {
         </div>
 
         {lockedAdvantage && (
-          <div className="foodiz-card p-4 flex items-center gap-3 border-foodiz-gold/20">
+          <div className="weello-card p-4 flex items-center gap-3 border-weello-gold/20">
             <input
               type="checkbox"
               checked={useAdvantage}
               disabled={userPoints < lockedAdvantage.points_cost}
               onChange={(e) => setUseAdvantage(e.target.checked)}
-              className="w-4 h-4 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold"
+              className="w-4 h-4 rounded border-weello-gold/30 bg-weello-black text-weello-gold"
             />
             <div className="flex-1">
-              <p className="text-xs text-foodiz-cream">Utiliser : {lockedAdvantage.title}</p>
-              <p className="text-[10px] text-foodiz-gray mt-1">{lockedAdvantage.points_cost} points seront débités uniquement après confirmation du paiement.</p>
+              <p className="text-xs text-weello-cream">Utiliser : {lockedAdvantage.title}</p>
+              <p className="text-[10px] text-weello-gray mt-1">{lockedAdvantage.points_cost} points seront débités uniquement après confirmation du paiement.</p>
             </div>
           </div>
         )}
@@ -294,7 +296,7 @@ export default function CheckoutPage() {
         <button
           onClick={handleConfirmOrder}
           disabled={isProcessing || !quote}
-          className="w-full foodiz-btn py-4 flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full weello-btn py-4 flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {isProcessing ? (
             <>

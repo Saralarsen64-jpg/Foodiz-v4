@@ -1,4 +1,3 @@
-import { useStripe } from '@stripe/stripe-react-native';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,6 +9,7 @@ import {
   weelloText,
 } from '@/components/weello-ui';
 import { weelloApi } from '@/lib/api';
+import { useWeelloStripe } from '@/lib/weello-stripe';
 import { useCart } from '@/providers/cart-provider';
 import { colors } from '@/theme/colors';
 
@@ -31,7 +31,7 @@ type Quote = {
 
 export default function CheckoutScreen() {
   const { restaurantId, items, clear } = useCart();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet } = useWeelloStripe();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
 

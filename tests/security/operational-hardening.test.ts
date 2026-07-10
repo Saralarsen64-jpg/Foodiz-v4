@@ -68,7 +68,7 @@ test("le dispatch exige une position récente et classe les retraits par proximi
 
 test("le panier web est conservé pendant un abandon Stripe", () => {
   assert.doesNotMatch(checkout, /clearCart\(\);\s*window\.location\.assign/);
-  assert.match(checkout, /foodiz_pending_checkout_order/);
+  assert.match(checkout, /weello_pending_checkout_order/);
   assert.match(checkout, /payment"\) !== "cancelled"/);
 });
 

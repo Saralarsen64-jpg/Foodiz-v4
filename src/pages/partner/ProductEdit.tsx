@@ -169,16 +169,16 @@ export default function ProductEditPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-foodiz-black flex items-center justify-center text-foodiz-gray">Chargement...</div>;
+  if (loading) return <div className="min-h-screen bg-weello-black flex items-center justify-center text-weello-gray">Chargement...</div>;
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24 relative border-x-2 border-foodiz-gold/20">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
-      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-foodiz-gold/40 to-transparent z-50" />
+    <div className="min-h-screen bg-weello-black pb-24 relative border-x-2 border-weello-gold/20">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
+      <div className="absolute top-0 bottom-0 right-0 w-1 bg-gradient-to-b from-transparent via-weello-gold/40 to-transparent z-50" />
       
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate("/partner/products")} className="text-foodiz-gold flex items-center gap-2">
+          <button onClick={() => navigate("/partner/products")} className="text-weello-gold flex items-center gap-2">
             <ChevronLeft size={20} /> Retour
           </button>
           <Logo size="sm" />
@@ -187,12 +187,12 @@ export default function ProductEditPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="foodiz-title text-2xl text-foodiz-cream mb-2">{isEditing ? "Modifier le plat" : "Nouveau plat"}</h1>
-        <p className="text-foodiz-gray text-sm mb-8">Remplissez les informations de votre produit. Le prix sera utilisé par le moteur économique Weello.</p>
+        <h1 className="weello-title text-2xl text-weello-cream mb-2">{isEditing ? "Modifier le plat" : "Nouveau plat"}</h1>
+        <p className="text-weello-gray text-sm mb-8">Remplissez les informations de votre produit. Le prix sera utilisé par le moteur économique Weello.</p>
 
-        <div className="foodiz-card p-6 bg-[#0A0A0A] border-foodiz-gold/20">
+        <div className="weello-card p-6 bg-[#0A0A0A] border-weello-gold/20">
           {message && (
-            <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 border ${message.type === 'success' ? 'bg-foodiz-green/10 text-foodiz-green border-foodiz-green/20' : 'bg-foodiz-red/10 text-foodiz-red border-foodiz-red/20'}`}>
+            <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 border ${message.type === 'success' ? 'bg-weello-green/10 text-weello-green border-weello-green/20' : 'bg-weello-red/10 text-weello-red border-weello-red/20'}`}>
               {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
               {message.text}
             </div>
@@ -200,28 +200,28 @@ export default function ProductEditPage() {
 
           <form onSubmit={handleSave} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Nom du plat *</label>
+              <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">Nom du plat *</label>
               <input 
                 type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors"
+                className="w-full bg-weello-black border border-weello-gold/30 rounded-xl px-4 py-3 text-weello-cream outline-none focus:border-weello-gold transition-colors"
                 placeholder="Ex: Burger Maison K"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Prix (€) *</label>
+                <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">Prix (€) *</label>
                 <input 
                   type="number" step="0.01" required value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors"
+                  className="w-full bg-weello-black border border-weello-gold/30 rounded-xl px-4 py-3 text-weello-cream outline-none focus:border-weello-gold transition-colors"
                   placeholder="12.50"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Catégorie</label>
+                <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">Catégorie</label>
                 <select 
                   value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors appearance-none"
+                  className="w-full bg-weello-black border border-weello-gold/30 rounded-xl px-4 py-3 text-weello-cream outline-none focus:border-weello-gold transition-colors appearance-none"
                 >
                   <option value="Plats">Plats</option>
                   <option value="Entrées">Entrées</option>
@@ -232,9 +232,9 @@ export default function ProductEditPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Photo du produit</label>
-              {formData.image_url && <img src={formData.image_url} alt="Aperçu du produit" className="h-44 w-full rounded-2xl border border-foodiz-gold/15 object-cover" />}
-              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-foodiz-gold/30 bg-foodiz-gold/5 px-4 py-3 text-sm text-foodiz-gold hover:bg-foodiz-gold/10">
+              <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">Photo du produit</label>
+              {formData.image_url && <img src={formData.image_url} alt="Aperçu du produit" className="h-44 w-full rounded-2xl border border-weello-gold/15 object-cover" />}
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-weello-gold/30 bg-weello-gold/5 px-4 py-3 text-sm text-weello-gold hover:bg-weello-gold/10">
                 {uploadingImage ? <Loader size={17} className="animate-spin"/> : <ImagePlus size={17}/>}
                 {uploadingImage ? "Chargement..." : "Choisir une photo"}
                 <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingImage} onChange={(event) => void uploadImage(event.target.files?.[0])} className="hidden" />
@@ -242,10 +242,10 @@ export default function ProductEditPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-foodiz-gray tracking-wider">Description</label>
+              <label className="text-[10px] uppercase font-bold text-weello-gray tracking-wider">Description</label>
               <textarea 
                 value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full bg-foodiz-black border border-foodiz-gold/30 rounded-xl px-4 py-3 text-foodiz-cream outline-none focus:border-foodiz-gold transition-colors h-24 resize-none"
+                className="w-full bg-weello-black border border-weello-gold/30 rounded-xl px-4 py-3 text-weello-cream outline-none focus:border-weello-gold transition-colors h-24 resize-none"
                 placeholder="Description appétissante du plat..."
               />
             </div>
@@ -253,12 +253,12 @@ export default function ProductEditPage() {
             <div className="flex items-center gap-3 pt-2">
               <input 
                 type="checkbox" id="available" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                className="w-5 h-5 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold"
+                className="w-5 h-5 rounded border-weello-gold/30 bg-weello-black text-weello-gold focus:ring-weello-gold"
               />
-              <label htmlFor="available" className="text-foodiz-cream text-sm">Produit disponible à la vente</label>
+              <label htmlFor="available" className="text-weello-cream text-sm">Produit disponible à la vente</label>
             </div>
 
-            <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/5 p-4">
+            <div className="rounded-2xl border border-weello-gold/20 bg-weello-gold/5 p-4">
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
@@ -269,15 +269,15 @@ export default function ProductEditPage() {
                       ...formData,
                       promotion_enabled: event.target.checked,
                     })}
-                  className="h-5 w-5 rounded border-foodiz-gold/30 bg-foodiz-black text-foodiz-gold focus:ring-foodiz-gold"
+                  className="h-5 w-5 rounded border-weello-gold/30 bg-weello-black text-weello-gold focus:ring-weello-gold"
                 />
-                <label htmlFor="promotion" className="text-sm font-semibold text-foodiz-cream">
+                <label htmlFor="promotion" className="text-sm font-semibold text-weello-cream">
                   Créer une offre sur ce produit
                 </label>
               </div>
               {formData.promotion_enabled && (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-weello-gray">
                     Libellé de l’offre
                     <input
                       value={formData.promotion_label}
@@ -288,10 +288,10 @@ export default function ProductEditPage() {
                           promotion_label: event.target.value,
                         })}
                       placeholder="Ex : Offre découverte"
-                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                      className="mt-2 w-full rounded-xl border border-weello-gold/30 bg-weello-black px-4 py-3 text-sm normal-case text-weello-cream outline-none focus:border-weello-gold"
                     />
                   </label>
-                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-weello-gray">
                     Prix partenaire en offre (€)
                     <input
                       type="number"
@@ -303,10 +303,10 @@ export default function ProductEditPage() {
                           ...formData,
                           promotion_price: event.target.value,
                         })}
-                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                      className="mt-2 w-full rounded-xl border border-weello-gold/30 bg-weello-black px-4 py-3 text-sm normal-case text-weello-cream outline-none focus:border-weello-gold"
                     />
                   </label>
-                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-weello-gray">
                     Début facultatif
                     <input
                       type="datetime-local"
@@ -316,10 +316,10 @@ export default function ProductEditPage() {
                           ...formData,
                           promotion_starts_at: event.target.value,
                         })}
-                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                      className="mt-2 w-full rounded-xl border border-weello-gold/30 bg-weello-black px-4 py-3 text-sm normal-case text-weello-cream outline-none focus:border-weello-gold"
                     />
                   </label>
-                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-foodiz-gray">
+                  <label className="space-y-2 text-[10px] font-bold uppercase tracking-wider text-weello-gray">
                     Fin facultative
                     <input
                       type="datetime-local"
@@ -329,7 +329,7 @@ export default function ProductEditPage() {
                           ...formData,
                           promotion_ends_at: event.target.value,
                         })}
-                      className="mt-2 w-full rounded-xl border border-foodiz-gold/30 bg-foodiz-black px-4 py-3 text-sm normal-case text-foodiz-cream outline-none focus:border-foodiz-gold"
+                      className="mt-2 w-full rounded-xl border border-weello-gold/30 bg-weello-black px-4 py-3 text-sm normal-case text-weello-cream outline-none focus:border-weello-gold"
                     />
                   </label>
                 </div>
@@ -337,7 +337,7 @@ export default function ProductEditPage() {
             </div>
 
             <div className="pt-4 flex justify-end">
-              <button type="submit" disabled={saving} className="foodiz-btn flex items-center gap-2 px-8 py-3 disabled:opacity-50">
+              <button type="submit" disabled={saving} className="weello-btn flex items-center gap-2 px-8 py-3 disabled:opacity-50">
                 {saving ? "Enregistrement..." : <><Save size={18} /> Enregistrer le plat</>}
               </button>
             </div>

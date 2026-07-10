@@ -156,34 +156,34 @@ export default function DeliveryTrackingPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: "bg-foodiz-gray",
-      preparing: "bg-foodiz-gold",
-      ready: "bg-foodiz-gold",
-      pickup: "bg-foodiz-gold",
+      pending: "bg-weello-gray",
+      preparing: "bg-weello-gold",
+      ready: "bg-weello-gold",
+      pickup: "bg-weello-gold",
       accepted: "bg-blue-500",
-      at_restaurant: "bg-foodiz-gold",
+      at_restaurant: "bg-weello-gold",
       picked_up: "bg-yellow-500",
-      in_transit: "bg-foodiz-gold",
-      at_customer: "bg-foodiz-green",
-      delivered: "bg-foodiz-green",
-      cancelled: "bg-foodiz-red",
+      in_transit: "bg-weello-gold",
+      at_customer: "bg-weello-green",
+      delivered: "bg-weello-green",
+      cancelled: "bg-weello-red",
     };
-    return colors[status] || "bg-foodiz-gray";
+    return colors[status] || "bg-weello-gray";
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-foodiz-black flex items-center justify-center">
-        <Loader size={32} className="text-foodiz-gold animate-spin" />
+      <div className="min-h-screen bg-weello-black flex items-center justify-center">
+        <Loader size={32} className="text-weello-gold animate-spin" />
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-foodiz-black p-6">
+      <div className="min-h-screen bg-weello-black p-6">
         <div className="max-w-lg mx-auto text-center pt-20">
-          <p className="text-foodiz-gray">Commande non trouvée</p>
+          <p className="text-weello-gray">Commande non trouvée</p>
         </div>
       </div>
     );
@@ -193,19 +193,19 @@ export default function DeliveryTrackingPage() {
   const staticPreparationStatus = ["pending", "preparing", "ready"].includes(order.status);
 
   return (
-    <div className="min-h-screen bg-foodiz-black">
+    <div className="min-h-screen bg-weello-black">
       {/* Header */}
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-foodiz-gold">
+          <button onClick={() => navigate(-1)} className="text-weello-gold">
             <ChevronLeft size={24} />
           </button>
-          <h1 className="foodiz-title text-lg flex-1">Suivi de Livraison</h1>
+          <h1 className="weello-title text-lg flex-1">Suivi de Livraison</h1>
         </div>
       </header>
 
       {/* Map */}
-      <div className="w-full h-96 bg-foodiz-card border-b border-foodiz-gold/10">
+      <div className="w-full h-96 bg-weello-card border-b border-weello-gold/10">
         {tracking && restaurant && client && (
           <MapContainer
             center={[
@@ -241,10 +241,10 @@ export default function DeliveryTrackingPage() {
         )}
         {(!tracking || !restaurant || !client) && staticPreparationStatus && (
           <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(216,168,79,.16),transparent_42%),#0a0a0a] p-6 text-center">
-            <div className="max-w-sm rounded-[2rem] border border-foodiz-gold/20 bg-black/35 p-6">
-              <p className="text-[10px] font-black uppercase tracking-[.24em] text-foodiz-gold">Suivi statique</p>
-              <h2 className="foodiz-title mt-3 text-2xl text-foodiz-cream">La commande se prépare</h2>
-              <p className="mt-3 text-sm leading-relaxed text-foodiz-gray">
+            <div className="max-w-sm rounded-[2rem] border border-weello-gold/20 bg-black/35 p-6">
+              <p className="text-[10px] font-black uppercase tracking-[.24em] text-weello-gold">Suivi statique</p>
+              <h2 className="weello-title mt-3 text-2xl text-weello-cream">La commande se prépare</h2>
+              <p className="mt-3 text-sm leading-relaxed text-weello-gray">
                 La carte GPS s’activera après récupération par le livreur.
                 Pour l’instant, Weello suit l’état restaurant.
               </p>
@@ -255,20 +255,20 @@ export default function DeliveryTrackingPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6 pb-20">
         {deliveryCode && tracking?.status !== "delivered" && (
-          <div className="foodiz-card p-5 text-center border-foodiz-gold/30 bg-foodiz-gold/5">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-foodiz-gold">Code à remettre au livreur</p>
-            <p className="text-3xl font-mono tracking-[0.35em] text-foodiz-cream font-bold mt-3">{deliveryCode}</p>
-            <p className="text-xs text-foodiz-gray mt-3">Ne communiquez ce code qu’une fois la commande reçue.</p>
+          <div className="weello-card p-5 text-center border-weello-gold/30 bg-weello-gold/5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-weello-gold">Code à remettre au livreur</p>
+            <p className="text-3xl font-mono tracking-[0.35em] text-weello-cream font-bold mt-3">{deliveryCode}</p>
+            <p className="text-xs text-weello-gray mt-3">Ne communiquez ce code qu’une fois la commande reçue.</p>
           </div>
         )}
         {/* Status */}
-        <div className="foodiz-card p-6 text-center">
+        <div className="weello-card p-6 text-center">
           <div className={`inline-block ${getStatusColor(visualStatus)} rounded-full px-4 py-2 mb-4`}>
             <p className="text-white text-sm font-bold">{getStatusLabel(visualStatus)}</p>
           </div>
-          <h2 className="foodiz-title text-2xl text-foodiz-cream mb-2">Commande #{orderId?.slice(0, 8)}</h2>
+          <h2 className="weello-title text-2xl text-weello-cream mb-2">Commande #{orderId?.slice(0, 8)}</h2>
           {tracking?.estimated_arrival_at && (
-            <p className="text-foodiz-gray text-sm">
+            <p className="text-weello-gray text-sm">
               Arrivée estimée: {new Date(tracking.estimated_arrival_at).toLocaleTimeString("fr-FR", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -279,15 +279,15 @@ export default function DeliveryTrackingPage() {
 
         {/* Courier Info */}
         {courier && tracking?.status !== "pending" && (
-          <div className="foodiz-card p-4 flex items-start gap-4 border-foodiz-gold/20">
-            <div className="w-12 h-12 rounded-full bg-foodiz-gold/20 flex items-center justify-center shrink-0">
-              <span className="text-foodiz-gold font-bold">{courier.first_name?.[0]}</span>
+          <div className="weello-card p-4 flex items-start gap-4 border-weello-gold/20">
+            <div className="w-12 h-12 rounded-full bg-weello-gold/20 flex items-center justify-center shrink-0">
+              <span className="text-weello-gold font-bold">{courier.first_name?.[0]}</span>
             </div>
             <div className="flex-1">
-              <h3 className="text-foodiz-cream font-bold">{courier.first_name} {courier.last_name}</h3>
-              <p className="text-foodiz-gray text-sm mb-3">Votre livreur</p>
+              <h3 className="text-weello-cream font-bold">{courier.first_name} {courier.last_name}</h3>
+              <p className="text-weello-gray text-sm mb-3">Votre livreur</p>
               {courier.phone && (
-                <a href={`tel:${courier.phone}`} className="flex items-center gap-2 text-foodiz-gold text-sm hover:underline">
+                <a href={`tel:${courier.phone}`} className="flex items-center gap-2 text-weello-gold text-sm hover:underline">
                   <Phone size={14} />
                   {courier.phone}
                 </a>
@@ -297,8 +297,8 @@ export default function DeliveryTrackingPage() {
         )}
 
         {/* Timeline */}
-        <div className="foodiz-card p-4 space-y-4">
-          <h3 className="foodiz-title text-sm">Évolution</h3>
+        <div className="weello-card p-4 space-y-4">
+          <h3 className="weello-title text-sm">Évolution</h3>
 
           {[
             { status: "accepted", label: "Acceptée", time: tracking?.pickup_at },
@@ -313,16 +313,16 @@ export default function DeliveryTrackingPage() {
                     ["pending", "accepted", "picked_up", "in_transit", "delivered"].includes(tracking?.status || "pending") &&
                     ["pending", "accepted", "picked_up", "in_transit", "delivered"].indexOf(tracking?.status || "pending") >=
                       ["pending", "accepted", "picked_up", "in_transit", "delivered"].indexOf(step.status)
-                      ? "bg-foodiz-gold border-foodiz-gold"
-                      : "border-foodiz-gold/30"
+                      ? "bg-weello-gold border-weello-gold"
+                      : "border-weello-gold/30"
                   }`}
                 />
-                {idx < 3 && <div className="w-0.5 h-8 bg-foodiz-gold/20 mt-1" />}
+                {idx < 3 && <div className="w-0.5 h-8 bg-weello-gold/20 mt-1" />}
               </div>
               <div className="pb-4">
-                <p className="text-foodiz-cream text-sm font-medium">{step.label}</p>
+                <p className="text-weello-cream text-sm font-medium">{step.label}</p>
                 {step.time && (
-                  <p className="text-foodiz-gray text-xs">
+                  <p className="text-weello-gray text-xs">
                     {new Date(step.time).toLocaleTimeString("fr-FR", {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -335,32 +335,32 @@ export default function DeliveryTrackingPage() {
         </div>
 
         {/* Delivery Address */}
-        <div className="foodiz-card p-4 flex items-start gap-4">
-          <MapPin size={18} className="text-foodiz-gold mt-1 shrink-0" />
+        <div className="weello-card p-4 flex items-start gap-4">
+          <MapPin size={18} className="text-weello-gold mt-1 shrink-0" />
           <div>
-            <h3 className="text-foodiz-cream font-bold text-sm">Adresse de livraison</h3>
-            <p className="text-foodiz-gray text-sm mt-2">{order.delivery_address}</p>
+            <h3 className="text-weello-cream font-bold text-sm">Adresse de livraison</h3>
+            <p className="text-weello-gray text-sm mt-2">{order.delivery_address}</p>
           </div>
         </div>
 
         {/* Order Summary */}
-        <div className="foodiz-card p-4 space-y-2">
-          <h3 className="foodiz-title text-sm">Résumé de la commande</h3>
-          <div className="flex justify-between text-sm py-2 border-b border-foodiz-gold/10">
-            <span className="text-foodiz-gray">Montant total</span>
-            <span className="text-foodiz-cream font-bold">{(order.final_client_total_cents / 100).toFixed(2)}€</span>
+        <div className="weello-card p-4 space-y-2">
+          <h3 className="weello-title text-sm">Résumé de la commande</h3>
+          <div className="flex justify-between text-sm py-2 border-b border-weello-gold/10">
+            <span className="text-weello-gray">Montant total</span>
+            <span className="text-weello-cream font-bold">{(order.final_client_total_cents / 100).toFixed(2)}€</span>
           </div>
           <div className="flex justify-between text-sm py-2">
-            <span className="text-foodiz-gray">Frais de livraison</span>
-            <span className="text-foodiz-cream">{(order.delivery_fee_cents / 100).toFixed(2)}€</span>
+            <span className="text-weello-gray">Frais de livraison</span>
+            <span className="text-weello-cream">{(order.delivery_fee_cents / 100).toFixed(2)}€</span>
           </div>
         </div>
 
         {/* Help */}
         {tracking?.status !== "delivered" && (
-          <button className="w-full foodiz-card p-4 text-left hover:bg-foodiz-gold/5 transition-colors">
-            <p className="text-foodiz-cream font-bold text-sm">Une question ou un problème ?</p>
-            <p className="text-foodiz-gray text-xs mt-1">Contactez notre support 24/7</p>
+          <button className="w-full weello-card p-4 text-left hover:bg-weello-gold/5 transition-colors">
+            <p className="text-weello-cream font-bold text-sm">Une question ou un problème ?</p>
+            <p className="text-weello-gray text-xs mt-1">Contactez notre support 24/7</p>
           </button>
         )}
       </main>

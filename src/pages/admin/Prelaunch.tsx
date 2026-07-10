@@ -113,7 +113,7 @@ export default function AdminPrelaunch() {
     const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `foodiz-preinscriptions-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `weello-preinscriptions-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -141,30 +141,30 @@ export default function AdminPrelaunch() {
     >
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {cards.map((card) => (
-          <article key={card.label} className="foodiz-card p-5">
+          <article key={card.label} className="weello-card p-5">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[.18em] text-foodiz-gray">{card.label}</p>
-              <card.icon size={19} className="text-foodiz-gold" />
+              <p className="text-xs uppercase tracking-[.18em] text-weello-gray">{card.label}</p>
+              <card.icon size={19} className="text-weello-gold" />
             </div>
-            <p className="foodiz-title text-4xl mt-5">{card.value}</p>
+            <p className="weello-title text-4xl mt-5">{card.value}</p>
           </article>
         ))}
       </div>
 
-      <section className="foodiz-card overflow-hidden">
-        <div className="p-5 border-b border-foodiz-gold/10 flex flex-wrap items-center justify-between gap-3">
+      <section className="weello-card overflow-hidden">
+        <div className="p-5 border-b border-weello-gold/10 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="foodiz-title text-xl">Liste d’attente</h2>
-            <p className="text-xs text-foodiz-gray mt-1">Données Auth reliées et consentements enregistrés.</p>
+            <h2 className="weello-title text-xl">Liste d’attente</h2>
+            <p className="text-xs text-weello-gray mt-1">Données Auth reliées et consentements enregistrés.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => void load()} className="foodiz-btn-outline !px-4 !py-2.5 flex items-center gap-2">
+            <button onClick={() => void load()} className="weello-btn-outline !px-4 !py-2.5 flex items-center gap-2">
               <RefreshCw size={16} /> Actualiser
             </button>
-            <button onClick={exportCsv} className="foodiz-btn-outline !px-4 !py-2.5 flex items-center gap-2">
+            <button onClick={exportCsv} className="weello-btn-outline !px-4 !py-2.5 flex items-center gap-2">
               <Download size={16} /> Export CSV
             </button>
-            <button disabled={sending} onClick={() => void sendLaunchAccess()} className="foodiz-btn !px-4 !py-2.5 flex items-center gap-2 disabled:opacity-50">
+            <button disabled={sending} onClick={() => void sendLaunchAccess()} className="weello-btn !px-4 !py-2.5 flex items-center gap-2 disabled:opacity-50">
               {sending ? <LoaderCircle size={16} className="animate-spin" /> : <Mail size={16} />}
               Envoyer les accès
             </button>
@@ -172,13 +172,13 @@ export default function AdminPrelaunch() {
         </div>
 
         {loading ? (
-          <div className="p-14 flex justify-center"><LoaderCircle className="animate-spin text-foodiz-gold" /></div>
+          <div className="p-14 flex justify-center"><LoaderCircle className="animate-spin text-weello-gold" /></div>
         ) : !data?.profiles.length ? (
-          <div className="p-14 text-center text-foodiz-gray">Aucune pré-inscription pour le moment.</div>
+          <div className="p-14 text-center text-weello-gray">Aucune pré-inscription pour le moment.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[920px] text-sm">
-              <thead className="text-left text-[10px] uppercase tracking-[.16em] text-foodiz-gold bg-white/[.02]">
+              <thead className="text-left text-[10px] uppercase tracking-[.16em] text-weello-gold bg-white/[.02]">
                 <tr>
                   <th className="px-5 py-4">Profil</th>
                   <th className="px-5 py-4">Contact</th>
@@ -188,7 +188,7 @@ export default function AdminPrelaunch() {
                   <th className="px-5 py-4">Statut</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-foodiz-gold/10">
+              <tbody className="divide-y divide-weello-gold/10">
                 {data.profiles.map((profile) => {
                   const partner = Array.isArray(profile.partner) ? profile.partner[0] : profile.partner;
                   const driver = Array.isArray(profile.driver) ? profile.driver[0] : profile.driver;
@@ -196,28 +196,28 @@ export default function AdminPrelaunch() {
                     <tr key={profile.id} className="hover:bg-white/[.02]">
                       <td className="px-5 py-4">
                         <p className="font-semibold">{profile.first_name} {profile.last_name}</p>
-                        <p className="text-xs text-foodiz-gold mt-1">
+                        <p className="text-xs text-weello-gold mt-1">
                           {roleLabels[profile.role]}{partner?.establishment_name ? ` · ${partner.establishment_name}` : ""}
                         </p>
                         {driver?.siret && (
-                          <p className="text-[11px] text-foodiz-gray mt-1">
+                          <p className="text-[11px] text-weello-gray mt-1">
                             SIRET {driver.siret} · {driver.vehicle_type || "véhicule à préciser"}
                           </p>
                         )}
                         {driver && (driver.availability_slots?.length || driver.availability_days?.length || driver.availability_flexible) && (
-                          <p className="text-[11px] text-foodiz-gray mt-1">
+                          <p className="text-[11px] text-weello-gray mt-1">
                             Dispos : {driver.availability_flexible ? "flexible · " : ""}
                             {driver.availability_slots?.join(", ") || driver.availability || "créneaux à préciser"}
                             {driver.availability_days?.length ? ` · ${driver.availability_days.join(", ")}` : ""}
                           </p>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-foodiz-gray">{profile.email}</td>
+                      <td className="px-5 py-4 text-weello-gray">{profile.email}</td>
                       <td className="px-5 py-4">{profile.city}</td>
-                      <td className="px-5 py-4 text-foodiz-gray">{profile.phone}</td>
-                      <td className="px-5 py-4 text-foodiz-gray">{new Date(profile.created_at).toLocaleDateString("fr-FR")}</td>
+                      <td className="px-5 py-4 text-weello-gray">{profile.phone}</td>
+                      <td className="px-5 py-4 text-weello-gray">{new Date(profile.created_at).toLocaleDateString("fr-FR")}</td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex rounded-full border border-foodiz-gold/20 bg-foodiz-gold/5 px-3 py-1 text-xs text-foodiz-gold">
+                        <span className="inline-flex rounded-full border border-weello-gold/20 bg-weello-gold/5 px-3 py-1 text-xs text-weello-gold">
                           {statusLabels[profile.status] || profile.status}
                         </span>
                       </td>

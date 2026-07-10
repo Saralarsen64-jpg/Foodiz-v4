@@ -51,18 +51,18 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="animate-fade-in-up min-h-screen bg-foodiz-black pb-24">
+    <div className="animate-fade-in-up min-h-screen bg-weello-black pb-24">
       <div className="max-w-lg mx-auto px-6 pt-12">
-        <button onClick={() => navigate("/client")} className="flex items-center gap-1 text-foodiz-gold text-sm mb-6"><ChevronLeft size={18} /> Retour</button>
-        <h1 className="foodiz-title text-2xl mb-6 text-foodiz-cream">Notifications</h1>
+        <button onClick={() => navigate("/client")} className="flex items-center gap-1 text-weello-gold text-sm mb-6"><ChevronLeft size={18} /> Retour</button>
+        <h1 className="weello-title text-2xl mb-6 text-weello-cream">Notifications</h1>
         
         {loading ? (
-          <div className="text-center py-10 text-foodiz-gray animate-pulse">Chargement...</div>
+          <div className="text-center py-10 text-weello-gray animate-pulse">Chargement...</div>
         ) : notifs.length === 0 ? (
-          <div className="foodiz-card p-12 text-center bg-[#0A0A0A] border-foodiz-gold/10">
-            <Bell size={48} className="mx-auto text-foodiz-gray/20 mb-4" />
-            <p className="text-foodiz-cream text-lg font-medium mb-2">Tout est calme</p>
-            <p className="text-foodiz-gray text-sm">Aucune nouvelle notification.</p>
+          <div className="weello-card p-12 text-center bg-[#0A0A0A] border-weello-gold/10">
+            <Bell size={48} className="mx-auto text-weello-gray/20 mb-4" />
+            <p className="text-weello-cream text-lg font-medium mb-2">Tout est calme</p>
+            <p className="text-weello-gray text-sm">Aucune nouvelle notification.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -72,17 +72,17 @@ export default function NotificationsPage() {
                 <div 
                   key={n.id} 
                   onClick={() => n.link && handleRead(n.id, n.link)}
-                  className={`foodiz-card p-4 flex gap-4 items-start cursor-pointer transition-all ${n.is_read ? 'bg-[#0A0A0A] opacity-70' : 'bg-foodiz-gold/5 border-foodiz-gold/30'}`}
+                  className={`weello-card p-4 flex gap-4 items-start cursor-pointer transition-all ${n.is_read ? 'bg-[#0A0A0A] opacity-70' : 'bg-weello-gold/5 border-weello-gold/30'}`}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${n.is_read ? 'bg-foodiz-black text-foodiz-gray' : 'bg-foodiz-gold text-foodiz-black'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${n.is_read ? 'bg-weello-black text-weello-gray' : 'bg-weello-gold text-weello-black'}`}>
                     <Icon size={18} />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
-                      <h3 className={`text-sm font-medium ${n.is_read ? 'text-foodiz-gray' : 'text-foodiz-cream'}`}>{n.title}</h3>
-                      <span className="text-[10px] text-foodiz-gray">{formatTime(n.created_at)}</span>
+                      <h3 className={`text-sm font-medium ${n.is_read ? 'text-weello-gray' : 'text-weello-cream'}`}>{n.title}</h3>
+                      <span className="text-[10px] text-weello-gray">{formatTime(n.created_at)}</span>
                     </div>
-                    <p className="text-xs text-foodiz-gray mt-1">{n.message}</p>
+                    <p className="text-xs text-weello-gray mt-1">{n.message}</p>
                   </div>
                 </div>
               );

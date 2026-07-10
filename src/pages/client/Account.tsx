@@ -80,19 +80,19 @@ export default function AccountPage() {
 
   // La page s'affiche IMMÉDIATEMENT.
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up relative overflow-x-hidden">
-      <div className="pointer-events-none fixed top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
-      <div className="pointer-events-none fixed top-0 bottom-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-foodiz-gold/20 to-transparent z-50" />
+    <div className="min-h-screen bg-weello-black pb-24 animate-fade-in-up relative overflow-x-hidden">
+      <div className="pointer-events-none fixed top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-weello-gold/20 to-transparent z-50" />
+      <div className="pointer-events-none fixed top-0 bottom-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-weello-gold/20 to-transparent z-50" />
       
-      <header className="px-6 pt-12 pb-8 bg-gradient-to-b from-foodiz-card to-foodiz-black border-b border-foodiz-gold/10">
+      <header className="px-6 pt-12 pb-8 bg-gradient-to-b from-weello-card to-weello-black border-b border-weello-gold/10">
         <div className="max-w-lg mx-auto text-center">
           <label className="relative block w-24 h-24 mx-auto mb-4 group cursor-pointer">
-            <div className="w-full h-full rounded-full bg-foodiz-gradient-gold p-1 shadow-lg shadow-foodiz-gold/20 overflow-hidden">
+            <div className="w-full h-full rounded-full bg-weello-gradient-gold p-1 shadow-lg shadow-weello-gold/20 overflow-hidden">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Profil" className="w-full h-full rounded-full object-cover" />
               ) : (
-                <div className="w-full h-full rounded-full bg-foodiz-black flex items-center justify-center">
-                  <User size={32} className="text-foodiz-gold" />
+                <div className="w-full h-full rounded-full bg-weello-black flex items-center justify-center">
+                  <User size={32} className="text-weello-gold" />
                 </div>
               )}
             </div>
@@ -102,8 +102,8 @@ export default function AccountPage() {
             <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingAvatar} onChange={(event) => void uploadAvatar(event.target.files?.[0])} className="hidden" />
           </label>
           
-          <h1 className="foodiz-title text-2xl text-foodiz-cream">{fullName}</h1>
-          <p className="text-foodiz-gray text-xs mt-2 flex items-center justify-center gap-1">
+          <h1 className="weello-title text-2xl text-weello-cream">{fullName}</h1>
+          <p className="text-weello-gray text-xs mt-2 flex items-center justify-center gap-1">
             <Mail size={12} /> {userEmail}
           </p>
         </div>
@@ -114,26 +114,26 @@ export default function AccountPage() {
           <button 
             key={item.label} 
             onClick={() => navigate(item.path)} 
-            className="w-full foodiz-card p-4 flex items-center justify-between hover:border-foodiz-gold/30 transition-all group bg-[#0A0A0A]"
+            className="w-full weello-card p-4 flex items-center justify-between hover:border-weello-gold/30 transition-all group bg-[#0A0A0A]"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-gold/20 flex items-center justify-center text-foodiz-gold group-hover:bg-foodiz-gold group-hover:text-foodiz-black transition-colors">
+              <div className="w-10 h-10 rounded-full bg-weello-black border border-weello-gold/20 flex items-center justify-center text-weello-gold group-hover:bg-weello-gold group-hover:text-weello-black transition-colors">
                 <item.icon size={18} />
               </div>
-              <span className="text-sm font-medium text-foodiz-cream">{item.label}</span>
+              <span className="text-sm font-medium text-weello-cream">{item.label}</span>
             </div>
-            <ChevronRight size={16} className="text-foodiz-gray/50 group-hover:text-foodiz-gold transition-colors" />
+            <ChevronRight size={16} className="text-weello-gray/50 group-hover:text-weello-gold transition-colors" />
           </button>
         ))}
 
         <button 
           onClick={handleLogout} 
-          className="w-full foodiz-card p-4 flex items-center gap-4 mt-8 border-foodiz-red/20 hover:bg-foodiz-red/5 transition-all group bg-[#0A0A0A]"
+          className="w-full weello-card p-4 flex items-center gap-4 mt-8 border-weello-red/20 hover:bg-weello-red/5 transition-all group bg-[#0A0A0A]"
         >
-          <div className="w-10 h-10 rounded-full bg-foodiz-black border border-foodiz-red/20 flex items-center justify-center text-foodiz-red group-hover:bg-foodiz-red group-hover:text-white transition-colors">
+          <div className="w-10 h-10 rounded-full bg-weello-black border border-weello-red/20 flex items-center justify-center text-weello-red group-hover:bg-weello-red group-hover:text-white transition-colors">
             <LogOut size={18} />
           </div>
-          <span className="text-sm font-medium text-foodiz-red">Se déconnecter</span>
+          <span className="text-sm font-medium text-weello-red">Se déconnecter</span>
         </button>
       </main>
     </div>

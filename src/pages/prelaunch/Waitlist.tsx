@@ -77,6 +77,7 @@ const initialForm = {
   handlesAnimalProducts: false,
   sellsAlcohol: false,
   requiresHygieneProof: false,
+  cguAccepted: false,
   marketingConsent: false,
   companyWebsite: "",
 };
@@ -174,7 +175,7 @@ function Field({
         placeholder={placeholder}
         required={required}
         autoComplete={autoComplete}
-        className="min-w-0 flex-1 bg-transparent text-[15px] text-foodiz-cream outline-none placeholder:text-[#b8b0a2]/60"
+        className="min-w-0 flex-1 bg-transparent text-[15px] text-weello-cream outline-none placeholder:text-[#b8b0a2]/60"
       />
       {trailing}
     </InputShell>
@@ -201,11 +202,11 @@ function SelectField({
           name={name}
           value={value}
           onChange={(event) => onChange(name, event.target.value)}
-          className="w-full appearance-none bg-transparent pr-6 text-sm text-foodiz-cream outline-none"
+          className="w-full appearance-none bg-transparent pr-6 text-sm text-weello-cream outline-none"
         >
-          {options.map((option) => <option key={option.value} value={option.value} className="bg-foodiz-card">{option.label}</option>)}
+          {options.map((option) => <option key={option.value} value={option.value} className="bg-weello-card">{option.label}</option>)}
         </select>
-        <ChevronDown size={15} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-foodiz-gold/70" />
+        <ChevronDown size={15} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-weello-gold/70" />
       </div>
     </InputShell>
   );
@@ -239,12 +240,12 @@ function DocumentField({
       />
       <div className="flex items-start gap-3">
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${
-          file ? "border-foodiz-green/30 bg-foodiz-green/10 text-foodiz-green" : "border-[#d8a84f]/35 bg-[#d8a84f]/10 text-[#d8a84f]"
+          file ? "border-weello-green/30 bg-weello-green/10 text-weello-green" : "border-[#d8a84f]/35 bg-[#d8a84f]/10 text-[#d8a84f]"
         }`}>
           {file ? <FileCheck2 size={19} /> : <FileText size={19} />}
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-semibold text-foodiz-cream">{label}</span>
+          <span className="block text-sm font-semibold text-weello-cream">{label}</span>
           <span className="mt-1 block text-[10px] leading-relaxed text-[#b8b0a2]/70">{file ? file.name : description}</span>
         </span>
       </div>
@@ -252,14 +253,20 @@ function DocumentField({
   );
 }
 
-export default function WaitlistPage() {
+export default function WaitlistPage({
+  registrationRole,
+}: {
+  registrationRole?: "livreur" | "partenaire";
+}) {
   const navigate = useNavigate();
+  const isProfessionalRegistration = Boolean(registrationRole);
   const [resumePartnerUpload] = useState(
-    () => Boolean(window.sessionStorage.getItem("foodiz-partner-upload-token")),
+    () => !registrationRole && Boolean(window.sessionStorage.getItem("weello-partner-upload-token")),
   );
   const [role, setRole] = useState<Role>(() => {
-    if (window.sessionStorage.getItem("foodiz-courier-upload-token")) return "livreur";
-    if (window.sessionStorage.getItem("foodiz-partner-upload-token")) return "partenaire";
+    if (registrationRole) return registrationRole;
+    if (window.sessionStorage.getItem("weello-courier-upload-token")) return "livreur";
+    if (window.sessionStorage.getItem("weello-partner-upload-token")) return "partenaire";
     return "client";
   });
   const [form, setForm] = useState(initialForm);
@@ -269,10 +276,10 @@ export default function WaitlistPage() {
   const [courierFiles, setCourierFiles] = useState<CourierFiles>(emptyCourierFiles);
   const [partnerFiles, setPartnerFiles] = useState<PartnerFiles>(emptyPartnerFiles);
   const [pendingCourierUploadToken, setPendingCourierUploadToken] = useState(
-    () => window.sessionStorage.getItem("foodiz-courier-upload-token") || "",
+    () => window.sessionStorage.getItem("weello-courier-upload-token") || "",
   );
   const [pendingPartnerUploadToken, setPendingPartnerUploadToken] = useState(
-    () => window.sessionStorage.getItem("foodiz-partner-upload-token") || "",
+    () => window.sessionStorage.getItem("weello-partner-upload-token") || "",
   );
   const [submissionStep, setSubmissionStep] = useState("");
 
@@ -291,10 +298,23 @@ export default function WaitlistPage() {
   }, [form.handlesAnimalProducts, form.requiresHygieneProof, form.sellsAlcohol]);
 
   const buttonLabel = useMemo(() => {
+    if (isProfessionalRegistration) {
+      return role === "livreur"
+        ? "Créer mon compte livreur"
+        : "Créer mon compte partenaire";
+    }
     if (role === "livreur") return "Pré-inscrire mon profil livreur";
     if (role === "partenaire") return "Pré-inscrire mon établissement";
     return "Je réserve ma place sur Weello";
-  }, [role]);
+  }, [isProfessionalRegistration, role]);
+
+  const displayedBenefits = isProfessionalRegistration
+    ? [
+        { title: "Compte professionnel sécurisé", icon: Lock },
+        { title: "Documents examinés par Weello", icon: FileCheck2 },
+        { title: "Activation décidée par l’administration", icon: Check },
+      ]
+    : BENEFITS;
 
   const update = (name: string, value: string | boolean) => {
     setForm((current) => ({ ...current, [name]: value }));
@@ -351,11 +371,16 @@ export default function WaitlistPage() {
     for (const [documentType, file] of entries) {
       if (!file) continue;
       setSubmissionStep(`Transfert sécurisé : ${uploaded.length + 1}/3`);
-      const prepareResponse = await fetch("/api/prelaunch/courier-documents", {
+      const prepareResponse = await fetch(
+        isProfessionalRegistration
+          ? "/api/professional/documents"
+          : "/api/prelaunch/courier-documents",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "prepare",
+          role,
           uploadToken,
           documentType,
           fileName: file.name,
@@ -383,10 +408,14 @@ export default function WaitlistPage() {
     }
 
     setSubmissionStep("Enregistrement du dossier…");
-    const completeResponse = await fetch("/api/prelaunch/courier-documents", {
+    const completeResponse = await fetch(
+      isProfessionalRegistration
+        ? "/api/professional/documents"
+        : "/api/prelaunch/courier-documents",
+      {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "complete", uploadToken, documents: uploaded }),
+      body: JSON.stringify({ action: "complete", role, uploadToken, documents: uploaded }),
     });
     const completed = await completeResponse.json();
     if (!completeResponse.ok) throw new Error(completed.error || "Le dossier n’a pas pu être finalisé.");
@@ -411,11 +440,16 @@ export default function WaitlistPage() {
     for (const [documentType, file] of entries) {
       if (!file) continue;
       setSubmissionStep(`Transfert sécurisé : ${uploaded.length + 1}/${entries.length}`);
-      const prepareResponse = await fetch("/api/prelaunch/partner-documents", {
+      const prepareResponse = await fetch(
+        isProfessionalRegistration
+          ? "/api/professional/documents"
+          : "/api/prelaunch/partner-documents",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "prepare",
+          role,
           uploadToken,
           documentType,
           fileName: file.name,
@@ -443,10 +477,14 @@ export default function WaitlistPage() {
     }
 
     setSubmissionStep("Enregistrement du dossier…");
-    const completeResponse = await fetch("/api/prelaunch/partner-documents", {
+    const completeResponse = await fetch(
+      isProfessionalRegistration
+        ? "/api/professional/documents"
+        : "/api/prelaunch/partner-documents",
+      {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "complete", uploadToken, documents: uploaded }),
+      body: JSON.stringify({ action: "complete", role, uploadToken, documents: uploaded }),
     });
     const completed = await completeResponse.json();
     if (!completeResponse.ok) throw new Error(completed.error || "Le dossier n’a pas pu être finalisé.");
@@ -464,40 +502,67 @@ export default function WaitlistPage() {
           : "";
       if (!uploadToken) {
         setSubmissionStep("Création du compte sécurisé…");
-        const response = await fetch("/api/prelaunch/register", {
+        const response = await fetch(
+          isProfessionalRegistration
+            ? "/api/professional/register"
+            : "/api/prelaunch/register",
+          {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...form, role }),
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Votre pré-inscription a échoué.");
-        uploadToken = String(payload.courierDocumentUploadToken || "");
+        if (!response.ok) {
+          throw new Error(payload.error || (
+            isProfessionalRegistration
+              ? "Votre inscription a échoué."
+              : "Votre pré-inscription a échoué."
+          ));
+        }
+        uploadToken = String(
+          isProfessionalRegistration
+            ? payload.documentUploadToken
+            : payload.courierDocumentUploadToken || "",
+        );
         if (role === "livreur") {
           if (!uploadToken) throw new Error("Le dépôt des justificatifs n’a pas pu être préparé.");
           setPendingCourierUploadToken(uploadToken);
-          window.sessionStorage.setItem("foodiz-courier-upload-token", uploadToken);
+          window.sessionStorage.setItem("weello-courier-upload-token", uploadToken);
         }
         if (role === "partenaire") {
-          uploadToken = String(payload.partnerDocumentUploadToken || "");
+          uploadToken = String(
+            isProfessionalRegistration
+              ? payload.documentUploadToken
+              : payload.partnerDocumentUploadToken || "",
+          );
           if (!uploadToken) throw new Error("Le dépôt des justificatifs n’a pas pu être préparé.");
           setPendingPartnerUploadToken(uploadToken);
-          window.sessionStorage.setItem("foodiz-partner-upload-token", uploadToken);
+          window.sessionStorage.setItem("weello-partner-upload-token", uploadToken);
         }
       }
 
       if (role === "livreur") {
         await uploadCourierDocuments(uploadToken);
-        window.sessionStorage.removeItem("foodiz-courier-upload-token");
+        window.sessionStorage.removeItem("weello-courier-upload-token");
         setPendingCourierUploadToken("");
       }
       if (role === "partenaire") {
         await uploadPartnerDocuments(uploadToken);
-        window.sessionStorage.removeItem("foodiz-partner-upload-token");
+        window.sessionStorage.removeItem("weello-partner-upload-token");
         setPendingPartnerUploadToken("");
       }
-      navigate(`/prelaunch-confirmed${role !== "client" ? `?role=${role}` : ""}`, { replace: true });
+      navigate(
+        isProfessionalRegistration
+          ? `/auth/professional-confirmed?role=${role}`
+          : `/prelaunch-confirmed${role !== "client" ? `?role=${role}` : ""}`,
+        { replace: true },
+      );
     } catch (submitError: any) {
-      setError(submitError.message || "Votre pré-inscription a échoué.");
+      setError(submitError.message || (
+        isProfessionalRegistration
+          ? "Votre inscription a échoué."
+          : "Votre pré-inscription a échoué."
+      ));
     } finally {
       setSubmitting(false);
       setSubmissionStep("");
@@ -505,7 +570,7 @@ export default function WaitlistPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#050504] text-foodiz-cream">
+    <div className="min-h-screen overflow-hidden bg-[#050504] text-weello-cream">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(216,168,79,.16),transparent_28%),radial-gradient(circle_at_20%_45%,rgba(170,115,38,.12),transparent_24%),linear-gradient(180deg,#11100d_0%,#050505_31%,#060604_100%)]" />
       <div className="fixed inset-0 -z-10 opacity-[.18] [background-image:radial-gradient(rgba(216,168,79,.7)_0.65px,transparent_0.65px)] [background-size:18px_18px]" />
 
@@ -522,9 +587,11 @@ export default function WaitlistPage() {
       <main className="relative z-10 mx-auto mt-5 max-w-[780px] px-5 pb-12 sm:mt-7 sm:px-8">
         <div className="text-center">
           <h1 className="mx-auto max-w-[720px] text-[44px] leading-[.98] tracking-[-.045em] text-white drop-shadow-[0_8px_22px_rgba(0,0,0,.85)] sm:text-[64px]" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-            Rejoignez les premiers
+            {isProfessionalRegistration ? "Créez votre espace" : "Rejoignez les premiers"}
             <span className="mt-1 block bg-[linear-gradient(180deg,#f0d08a_0%,#b98735_72%,#8d6228_100%)] bg-clip-text italic text-transparent">
-              Weelloers.
+              {isProfessionalRegistration
+                ? role === "livreur" ? "livreur Weello." : "partenaire Weello."
+                : "Weelloers."}
             </span>
           </h1>
 
@@ -535,13 +602,15 @@ export default function WaitlistPage() {
           </div>
 
           <p className="mx-auto mt-5 max-w-[650px] text-[21px] leading-relaxed text-[#d7d0c6]/78 sm:text-[25px]">
-            Parce que tout le monde mérite sa part du gâteau.
+            {isProfessionalRegistration
+              ? "Un dossier clair, sécurisé et suivi jusqu’à votre validation."
+              : "Parce que tout le monde mérite sa part du gâteau."}
           </p>
         </div>
 
         <section className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {BENEFITS.map((benefit) => (
-            <article key={benefit.title} className="rounded-[1.2rem] border border-[#d8a84f]/35 bg-[linear-gradient(180deg,rgba(216,168,79,.18),rgba(17,17,15,.96)_48%,rgba(6,6,5,.98)_100%)] p-5 text-center text-foodiz-cream shadow-[0_18px_35px_rgba(0,0,0,.36),inset_0_1px_0_rgba(255,238,190,.08)]">
+          {displayedBenefits.map((benefit) => (
+            <article key={benefit.title} className="rounded-[1.2rem] border border-[#d8a84f]/35 bg-[linear-gradient(180deg,rgba(216,168,79,.18),rgba(17,17,15,.96)_48%,rgba(6,6,5,.98)_100%)] p-5 text-center text-weello-cream shadow-[0_18px_35px_rgba(0,0,0,.36),inset_0_1px_0_rgba(255,238,190,.08)]">
               <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#d8a84f]/40 bg-[#d8a84f]/10 text-[#d8a84f] shadow-[0_8px_24px_rgba(0,0,0,.32)]">
                 <benefit.icon size={26} strokeWidth={1.8} />
               </span>
@@ -551,13 +620,16 @@ export default function WaitlistPage() {
           ))}
         </section>
 
-        <div className="my-7 flex items-center gap-5">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#c19443]/75 to-[#c19443]/75" />
-          <span className="text-[16px] font-black uppercase tracking-[.34em] text-[#c19443]">Je suis</span>
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent via-[#c19443]/75 to-[#c19443]/75" />
-        </div>
+        {!isProfessionalRegistration && (
+          <div className="my-7 flex items-center gap-5">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#c19443]/75 to-[#c19443]/75" />
+            <span className="text-[16px] font-black uppercase tracking-[.34em] text-[#c19443]">Je suis</span>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-[#c19443]/75 to-[#c19443]/75" />
+          </div>
+        )}
 
-        <div className="grid grid-cols-3 gap-3 sm:gap-6">
+        {!isProfessionalRegistration && (
+          <div className="grid grid-cols-3 gap-3 sm:gap-6">
             {ROLES.map((option) => {
               const selected = role === option.value;
               return (
@@ -589,8 +661,9 @@ export default function WaitlistPage() {
               );
             })}
           </div>
+        )}
 
-          <div className="mt-4 flex items-center gap-4 rounded-[1.05rem] border border-[#8e6424]/55 bg-[linear-gradient(180deg,rgba(14,14,12,.9),rgba(5,5,5,.9))] px-5 py-4 shadow-[inset_0_1px_0_rgba(245,205,122,.05)]">
+          <div className={`${isProfessionalRegistration ? "mt-7" : "mt-4"} flex items-center gap-4 rounded-[1.05rem] border border-[#8e6424]/55 bg-[linear-gradient(180deg,rgba(14,14,12,.9),rgba(5,5,5,.9))] px-5 py-4 shadow-[inset_0_1px_0_rgba(245,205,122,.05)]`}>
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#d8a84f]/55 bg-[#d8a84f]/10 text-[#d8a84f]">
               {role === "client" ? <User size={25} /> : role === "livreur" ? <Bike size={25} /> : <Store size={25} />}
             </span>
@@ -610,7 +683,7 @@ export default function WaitlistPage() {
             />
 
             {role === "partenaire" && (
-              <div className="space-y-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[.025] p-3">
+              <div className="space-y-3 rounded-2xl border border-weello-gold/15 bg-weello-gold/[.025] p-3">
                 <Field icon={<Building2 size={18} />} name="establishmentName" value={form.establishmentName} onChange={update} placeholder="Nom de l’établissement" />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <SelectField
@@ -640,8 +713,8 @@ export default function WaitlistPage() {
                   <Field icon={<MapPin size={17} />} name="address" value={form.address} onChange={update} placeholder="Adresse de l’établissement" autoComplete="street-address" />
                   <Field icon={<MapPin size={17} />} name="postalCode" value={form.postalCode} onChange={update} placeholder="Code postal" autoComplete="postal-code" />
                 </div>
-                <div className="space-y-2 rounded-2xl border border-white/5 bg-black/25 p-4 text-xs text-foodiz-gray">
-                  <p className="font-semibold text-foodiz-cream">Activités réglementées de l’établissement</p>
+                <div className="space-y-2 rounded-2xl border border-white/5 bg-black/25 p-4 text-xs text-weello-gray">
+                  <p className="font-semibold text-weello-cream">Activités réglementées de l’établissement</p>
                   <label className="flex items-start gap-2">
                     <input type="checkbox" checked={form.requiresHygieneProof} onChange={(event) => update("requiresHygieneProof", event.target.checked)} className="mt-0.5 accent-[#D8A84F]" />
                     Activité de restauration nécessitant un justificatif de formation à l’hygiène alimentaire.
@@ -655,9 +728,9 @@ export default function WaitlistPage() {
                     Vente de boissons alcoolisées.
                   </label>
                 </div>
-                <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/[.04] p-4">
-                  <p className="text-xs font-semibold text-foodiz-cream">Justificatifs professionnels</p>
-                  <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">
+                <div className="rounded-2xl border border-weello-gold/20 bg-weello-gold/[.04] p-4">
+                  <p className="text-xs font-semibold text-weello-cream">Justificatifs professionnels</p>
+                  <p className="mt-2 text-[10px] leading-relaxed text-weello-gray">
                     Les pièces sont stockées dans un espace privé. Elles seront examinées par Weello avant toute activation commerciale.
                   </p>
                 </div>
@@ -715,7 +788,7 @@ export default function WaitlistPage() {
             <Field icon={<MapPin size={18} />} name="city" value={form.city} onChange={update} placeholder="Ville" autoComplete="address-level2" />
 
             {role === "livreur" && (
-              <div className="space-y-3 rounded-2xl border border-foodiz-gold/15 bg-foodiz-gold/[.025] p-3">
+              <div className="space-y-3 rounded-2xl border border-weello-gold/15 bg-weello-gold/[.025] p-3">
                 <Field
                   icon={<Building2 size={17} />}
                   name="siret"
@@ -755,7 +828,7 @@ export default function WaitlistPage() {
                       { value: "autre", label: "Autre" },
                     ]}
                   />
-                  <label className="flex items-center gap-3 rounded-[1.15rem] border border-[#9d742d]/45 bg-[linear-gradient(180deg,rgba(12,12,10,.94),rgba(4,4,4,.92))] px-4 py-3.5 text-sm text-foodiz-cream">
+                  <label className="flex items-center gap-3 rounded-[1.15rem] border border-[#9d742d]/45 bg-[linear-gradient(180deg,rgba(12,12,10,.94),rgba(4,4,4,.92))] px-4 py-3.5 text-sm text-weello-cream">
                     <input
                       type="checkbox"
                       checked={form.availabilityFlexible}
@@ -763,17 +836,17 @@ export default function WaitlistPage() {
                       className="h-5 w-5 accent-[#D8A84F]"
                     />
                     <span>
-                      <span className="block font-semibold text-foodiz-cream">Je suis flexible</span>
+                      <span className="block font-semibold text-weello-cream">Je suis flexible</span>
                       <span className="mt-0.5 block text-[10px] text-[#b8b0a2]/70">Weello pourra me proposer plusieurs créneaux.</span>
                     </span>
                   </label>
                 </div>
-                <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
+                <div className="rounded-2xl border border-weello-gold/15 bg-black/25 p-4">
                   <div className="flex items-start gap-3">
-                    <ArrowRight size={17} className="mt-0.5 shrink-0 text-foodiz-gold" />
+                    <ArrowRight size={17} className="mt-0.5 shrink-0 text-weello-gold" />
                     <div>
-                      <p className="text-xs font-semibold text-foodiz-cream">Mes créneaux préférés</p>
-                      <p className="mt-1 text-[10px] leading-relaxed text-foodiz-gray">Sélectionnez plusieurs tranches si vous êtes disponible sur plusieurs moments.</p>
+                      <p className="text-xs font-semibold text-weello-cream">Mes créneaux préférés</p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-weello-gray">Sélectionnez plusieurs tranches si vous êtes disponible sur plusieurs moments.</p>
                     </div>
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -786,8 +859,8 @@ export default function WaitlistPage() {
                           onClick={() => toggleArrayValue("availabilitySlots", slot.value)}
                           className={`rounded-xl border px-3 py-3 text-left transition ${
                             selected
-                              ? "border-foodiz-gold bg-foodiz-gold/15 text-foodiz-cream"
-                              : "border-foodiz-gold/15 bg-white/[0.02] text-foodiz-gray hover:border-foodiz-gold/45"
+                              ? "border-weello-gold bg-weello-gold/15 text-weello-cream"
+                              : "border-weello-gold/15 bg-white/[0.02] text-weello-gray hover:border-weello-gold/45"
                           }`}
                         >
                           <span className="block text-xs font-semibold">{slot.label}</span>
@@ -797,8 +870,8 @@ export default function WaitlistPage() {
                     })}
                   </div>
                 </div>
-                <div className="rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
-                  <p className="text-xs font-semibold text-foodiz-cream">Jours souhaités</p>
+                <div className="rounded-2xl border border-weello-gold/15 bg-black/25 p-4">
+                  <p className="text-xs font-semibold text-weello-cream">Jours souhaités</p>
                   <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-7">
                     {COURIER_AVAILABILITY_DAYS.map((day) => {
                       const selected = form.availabilityDays.includes(day.value);
@@ -809,8 +882,8 @@ export default function WaitlistPage() {
                           onClick={() => toggleArrayValue("availabilityDays", day.value)}
                           className={`rounded-xl border px-2 py-2 text-xs font-semibold transition ${
                             selected
-                              ? "border-foodiz-gold bg-foodiz-gold/15 text-foodiz-cream"
-                              : "border-foodiz-gold/15 bg-white/[0.02] text-foodiz-gray hover:border-foodiz-gold/45"
+                              ? "border-weello-gold bg-weello-gold/15 text-weello-cream"
+                              : "border-weello-gold/15 bg-white/[0.02] text-weello-gray hover:border-weello-gold/45"
                           }`}
                         >
                           {day.label}
@@ -819,9 +892,9 @@ export default function WaitlistPage() {
                     })}
                   </div>
                 </div>
-                <div className="rounded-2xl border border-foodiz-gold/20 bg-foodiz-gold/[.04] p-4">
-                  <p className="text-xs font-semibold text-foodiz-cream">Justificatifs obligatoires</p>
-                  <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">
+                <div className="rounded-2xl border border-weello-gold/20 bg-weello-gold/[.04] p-4">
+                  <p className="text-xs font-semibold text-weello-cream">Justificatifs obligatoires</p>
+                  <p className="mt-2 text-[10px] leading-relaxed text-weello-gray">
                     Prenez des photos nettes, sans reflet et avec les quatre bords visibles. Les fichiers sont conservés dans un espace privé et examinés uniquement par Weello.
                   </p>
                 </div>
@@ -859,7 +932,7 @@ export default function WaitlistPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="shrink-0 text-foodiz-gold/60 hover:text-foodiz-gold"
+                  className="shrink-0 text-weello-gold/60 hover:text-weello-gold"
                   aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                 >
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -875,47 +948,58 @@ export default function WaitlistPage() {
               placeholder="Confirmer le mot de passe"
               autoComplete="new-password"
             />
-            <p className="px-1 text-[10px] leading-relaxed text-foodiz-gray/55">
+            <p className="px-1 text-[10px] leading-relaxed text-weello-gray/55">
               10 caractères minimum, avec une majuscule, une minuscule et un chiffre.
             </p>
 
             <label className="flex cursor-pointer items-start gap-4 rounded-[1.05rem] border border-[#8e6424]/35 bg-[linear-gradient(180deg,rgba(14,14,12,.84),rgba(5,5,5,.88))] px-5 py-4 shadow-[inset_0_1px_0_rgba(245,205,122,.05)]">
               <input
                 type="checkbox"
-                checked={form.marketingConsent}
-                onChange={(event) => update("marketingConsent", event.target.checked)}
+                checked={form.cguAccepted}
+                onChange={(event) => update("cguAccepted", event.target.checked)}
                 required
                 className="mt-0.5 h-7 w-7 shrink-0 rounded-md accent-[#D8A84F]"
               />
               <span className="text-[12px] leading-relaxed text-[#d7d0c6]/72">
                 J’accepte les{" "}
-                <Link to="/cgu" className="font-semibold text-foodiz-gold underline decoration-foodiz-gold/35 underline-offset-4">
+                <Link to="/cgu" className="font-semibold text-weello-gold underline decoration-weello-gold/35 underline-offset-4">
                   CGU
                 </Link>
                 {" "}et la{" "}
-                <Link to="/confidentialite" className="font-semibold text-foodiz-gold underline decoration-foodiz-gold/35 underline-offset-4">
+                <Link to="/confidentialite" className="font-semibold text-weello-gold underline decoration-weello-gold/35 underline-offset-4">
                   politique de confidentialité
                 </Link>
-                , et j’autorise Weello à me contacter au sujet de ma pré-inscription et du lancement.
+                .
+              </span>
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-4 rounded-[1.05rem] border border-[#8e6424]/25 bg-black/25 px-5 py-4">
+              <input
+                type="checkbox"
+                checked={form.marketingConsent}
+                onChange={(event) => update("marketingConsent", event.target.checked)}
+                required={!isProfessionalRegistration}
+                className="mt-0.5 h-5 w-5 shrink-0 rounded-md accent-[#D8A84F]"
+              />
+              <span className="text-[11px] leading-relaxed text-[#d7d0c6]/65">
+                {isProfessionalRegistration
+                  ? "J’accepte de recevoir les actualités, conseils et offres Weello. Ce consentement est facultatif et révocable."
+                  : "J’autorise Weello à me contacter au sujet de ma pré-inscription et du lancement."}
               </span>
             </label>
 
             {error && (
-              <div className="rounded-2xl border border-foodiz-red/25 bg-foodiz-red/[.06] px-4 py-3 text-sm text-foodiz-red">{error}</div>
+              <div className="rounded-2xl border border-weello-red/25 bg-weello-red/[.06] px-4 py-3 text-sm text-weello-red">{error}</div>
             )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="flex w-full items-center justify-center gap-3 rounded-[1.05rem] border border-[#f0cf84]/45 py-5 text-[18px] font-black text-[#070705] transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-foodiz-gold/30 disabled:opacity-50 sm:text-[20px]"
-              style={{
-                background: "linear-gradient(180deg, #e7c778 0%, #c8943b 62%, #a86f25 100%)",
-                boxShadow: "0 14px 28px rgba(0,0,0,.46), 0 0 28px rgba(216,168,79,.20), inset 0 1px 0 rgba(255,241,198,.48)",
-              }}
+              className="weello-btn flex w-full items-center justify-center gap-3 rounded-[1.05rem] py-5 text-[18px] font-black text-[#070705] disabled:opacity-50 sm:text-[20px]"
             >
               {submitting ? <LoaderCircle size={19} className="animate-spin" /> : <ArrowRight size={19} />}
               {submitting
-                ? submissionStep || "Pré-inscription en cours…"
+                ? submissionStep || (isProfessionalRegistration ? "Inscription en cours…" : "Pré-inscription en cours…")
                 : (pendingCourierUploadToken && role === "livreur") || (pendingPartnerUploadToken && role === "partenaire")
                   ? "Reprendre l’envoi des justificatifs"
                   : buttonLabel}
@@ -927,22 +1011,22 @@ export default function WaitlistPage() {
             <p className="text-[12px] text-[#d8a84f]">Vos informations sont sécurisées et confidentielles.</p>
           </div>
 
-          <footer className="mt-8 rounded-[1.25rem] border border-foodiz-gold/10 bg-white/[0.018] px-5 py-5 text-center">
+          <footer className="mt-8 rounded-[1.25rem] border border-weello-gold/10 bg-white/[0.018] px-5 py-5 text-center">
             <a
               href="https://weello.app/"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-foodiz-gold/20 px-4 py-2 text-xs font-semibold text-foodiz-gold transition hover:bg-foodiz-gold/10"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-weello-gold/20 px-4 py-2 text-xs font-semibold text-weello-gold transition hover:bg-weello-gold/10"
             >
               <Star size={15} />
               Découvrir weello.app
             </a>
-            <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-foodiz-gray">
-              <Link to="/mentions-legales" className="hover:text-foodiz-gold">Mentions légales</Link>
-              <Link to="/cgu" className="hover:text-foodiz-gold">CGU</Link>
-              <Link to="/cgv" className="hover:text-foodiz-gold">CGV</Link>
-              <Link to="/confidentialite" className="hover:text-foodiz-gold">Confidentialité</Link>
-              <Link to="/cookies" className="hover:text-foodiz-gold">Cookies</Link>
+            <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-weello-gray">
+              <Link to="/mentions-legales" className="hover:text-weello-gold">Mentions légales</Link>
+              <Link to="/cgu" className="hover:text-weello-gold">CGU</Link>
+              <Link to="/cgv" className="hover:text-weello-gold">CGV</Link>
+              <Link to="/confidentialite" className="hover:text-weello-gold">Confidentialité</Link>
+              <Link to="/cookies" className="hover:text-weello-gold">Cookies</Link>
             </nav>
           </footer>
         </main>

@@ -56,11 +56,11 @@ export async function sendPrelaunchEmail({
   to: string;
   subject: string;
   headline: string;
-  body: string;
+  body: string | string[];
   actionLabel?: string;
   actionUrl?: string;
   recipientUserId?: string | null;
-  emailType?: "prelaunch_confirmation" | "launch_access" | "professional_documents_received" | "professional_approved" | "professional_replacement_requested" | "professional_rejected";
+  emailType?: "prelaunch_confirmation" | "launch_access" | "professional_signup_confirmation" | "professional_documents_received" | "professional_approved" | "professional_replacement_requested" | "professional_rejected";
   required?: boolean;
 }) {
   return sendWeelloEmail({

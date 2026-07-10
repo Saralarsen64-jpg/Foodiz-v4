@@ -1,13 +1,13 @@
 # Weello — checklist App Store et Google Play
 
-Dernière vérification technique : 4 juillet 2026.
+Dernière vérification technique : 10 juillet 2026.
 
 ## État automatisé
 
 - Expo Doctor : 21/21.
 - TypeScript web, fonctions et mobile : OK.
 - ESLint mobile : OK.
-- Tests sécurité, économie et routage : 76/76.
+- Tests sécurité, économie et routage : 86/86.
 - Build web : OK.
 - Export Metro iOS et Android : OK.
 - Bundle ID iOS et package Android : `app.weello`.
@@ -53,7 +53,8 @@ Dernière vérification technique : 4 juillet 2026.
    - code de remise, points et reçu ;
    - création d’un ticket support ;
    - suppression de chaque type de compte test.
-6. Renommer le projet Expo distant `@foodiz.co/foodiz` en Weello depuis le
+6. Renommer ou transférer le projet Expo distant `@foodiz.co/foodiz` vers
+   le futur compte Weello depuis le
    tableau de bord Expo, puis seulement après remplacer le `slug` local.
    Conserver impérativement le Project ID existant.
 7. Publier les fichiers Universal Links/App Links sur `weello.app` après

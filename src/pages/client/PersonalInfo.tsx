@@ -61,43 +61,43 @@ export default function PersonalInfoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-foodiz-black pb-24 animate-fade-in-up border-x-2 border-foodiz-gold/20 relative">
-      <header className="bg-foodiz-card border-b border-foodiz-gold/10 px-4 py-3 sticky top-0 z-30 flex items-center justify-between max-w-lg mx-auto">
-        <button onClick={() => navigate("/client/account")} className="text-foodiz-gold"><ChevronLeft size={24} /></button>
-        <h1 className="foodiz-title text-lg">Mes informations</h1>
+    <div className="min-h-screen bg-weello-black pb-24 animate-fade-in-up border-x-2 border-weello-gold/20 relative">
+      <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30 flex items-center justify-between max-w-lg mx-auto">
+        <button onClick={() => navigate("/client/account")} className="text-weello-gold"><ChevronLeft size={24} /></button>
+        <h1 className="weello-title text-lg">Mes informations</h1>
         <div className="w-6" />
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {message && (
-          <div className={`p-4 rounded-xl flex items-center gap-3 border ${message.type === 'success' ? 'bg-foodiz-green/10 text-foodiz-green border-foodiz-green/20' : 'bg-foodiz-red/10 text-foodiz-red border-foodiz-red/20'}`}>
+          <div className={`p-4 rounded-xl flex items-center gap-3 border ${message.type === 'success' ? 'bg-weello-green/10 text-weello-green border-weello-green/20' : 'bg-weello-red/10 text-weello-red border-weello-red/20'}`}>
             {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
             <span className="text-sm">{message.text}</span>
           </div>
         )}
 
         <form onSubmit={handleSave} className="space-y-4">
-          <div className="foodiz-card p-4 flex items-center gap-3">
-            <User size={16} className="text-foodiz-gold" />
-            <input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Nom complet" required />
+          <div className="weello-card p-4 flex items-center gap-3">
+            <User size={16} className="text-weello-gold" />
+            <input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="flex-1 bg-transparent text-weello-cream outline-none" placeholder="Nom complet" required />
           </div>
-          <div className="foodiz-card p-4 flex items-center gap-3">
-            <Mail size={16} className="text-foodiz-gold" />
-            <input value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Email" required />
+          <div className="weello-card p-4 flex items-center gap-3">
+            <Mail size={16} className="text-weello-gold" />
+            <input value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="flex-1 bg-transparent text-weello-cream outline-none" placeholder="Email" required />
           </div>
-          <div className="foodiz-card p-4 flex items-center gap-3">
-            <Phone size={16} className="text-foodiz-gold" />
-            <input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="flex-1 bg-transparent text-foodiz-cream outline-none" placeholder="Téléphone" required />
+          <div className="weello-card p-4 flex items-center gap-3">
+            <Phone size={16} className="text-weello-gold" />
+            <input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="flex-1 bg-transparent text-weello-cream outline-none" placeholder="Téléphone" required />
           </div>
-          <div className="foodiz-card p-4 flex items-center gap-3">
-            <MapPin size={16} className="text-foodiz-gold" />
+          <div className="weello-card p-4 flex items-center gap-3">
+            <MapPin size={16} className="text-weello-gold" />
             <div className="flex-1">
-              <p className="text-sm text-foodiz-cream">{[formData.address, formData.postalCode, formData.city].filter(Boolean).join(", ") || "Aucune adresse vérifiée"}</p>
-              <p className="mt-1 text-[10px] text-foodiz-gray">L'adresse de livraison se modifie depuis l'espace sécurisé afin de recalculer ses coordonnées.</p>
+              <p className="text-sm text-weello-cream">{[formData.address, formData.postalCode, formData.city].filter(Boolean).join(", ") || "Aucune adresse vérifiée"}</p>
+              <p className="mt-1 text-[10px] text-weello-gray">L'adresse de livraison se modifie depuis l'espace sécurisé afin de recalculer ses coordonnées.</p>
             </div>
-            <button type="button" onClick={() => navigate("/client/account/addresses")} className="text-xs text-foodiz-gold">Modifier</button>
+            <button type="button" onClick={() => navigate("/client/account/addresses")} className="text-xs text-weello-gold">Modifier</button>
           </div>
-          <button type="submit" disabled={loading} className="w-full foodiz-btn !py-4 flex items-center justify-center gap-2 disabled:opacity-50 mt-6">
+          <button type="submit" disabled={loading} className="w-full weello-btn !py-4 flex items-center justify-center gap-2 disabled:opacity-50 mt-6">
             <Save size={18} /> {loading ? "Enregistrement..." : "Enregistrer"}
           </button>
         </form>

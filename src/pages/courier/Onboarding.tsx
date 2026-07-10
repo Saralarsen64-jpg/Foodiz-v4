@@ -112,11 +112,11 @@ export default function CourierOnboarding() {
     }
   };
 
-  const field = (key: "name" | "phone" | "city" | "legalName" | "siret" | "address" | "postalCode", placeholder: string, Icon: typeof UserRound) => <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><Icon size={17} className="text-foodiz-gold"/><input value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} inputMode={key === "siret" || key === "postalCode" ? "numeric" : undefined} maxLength={key === "siret" ? 14 : key === "postalCode" ? 5 : undefined} className="w-full bg-transparent py-4 text-foodiz-cream outline-none"/></div>;
+  const field = (key: "name" | "phone" | "city" | "legalName" | "siret" | "address" | "postalCode", placeholder: string, Icon: typeof UserRound) => <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><Icon size={17} className="text-weello-gold"/><input value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} inputMode={key === "siret" || key === "postalCode" ? "numeric" : undefined} maxLength={key === "siret" ? 14 : key === "postalCode" ? 5 : undefined} className="w-full bg-transparent py-4 text-weello-cream outline-none"/></div>;
 
   return <CourierShell title="Rejoindre la flotte" back="/courier">
-    <section className="rounded-[2rem] border border-foodiz-gold/20 bg-foodiz-gold/[0.06] p-6"><FileText size={25} className="text-foodiz-gold"/><h2 className="foodiz-title mt-4 text-2xl">Votre dossier livreur</h2><p className="mt-2 text-sm text-foodiz-gray">Votre accès aux courses reste bloqué tant que Weello n’a pas validé votre identité et votre activité.</p></section>
-    <section className="foodiz-card mt-4 space-y-4 p-5">
+    <section className="rounded-[2rem] border border-weello-gold/20 bg-weello-gold/[0.06] p-6"><FileText size={25} className="text-weello-gold"/><h2 className="weello-title mt-4 text-2xl">Votre dossier livreur</h2><p className="mt-2 text-sm text-weello-gray">Votre accès aux courses reste bloqué tant que Weello n’a pas validé votre identité et votre activité.</p></section>
+    <section className="weello-card mt-4 space-y-4 p-5">
       {field("name", "Nom complet", UserRound)}
       {field("phone", "Téléphone", Phone)}
       {field("legalName", "Nom légal / raison sociale", Building2)}
@@ -124,20 +124,20 @@ export default function CourierOnboarding() {
       {field("address", "Adresse professionnelle", MapPin)}
       {field("postalCode", "Code postal", MapPin)}
       {field("city", "Ville", MapPin)}
-      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><Bike size={17} className="text-foodiz-gold"/><select value={form.vehicle} onChange={(event) => setForm((current) => ({ ...current, vehicle: event.target.value }))} className="w-full bg-transparent py-4 text-foodiz-cream outline-none"><option className="bg-foodiz-card" value="bike">Vélo</option><option className="bg-foodiz-card" value="scooter">Scooter</option><option className="bg-foodiz-card" value="motorcycle">Moto</option><option className="bg-foodiz-card" value="car">Voiture</option></select></div>
+      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4"><Bike size={17} className="text-weello-gold"/><select value={form.vehicle} onChange={(event) => setForm((current) => ({ ...current, vehicle: event.target.value }))} className="w-full bg-transparent py-4 text-weello-cream outline-none"><option className="bg-weello-card" value="bike">Vélo</option><option className="bg-weello-card" value="scooter">Scooter</option><option className="bg-weello-card" value="motorcycle">Moto</option><option className="bg-weello-card" value="car">Voiture</option></select></div>
 
-      <div className="rounded-xl border border-foodiz-gold/15 bg-foodiz-gold/5 p-3 text-xs text-foodiz-gray">Photos nettes, sans reflet, avec les quatre bords visibles. Le justificatif d’activité peut être un avis SIRENE/RNE, une attestation INSEE, un extrait K/Kbis ou un document officiel équivalent.</div>
+      <div className="rounded-xl border border-weello-gold/15 bg-weello-gold/5 p-3 text-xs text-weello-gray">Photos nettes, sans reflet, avec les quatre bords visibles. Le justificatif d’activité peut être un avis SIRENE/RNE, une attestation INSEE, un extrait K/Kbis ou un document officiel équivalent.</div>
       {(Object.keys(documentLabels) as DocumentType[]).map((documentType) => {
         const selected = files[documentType];
         const status = documentStatuses[documentType];
         return <label key={documentType} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           <input type="file" accept={documentType === "activity_proof" ? "image/jpeg,image/png,application/pdf" : "image/jpeg,image/png"} capture={documentType === "activity_proof" ? undefined : "environment"} className="sr-only" onChange={(event) => selectFile(documentType, event.target.files?.[0])}/>
-          {selected || status ? <FileCheck2 size={18} className="text-foodiz-green"/> : <FileText size={18} className="text-foodiz-gold"/>}
-          <span className="min-w-0"><span className="block text-sm text-foodiz-cream">{documentLabels[documentType]}</span><span className="mt-1 block truncate text-[10px] text-foodiz-gray">{selected?.name || (status ? `Statut : ${status}` : "Ajouter le document")}</span></span>
+          {selected || status ? <FileCheck2 size={18} className="text-weello-green"/> : <FileText size={18} className="text-weello-gold"/>}
+          <span className="min-w-0"><span className="block text-sm text-weello-cream">{documentLabels[documentType]}</span><span className="mt-1 block truncate text-[10px] text-weello-gray">{selected?.name || (status ? `Statut : ${status}` : "Ajouter le document")}</span></span>
         </label>;
       })}
 
-      <button onClick={submit} disabled={sending} className="foodiz-btn flex w-full items-center justify-center gap-2 py-4 disabled:opacity-50">{sending ? <CheckCircle2 size={18}/> : <FileText size={18}/>} {sending ? "Envoi..." : "Envoyer mon dossier"}</button>
+      <button onClick={submit} disabled={sending} className="weello-btn flex w-full items-center justify-center gap-2 py-4 disabled:opacity-50">{sending ? <CheckCircle2 size={18}/> : <FileText size={18}/>} {sending ? "Envoi..." : "Envoyer mon dossier"}</button>
     </section>
   </CourierShell>;
 }

@@ -68,7 +68,6 @@ import LoginPage from "./pages/auth/Login";
 import SignupPage from "./pages/auth/Signup";
 import AuthCallback from "./pages/auth/Callback"; // NOUVEL IMPORT
 import ResetPasswordPage from "./pages/auth/ResetPassword";
-import WaitlistPage from "./pages/prelaunch/Waitlist";
 import PrelaunchConfirmed from "./pages/prelaunch/Confirmed";
 import ActivatePrelaunch from "./pages/prelaunch/Activate";
 import PrelaunchCourierDocuments from "./pages/prelaunch/CourierDocuments";
@@ -99,6 +98,7 @@ import AdminPrelaunch from "./pages/admin/Prelaunch";
 import AdminUsers from "./pages/admin/Users";
 import AdminServiceAreas from "./pages/admin/ServiceAreas";
 import InterfaceStudio from "./pages/dev/InterfaceStudio";
+import ProfessionalConfirmed from "./pages/auth/ProfessionalConfirmed";
 
 export default function App() {
   return (
@@ -109,10 +109,10 @@ export default function App() {
       )}
 
       {/* Redirect root */}
-      <Route path="/" element={<Navigate to="/waitlist" replace />} />
+      <Route path="/" element={<Navigate to="/auth" replace />} />
 
       {/* ─── AUTH ROUTES (Publiques) ─────────────────────────────────────── */}
-      <Route path="/waitlist" element={<WaitlistPage />} />
+      <Route path="/waitlist" element={<Navigate to="/auth" replace />} />
       <Route path="/prelaunch-confirmed" element={<PrelaunchConfirmed />} />
       <Route path="/courier-documents" element={<PrelaunchCourierDocuments />} />
       <Route path="/partner-documents" element={<PrelaunchPartnerDocuments />} />
@@ -120,6 +120,7 @@ export default function App() {
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
+      <Route path="/auth/professional-confirmed" element={<ProfessionalConfirmed />} />
       <Route path="/auth/callback" element={<AuthCallback />} /> {/* NOUVELLE ROUTE */}
       <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route path="/admin/auth" element={<AdminAuth />} />

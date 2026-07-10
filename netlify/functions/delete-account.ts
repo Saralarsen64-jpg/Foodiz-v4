@@ -74,7 +74,7 @@ const handler: Handler = async (event) => {
       .eq("user_id", user.id);
   }
 
-  const anonymizedEmail = `deleted-${user.id}@deleted.foodiz.invalid`;
+  const anonymizedEmail = `deleted-${user.id}@deleted.weello.invalid`;
   const { error: profileError } = await adminSupabase
     .from("profiles")
     .update({

@@ -1,4 +1,4 @@
--- Anti-multi-account identity lock for Foodiz clients and couriers.
+-- Anti-multi-account identity lock for Weello clients and couriers.
 -- Equivalent French phone formats are normalized to the same value.
 -- Partners remain outside this particular uniqueness rule because a business
 -- contact number can legitimately be shared by several establishment users.
@@ -92,4 +92,3 @@ ALTER TABLE public.prelaunch_profiles
     role NOT IN ('client', 'livreur')
     OR phone_normalized IS NOT NULL
   ) NOT VALID;
-

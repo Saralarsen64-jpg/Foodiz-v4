@@ -69,7 +69,7 @@ const handler: Handler = async (event) => {
       customerId = existingCustomers.data[0]?.id || null;
     }
     if (!customerId) {
-      const customer = await stripe.customers.create({ email: user.email, name: restaurant.name, metadata: { restaurantId, ownerId: user.id, type: "foodiz_plus" } });
+      const customer = await stripe.customers.create({ email: user.email, name: restaurant.name, metadata: { restaurantId, ownerId: user.id, type: "weello_plus" } });
       customerId = customer.id;
     }
 

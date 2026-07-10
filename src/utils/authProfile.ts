@@ -132,19 +132,6 @@ export async function resolveRedirectPath() {
 
   if (profile.role === "admin") return "/admin/auth";
 
-  const { data: prelaunchProfile } = await supabase
-    .from("prelaunch_profiles")
-    .select("status,access_enabled")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (
-    prelaunchProfile
-    && prelaunchProfile.status !== "activated"
-    && prelaunchProfile.access_enabled !== true
-  ) {
-    return "/prelaunch-confirmed";
-  }
-
   if (profile.role === "client") return "/client";
 
   if (profile.role === "partner") {

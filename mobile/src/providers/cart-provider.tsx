@@ -6,7 +6,8 @@ import {
   useMemo,
   useState,
 } from 'react';
-import * as SecureStore from 'expo-secure-store';
+
+import { secureStorage } from '@/lib/secure-storage';
 
 export type MobileCartItem = {
   productId: string;
@@ -30,7 +31,8 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
-const CART_STORAGE_KEY = 'foodiz_mobile_cart_v1';
+const CART_STORAGE_KEY = 'weello_mobile_cart_v1';
+const LEGACY_CART_STORAGE_KEY = 'foodiz_mobile_cart_v1';
 
 export function CartProvider({ children }: PropsWithChildren) {
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
@@ -40,22 +42,41 @@ export function CartProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void SecureStore.getItemAsync(CART_STORAGE_KEY)
-      .then((stored) => {
-        if (!active || !stored) return;
-        const parsed = JSON.parse(stored) as {
-          restaurantId?: string | null;
-          restaurantName?: string | null;
-          items?: MobileCartItem[];
-        };
-        setRestaurantId(parsed.restaurantId || null);
-        setRestaurantName(parsed.restaurantName || null);
-        setItems(Array.isArray(parsed.items) ? parsed.items : []);
-      })
-      .catch(() => undefined)
-      .finally(() => {
+    void (async () => {
+      try {
+        const stored = await secureStorage.getItem(CART_STORAGE_KEY);
+        if (active && stored) {
+          const parsed = JSON.parse(stored) as {
+            restaurantId?: string | null;
+            restaurantName?: string | null;
+            items?: MobileCartItem[];
+          };
+          setRestaurantId(parsed.restaurantId || null);
+          setRestaurantName(parsed.restaurantName || null);
+          setItems(Array.isArray(parsed.items) ? parsed.items : []);
+        } else if (active && !stored) {
+          // Try migrating legacy mobile cart value
+          const legacy = await secureStorage.getItem(LEGACY_CART_STORAGE_KEY);
+          if (legacy) {
+            await secureStorage.setItem(CART_STORAGE_KEY, legacy);
+            await secureStorage.removeItem(LEGACY_CART_STORAGE_KEY);
+            const parsed = JSON.parse(legacy) as {
+              restaurantId?: string | null;
+              restaurantName?: string | null;
+              items?: MobileCartItem[];
+            };
+            setRestaurantId(parsed.restaurantId || null);
+            setRestaurantName(parsed.restaurantName || null);
+            setItems(Array.isArray(parsed.items) ? parsed.items : []);
+          }
+        }
+      } catch {
+        // ignore
+      } finally {
         if (active) setHydrated(true);
-      });
+      }
+    })();
+
     return () => {
       active = false;
     };
@@ -63,7 +84,7 @@ export function CartProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (!hydrated) return;
-    void SecureStore.setItemAsync(
+    void secureStorage.setItem(
       CART_STORAGE_KEY,
       JSON.stringify({ restaurantId, restaurantName, items }),
     );

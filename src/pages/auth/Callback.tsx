@@ -34,20 +34,20 @@ export default function AuthCallback() {
   // Affichage en cas d'erreur (lien invalide)
   if (error) {
     return (
-      <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-cream p-6 text-center">
-        <h1 className="foodiz-title text-2xl text-foodiz-red mb-4">Oups !</h1>
-        <p className="text-foodiz-gray mb-6">{error}</p>
-        <button onClick={() => navigate('/auth/login')} className="foodiz-btn px-6 py-3">Retour à la connexion</button>
+      <div className="min-h-screen bg-weello-black flex flex-col items-center justify-center text-weello-cream p-6 text-center">
+        <h1 className="weello-title text-2xl text-weello-red mb-4">Oups !</h1>
+        <p className="text-weello-gray mb-6">{error}</p>
+        <button onClick={() => navigate('/auth/login')} className="weello-btn px-6 py-3">Retour à la connexion</button>
       </div>
     );
   }
 
   // Affichage pendant le chargement
   return (
-    <div className="min-h-screen bg-foodiz-black flex flex-col items-center justify-center text-foodiz-gold">
-      <div className="w-16 h-16 rounded-full border-2 border-foodiz-gold/20 border-t-foodiz-gold animate-spin mb-4"></div>
+    <div className="min-h-screen bg-weello-black flex flex-col items-center justify-center text-weello-gold">
+      <div className="w-16 h-16 rounded-full border-2 border-weello-gold/20 border-t-weello-gold animate-spin mb-4"></div>
       <p className="text-sm animate-pulse">Confirmation de votre compte Weello en cours...</p>
-      <p className="text-[10px] text-foodiz-gray mt-2">Ne fermez pas cette page.</p>
+      <p className="text-[10px] text-weello-gray mt-2">Ne fermez pas cette page.</p>
     </div>
   );
 }

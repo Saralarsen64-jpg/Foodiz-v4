@@ -20,8 +20,8 @@ export type ClientNotification = {
   deepLink?: string;
 };
 
-const CAMPAIGNS_KEY = "foodiz_partner_campaigns_v1";
-const CLIENT_NOTIFICATIONS_KEY = "foodiz_client_notifications_v1";
+const CAMPAIGNS_KEY = "weello_partner_campaigns_v1";
+const CLIENT_NOTIFICATIONS_KEY = "weello_client_notifications_v1";
 
 export function loadCampaigns(): PartnerCampaign[] {
   try {

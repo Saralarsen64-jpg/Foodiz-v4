@@ -6,12 +6,12 @@ export default function PrelaunchConfirmed() {
   const courier = params.get("role") === "livreur";
   const partner = params.get("role") === "partenaire";
   return (
-    <main className="min-h-screen kraft-paper-bg px-5 py-10 flex items-center justify-center text-foodiz-black">
+    <main className="min-h-screen kraft-paper-bg px-5 py-10 flex items-center justify-center text-weello-black">
       <section className="w-full max-w-xl rounded-[2rem] border border-black/15 bg-[#f8ead2]/90 shadow-[0_30px_100px_rgba(0,0,0,.28)] backdrop-blur p-7 sm:p-10 text-center">
         <div className="flex justify-center mb-8">
           <img src="/images/weello-wordmark.png" alt="Weello" className="w-72 max-w-full h-auto rounded-2xl" />
         </div>
-        <div className="mx-auto w-20 h-20 rounded-[1.7rem] bg-black text-foodiz-gold flex items-center justify-center shadow-xl">
+        <div className="mx-auto w-20 h-20 rounded-[1.7rem] bg-black text-weello-gold flex items-center justify-center shadow-xl">
           <MailCheck size={36} />
         </div>
         <p className="mt-7 text-[11px] uppercase tracking-[.28em] font-bold text-black/55">Pré-inscription confirmée</p>

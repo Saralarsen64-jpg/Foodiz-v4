@@ -1,4 +1,4 @@
--- Couriers operate as independent professionals in the Foodiz marketplace.
+-- Couriers operate as independent professionals in the Weello marketplace.
 -- Their SIRET is collected during pre-registration and kept in their
 -- role-specific prelaunch details.
 
@@ -15,4 +15,3 @@ ALTER TABLE public.prelaunch_driver_details
 CREATE UNIQUE INDEX IF NOT EXISTS prelaunch_driver_details_siret_unique
   ON public.prelaunch_driver_details (siret)
   WHERE siret IS NOT NULL;
-

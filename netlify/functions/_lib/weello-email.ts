@@ -4,6 +4,7 @@ import { adminSupabase } from "./auth.js";
 export type WeelloEmailType =
   | "prelaunch_confirmation"
   | "launch_access"
+  | "professional_signup_confirmation"
   | "professional_documents_received"
   | "professional_approved"
   | "professional_replacement_requested"

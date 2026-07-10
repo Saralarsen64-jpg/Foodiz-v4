@@ -13,7 +13,7 @@ export type PartnerSubscription = {
   currentPeriodEnd: string;
 };
 
-const STORAGE_KEY = "foodiz_partner_subscriptions_v1";
+const STORAGE_KEY = "weello_partner_subscriptions_v1";
 
 export function loadSubscriptions(): PartnerSubscription[] {
   try {

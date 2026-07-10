@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import {
   WeelloCard,
@@ -9,6 +8,11 @@ import {
   WeelloButton,
   weelloText,
 } from '@/components/weello-ui';
+import {
+  WeelloMap,
+  WeelloMarker,
+  WeelloPolyline,
+} from '@/components/weello-map';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -286,7 +290,7 @@ export default function ClientOrderDetailScreen() {
         {liveTrackingAvailable ? (
           <>
             {mapCenter ? (
-              <MapView
+              <WeelloMap
                 style={styles.liveMap}
                 initialRegion={{
                   latitude: mapCenter.latitude,
@@ -295,21 +299,21 @@ export default function ClientOrderDetailScreen() {
                   longitudeDelta: 0.035,
                 }}>
                 {restaurantPosition ? (
-                  <Marker
+                  <WeelloMarker
                     coordinate={restaurantPosition}
                     title={order.restaurant?.name || 'Restaurant'}
                     pinColor="#D8A84F"
                   />
                 ) : null}
                 {clientPosition ? (
-                  <Marker
+                  <WeelloMarker
                     coordinate={clientPosition}
                     title="Adresse de livraison"
                     pinColor="#5FAE78"
                   />
                 ) : null}
                 {courierPosition ? (
-                  <Marker
+                  <WeelloMarker
                     coordinate={courierPosition}
                     title={courierName}
                     description="Position du livreur"
@@ -317,13 +321,13 @@ export default function ClientOrderDetailScreen() {
                   />
                 ) : null}
                 {mapCoordinates.length >= 2 ? (
-                  <Polyline
+                  <WeelloPolyline
                     coordinates={mapCoordinates}
                     strokeColor="#D8A84F"
                     strokeWidth={4}
                   />
                 ) : null}
-              </MapView>
+              </WeelloMap>
             ) : (
               <View style={styles.livePending}>
                 <Text style={weelloText.body}>

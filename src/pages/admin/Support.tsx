@@ -157,7 +157,7 @@ export default function AdminSupportPage() {
 
   useEffect(() => {
     void fetchTickets();
-    const channel = supabase.channel("foodiz_care_support_changes")
+    const channel = supabase.channel("weello_care_support_changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => void fetchTickets())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -276,35 +276,35 @@ export default function AdminSupportPage() {
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {[
-          { label: "File active", value: stats.active, icon: LifeBuoy, color: "text-foodiz-gold", detail: "tickets ouverts" },
-          { label: "Urgents", value: stats.urgent, icon: Zap, color: "text-foodiz-red", detail: "réponse < 1h" },
-          { label: "SLA dépassé", value: stats.overdue, icon: TimerReset, color: stats.overdue ? "text-foodiz-red" : "text-foodiz-green", detail: "à reprendre vite" },
+          { label: "File active", value: stats.active, icon: LifeBuoy, color: "text-weello-gold", detail: "tickets ouverts" },
+          { label: "Urgents", value: stats.urgent, icon: Zap, color: "text-weello-red", detail: "réponse < 1h" },
+          { label: "SLA dépassé", value: stats.overdue, icon: TimerReset, color: stats.overdue ? "text-weello-red" : "text-weello-green", detail: "à reprendre vite" },
           { label: "À surveiller", value: stats.soon, icon: Clock3, color: "text-amber-300", detail: "échéance proche" },
-          { label: "Traités aujourd’hui", value: stats.closedToday, icon: CheckCircle2, color: "text-foodiz-green", detail: `${stats.closed} au total` },
+          { label: "Traités aujourd’hui", value: stats.closedToday, icon: CheckCircle2, color: "text-weello-green", detail: `${stats.closed} au total` },
         ].map((item) => (
           <article
             key={item.label}
-            className="foodiz-card border-foodiz-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.13),transparent_42%)] p-5 shadow-[0_0_35px_rgba(216,168,79,0.04)]"
+            className="weello-card border-weello-gold/15 bg-[radial-gradient(circle_at_top_right,rgba(216,168,79,0.13),transparent_42%)] p-5 shadow-[0_0_35px_rgba(216,168,79,0.04)]"
           >
             <item.icon size={20} className={item.color}/>
-            <p className="mt-4 text-[10px] uppercase tracking-widest text-foodiz-gray">{item.label}</p>
-            <p className="mt-2 text-3xl font-serif italic text-foodiz-cream">{item.value}</p>
-            <p className="mt-1 text-[10px] text-foodiz-gray">{item.detail}</p>
+            <p className="mt-4 text-[10px] uppercase tracking-widest text-weello-gray">{item.label}</p>
+            <p className="mt-2 text-3xl font-serif italic text-weello-cream">{item.value}</p>
+            <p className="mt-1 text-[10px] text-weello-gray">{item.detail}</p>
           </article>
         ))}
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
-        <article className="foodiz-card overflow-hidden border-foodiz-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,.12),rgba(8,8,8,.98)_35%,rgba(5,5,5,.98))]">
-          <div className="border-b border-foodiz-gold/10 p-5">
+        <article className="weello-card overflow-hidden border-weello-gold/20 bg-[linear-gradient(145deg,rgba(216,168,79,.12),rgba(8,8,8,.98)_35%,rgba(5,5,5,.98))]">
+          <div className="border-b border-weello-gold/10 p-5">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-foodiz-gold/25 bg-foodiz-gold/10 text-foodiz-gold">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-weello-gold/25 bg-weello-gold/10 text-weello-gold">
                 <Crown size={22} />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[.25em] text-foodiz-gold">Standard numéro 1</p>
-                <h2 className="foodiz-title mt-1 text-2xl">Promesse Weello Care</h2>
-                <p className="mt-2 text-sm leading-relaxed text-foodiz-gray">
+                <p className="text-[10px] font-black uppercase tracking-[.25em] text-weello-gold">Standard numéro 1</p>
+                <h2 className="weello-title mt-1 text-2xl">Promesse Weello Care</h2>
+                <p className="mt-2 text-sm leading-relaxed text-weello-gray">
                   Chaque ticket doit être lisible, priorisé, contextualisé et traité avec une réponse humaine. L’objectif : moins d’effort pour le client, plus de contrôle côté admin.
                 </p>
               </div>
@@ -316,21 +316,21 @@ export default function AdminSupportPage() {
               ["Important", "< 4h", "Commande, dossier pro, incident sensible"],
               ["Normal", "< 24h", "Question compte, avantage, information"],
             ].map(([title, sla, detail]) => (
-              <div key={title} className="rounded-2xl border border-foodiz-gold/10 bg-black/25 p-4">
-                <p className="text-sm font-semibold text-foodiz-cream">{title}</p>
-                <p className="mt-2 text-2xl font-serif italic text-foodiz-gold">{sla}</p>
-                <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">{detail}</p>
+              <div key={title} className="rounded-2xl border border-weello-gold/10 bg-black/25 p-4">
+                <p className="text-sm font-semibold text-weello-cream">{title}</p>
+                <p className="mt-2 text-2xl font-serif italic text-weello-gold">{sla}</p>
+                <p className="mt-2 text-[10px] leading-relaxed text-weello-gray">{detail}</p>
               </div>
             ))}
           </div>
         </article>
 
-        <article className="foodiz-card border-foodiz-gold/20 p-5">
+        <article className="weello-card border-weello-gold/20 p-5">
           <div className="mb-4 flex items-center gap-3">
-            <ShieldCheck size={19} className="text-foodiz-gold" />
+            <ShieldCheck size={19} className="text-weello-gold" />
             <div>
-              <h2 className="font-semibold text-foodiz-cream">Sécurité admin</h2>
-              <p className="text-xs text-foodiz-gray">Réponses historisées via RPC, notification utilisateur, pas de données carte demandées.</p>
+              <h2 className="font-semibold text-weello-cream">Sécurité admin</h2>
+              <p className="text-xs text-weello-gray">Réponses historisées via RPC, notification utilisateur, pas de données carte demandées.</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -341,35 +341,35 @@ export default function AdminSupportPage() {
               "Escalader tout abus, fraude ou usurpation.",
             ].map((rule) => (
               <div key={rule} className="flex gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                <Sparkles size={14} className="mt-0.5 shrink-0 text-foodiz-gold" />
-                <p className="text-xs leading-relaxed text-foodiz-gray">{rule}</p>
+                <Sparkles size={14} className="mt-0.5 shrink-0 text-weello-gold" />
+                <p className="text-xs leading-relaxed text-weello-gray">{rule}</p>
               </div>
             ))}
           </div>
         </article>
       </section>
 
-      <section className="foodiz-card border-foodiz-gold/15 p-4">
-        <div className="mb-4 flex items-center gap-2 text-foodiz-gold">
+      <section className="weello-card border-weello-gold/15 p-4">
+        <div className="mb-4 flex items-center gap-2 text-weello-gold">
           <SlidersHorizontal size={16} />
           <p className="text-[10px] font-black uppercase tracking-[.25em]">Pilotage de la file</p>
         </div>
         <div className="grid gap-3 lg:grid-cols-[1.2fr_repeat(5,minmax(120px,.6fr))_auto]">
-          <label className="flex items-center gap-2 rounded-xl border border-foodiz-gold/20 bg-foodiz-black px-3 py-2">
-            <Search size={14} className="text-foodiz-gold" />
+          <label className="flex items-center gap-2 rounded-xl border border-weello-gold/20 bg-weello-black px-3 py-2">
+            <Search size={14} className="text-weello-gold" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Rechercher client, ville, commande…"
-              className="w-full bg-transparent text-xs text-foodiz-cream outline-none placeholder:text-foodiz-gray"
+              className="w-full bg-transparent text-xs text-weello-cream outline-none placeholder:text-weello-gray"
             />
           </label>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-xl border border-foodiz-gold/20 bg-foodiz-black px-3 py-2 text-xs text-foodiz-cream">
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-xl border border-weello-gold/20 bg-weello-black px-3 py-2 text-xs text-weello-cream">
             <option value="active">À traiter</option>
             <option value="closed">Historique traité</option>
             <option value="all">Toutes</option>
           </select>
-          <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} className="rounded-xl border border-foodiz-gold/20 bg-foodiz-black px-3 py-2 text-xs text-foodiz-cream">
+          <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} className="rounded-xl border border-weello-gold/20 bg-weello-black px-3 py-2 text-xs text-weello-cream">
             <option value="all">Priorités</option>
             <option value="overdue">SLA dépassé</option>
             <option value="urgent">Urgent</option>
@@ -377,19 +377,19 @@ export default function AdminSupportPage() {
             <option value="normal">Normal</option>
             <option value="low">Bas</option>
           </select>
-          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="rounded-xl border border-foodiz-gold/20 bg-foodiz-black px-3 py-2 text-xs text-foodiz-cream">
+          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="rounded-xl border border-weello-gold/20 bg-weello-black px-3 py-2 text-xs text-weello-cream">
             <option value="all">Catégories</option>
             {Object.entries(CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
-          <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="rounded-xl border border-foodiz-gold/20 bg-foodiz-black px-3 py-2 text-xs text-foodiz-cream">
+          <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="rounded-xl border border-weello-gold/20 bg-weello-black px-3 py-2 text-xs text-weello-cream">
             <option value="all">Rôles</option>
             {Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
-          <select value={cityFilter} onChange={(event) => setCityFilter(event.target.value)} className="rounded-xl border border-foodiz-gold/20 bg-foodiz-black px-3 py-2 text-xs text-foodiz-cream">
+          <select value={cityFilter} onChange={(event) => setCityFilter(event.target.value)} className="rounded-xl border border-weello-gold/20 bg-weello-black px-3 py-2 text-xs text-weello-cream">
             <option value="all">Villes</option>
             {cityOptions.map((city) => <option key={city} value={city}>{city}</option>)}
           </select>
-          <button onClick={() => void fetchTickets()} className="flex items-center justify-center gap-2 rounded-xl border border-foodiz-gold/20 px-4 py-2 text-xs text-foodiz-gold">
+          <button onClick={() => void fetchTickets()} className="flex items-center justify-center gap-2 rounded-xl border border-weello-gold/20 px-4 py-2 text-xs text-weello-gold">
             <RefreshCw size={14}/>
             Actualiser
           </button>
@@ -397,9 +397,9 @@ export default function AdminSupportPage() {
       </section>
 
       {loading ? (
-        <div className="foodiz-card p-8 text-center text-foodiz-gray animate-pulse">Chargement de Weello Care...</div>
+        <div className="weello-card p-8 text-center text-weello-gray animate-pulse">Chargement de Weello Care...</div>
       ) : filteredTickets.length === 0 ? (
-        <div className="foodiz-card p-8 text-center text-sm text-foodiz-gray">
+        <div className="weello-card p-8 text-center text-sm text-weello-gray">
           Aucune demande dans cette file. C’est calme — le meilleur bruit possible.
         </div>
       ) : (
@@ -410,31 +410,31 @@ export default function AdminSupportPage() {
             return (
               <article
                 key={ticket.id}
-                className={`foodiz-card overflow-hidden border-foodiz-gold/15 bg-[#070707] ${ticket.sla.overdue ? "ring-1 ring-foodiz-red/35" : isActive ? "shadow-[0_0_45px_rgba(216,168,79,0.07)]" : "opacity-80"}`}
+                className={`weello-card overflow-hidden border-weello-gold/15 bg-[#070707] ${ticket.sla.overdue ? "ring-1 ring-weello-red/35" : isActive ? "shadow-[0_0_45px_rgba(216,168,79,0.07)]" : "opacity-80"}`}
               >
-                <div className="border-b border-foodiz-gold/10 p-5">
+                <div className="border-b border-weello-gold/10 p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="mb-2 flex items-center gap-2">
-                        <MessageSquare size={17} className="text-foodiz-gold"/>
-                        <h2 className="font-semibold text-foodiz-cream">{ticket.subject}</h2>
+                        <MessageSquare size={17} className="text-weello-gold"/>
+                        <h2 className="font-semibold text-weello-cream">{ticket.subject}</h2>
                       </div>
-                      <p className="text-[10px] text-foodiz-gray">
+                      <p className="text-[10px] text-weello-gray">
                         {ticket.careName} · {ticket.user_email || "email inconnu"} · {new Date(ticket.created_at).toLocaleString("fr-FR")}
                       </p>
                     </div>
-                    <span className={`rounded-full border px-3 py-1 text-[10px] uppercase ${isActive ? "border-foodiz-gold/25 bg-foodiz-gold/10 text-foodiz-gold" : "border-foodiz-green/20 bg-foodiz-green/5 text-foodiz-green"}`}>
+                    <span className={`rounded-full border px-3 py-1 text-[10px] uppercase ${isActive ? "border-weello-gold/25 bg-weello-gold/10 text-weello-gold" : "border-weello-green/20 bg-weello-green/5 text-weello-green"}`}>
                       {isActive ? "À traiter" : "Traité"}
                     </span>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 px-2 py-1 text-[9px] uppercase text-foodiz-gray">{CATEGORY_LABELS[ticket.category] || "Autre"}</span>
-                    <span className="rounded-full border border-white/10 px-2 py-1 text-[9px] uppercase text-foodiz-gray">{ROLE_LABELS[ticket.careRole] || ticket.careRole}</span>
-                    <span className="flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[9px] text-foodiz-gray"><MapPin size={11}/>{ticket.careCity}</span>
-                    <span className={`rounded-full border px-2 py-1 text-[9px] uppercase ${ticket.priority === "urgent" ? "border-foodiz-red/20 text-foodiz-red" : ticket.priority === "high" ? "border-foodiz-gold/20 text-foodiz-gold" : "border-white/10 text-foodiz-gray"}`}>{ticket.priority}</span>
-                    {ticket.order_id && <span className="rounded-full border border-foodiz-gold/20 px-2 py-1 text-[9px] text-foodiz-gold">Commande #{ticket.order_id.slice(0, 8)}</span>}
-                    <span className={`rounded-full border px-2 py-1 text-[9px] ${ticket.sla.overdue ? "border-foodiz-red/20 text-foodiz-red" : ticket.sla.soon ? "border-amber-300/20 text-amber-300" : "border-foodiz-green/20 text-foodiz-green"}`}>
+                    <span className="rounded-full border border-white/10 px-2 py-1 text-[9px] uppercase text-weello-gray">{CATEGORY_LABELS[ticket.category] || "Autre"}</span>
+                    <span className="rounded-full border border-white/10 px-2 py-1 text-[9px] uppercase text-weello-gray">{ROLE_LABELS[ticket.careRole] || ticket.careRole}</span>
+                    <span className="flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[9px] text-weello-gray"><MapPin size={11}/>{ticket.careCity}</span>
+                    <span className={`rounded-full border px-2 py-1 text-[9px] uppercase ${ticket.priority === "urgent" ? "border-weello-red/20 text-weello-red" : ticket.priority === "high" ? "border-weello-gold/20 text-weello-gold" : "border-white/10 text-weello-gray"}`}>{ticket.priority}</span>
+                    {ticket.order_id && <span className="rounded-full border border-weello-gold/20 px-2 py-1 text-[9px] text-weello-gold">Commande #{ticket.order_id.slice(0, 8)}</span>}
+                    <span className={`rounded-full border px-2 py-1 text-[9px] ${ticket.sla.overdue ? "border-weello-red/20 text-weello-red" : ticket.sla.soon ? "border-amber-300/20 text-amber-300" : "border-weello-green/20 text-weello-green"}`}>
                       {ticket.sla.overdue ? `SLA dépassé de ${formatHours(Math.abs(ticket.sla.remaining))}` : `SLA ${formatHours(Math.max(0, ticket.sla.remaining))}`}
                     </span>
                   </div>
@@ -443,53 +443,53 @@ export default function AdminSupportPage() {
                 <div className="space-y-4 p-5">
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3">
-                      <UserRound size={15} className="text-foodiz-gold"/>
-                      <p className="mt-2 text-[10px] text-foodiz-gray">Contact</p>
-                      <p className="mt-1 truncate text-xs text-foodiz-cream">{ticket.profile?.phone || "Téléphone non renseigné"}</p>
+                      <UserRound size={15} className="text-weello-gold"/>
+                      <p className="mt-2 text-[10px] text-weello-gray">Contact</p>
+                      <p className="mt-1 truncate text-xs text-weello-cream">{ticket.profile?.phone || "Téléphone non renseigné"}</p>
                     </div>
                     <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3">
-                      <Clock3 size={15} className="text-foodiz-gold"/>
-                      <p className="mt-2 text-[10px] text-foodiz-gray">Âge</p>
-                      <p className="mt-1 text-xs text-foodiz-cream">{formatHours(ticket.sla.age)}</p>
+                      <Clock3 size={15} className="text-weello-gold"/>
+                      <p className="mt-2 text-[10px] text-weello-gray">Âge</p>
+                      <p className="mt-1 text-xs text-weello-cream">{formatHours(ticket.sla.age)}</p>
                     </div>
                     <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3">
-                      <FileText size={15} className="text-foodiz-gold"/>
-                      <p className="mt-2 text-[10px] text-foodiz-gray">Historique</p>
-                      <p className="mt-1 text-xs text-foodiz-cream">{eventCount(ticket.id)} événement(s)</p>
+                      <FileText size={15} className="text-weello-gold"/>
+                      <p className="mt-2 text-[10px] text-weello-gray">Historique</p>
+                      <p className="mt-1 text-xs text-weello-cream">{eventCount(ticket.id)} événement(s)</p>
                     </div>
                   </div>
 
-                  <p className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-sm leading-relaxed text-foodiz-gray whitespace-pre-wrap">
+                  <p className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-sm leading-relaxed text-weello-gray whitespace-pre-wrap">
                     {ticket.message}
                   </p>
 
                   {ticket.diagnostic && Object.keys(ticket.diagnostic).length > 0 && (
-                    <div className="rounded-2xl border border-foodiz-gold/10 bg-foodiz-gold/[0.03] p-4">
-                      <p className="mb-2 flex items-center gap-2 text-[10px] uppercase text-foodiz-gold">
+                    <div className="rounded-2xl border border-weello-gold/10 bg-weello-gold/[0.03] p-4">
+                      <p className="mb-2 flex items-center gap-2 text-[10px] uppercase text-weello-gold">
                         <Sparkles size={13}/>
                         Diagnostic automatique
                       </p>
-                      <p className="text-xs text-foodiz-gray">
+                      <p className="text-xs text-weello-gray">
                         {ticket.diagnostic.title || ticket.diagnostic.diagnosis || "Contexte disponible"}
                       </p>
-                      {ticket.diagnostic.explanation && <p className="mt-2 text-[10px] leading-relaxed text-foodiz-gray">{ticket.diagnostic.explanation}</p>}
-                      {ticket.attempted_actions?.length > 0 && <p className="mt-2 text-[10px] text-foodiz-gray">Déjà tenté : {ticket.attempted_actions.join(", ")}</p>}
+                      {ticket.diagnostic.explanation && <p className="mt-2 text-[10px] leading-relaxed text-weello-gray">{ticket.diagnostic.explanation}</p>}
+                      {ticket.attempted_actions?.length > 0 && <p className="mt-2 text-[10px] text-weello-gray">Déjà tenté : {ticket.attempted_actions.join(", ")}</p>}
                     </div>
                   )}
 
                   {ticket.admin_response && (
-                    <div className="rounded-2xl border border-foodiz-green/15 bg-foodiz-green/[0.04] p-4">
-                      <p className="mb-1 text-[10px] uppercase text-foodiz-green">Réponse Weello</p>
-                      <p className="text-sm text-foodiz-cream whitespace-pre-wrap">{ticket.admin_response}</p>
-                      {ticket.resolved_at && <p className="mt-2 text-[10px] text-foodiz-gray">Traité le {new Date(ticket.resolved_at).toLocaleString("fr-FR")}</p>}
+                    <div className="rounded-2xl border border-weello-green/15 bg-weello-green/[0.04] p-4">
+                      <p className="mb-1 text-[10px] uppercase text-weello-green">Réponse Weello</p>
+                      <p className="text-sm text-weello-cream whitespace-pre-wrap">{ticket.admin_response}</p>
+                      {ticket.resolved_at && <p className="mt-2 text-[10px] text-weello-gray">Traité le {new Date(ticket.resolved_at).toLocaleString("fr-FR")}</p>}
                     </div>
                   )}
 
                   {isActive && (
                     activeTicketId === ticket.id ? (
-                      <div className="space-y-3 rounded-2xl border border-foodiz-gold/15 bg-black/25 p-4">
+                      <div className="space-y-3 rounded-2xl border border-weello-gold/15 bg-black/25 p-4">
                         <div>
-                          <p className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[.2em] text-foodiz-gold">
+                          <p className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[.2em] text-weello-gold">
                             <HeartHandshake size={13}/>
                             Réponses rapides
                           </p>
@@ -499,7 +499,7 @@ export default function AdminSupportPage() {
                                 key={reply.title}
                                 type="button"
                                 onClick={() => applyQuickReply(reply.body)}
-                                className="rounded-full border border-foodiz-gold/20 px-3 py-1.5 text-[10px] text-foodiz-gold transition hover:bg-foodiz-gold/10"
+                                className="rounded-full border border-weello-gold/20 px-3 py-1.5 text-[10px] text-weello-gold transition hover:bg-weello-gold/10"
                               >
                                 {reply.title}
                               </button>
@@ -510,11 +510,11 @@ export default function AdminSupportPage() {
                           value={replyText}
                           onChange={(event) => setReplyText(event.target.value)}
                           placeholder="Réponse au client et résumé de traitement..."
-                          className="h-32 w-full resize-none rounded-2xl border border-foodiz-gold/25 bg-foodiz-black p-4 text-sm text-foodiz-cream outline-none"
+                          className="h-32 w-full resize-none rounded-2xl border border-weello-gold/25 bg-weello-black p-4 text-sm text-weello-cream outline-none"
                         />
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => setActiveTicketId(null)} className="rounded-xl px-4 py-2 text-xs text-foodiz-gray">Annuler</button>
-                          <button disabled={busy} onClick={() => void handleResolve(ticket.id)} className="foodiz-btn flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-50">
+                          <button onClick={() => setActiveTicketId(null)} className="rounded-xl px-4 py-2 text-xs text-weello-gray">Annuler</button>
+                          <button disabled={busy} onClick={() => void handleResolve(ticket.id)} className="weello-btn flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-50">
                             <Send size={14}/>
                             Traiter et historiser
                           </button>
@@ -523,7 +523,7 @@ export default function AdminSupportPage() {
                     ) : (
                       <button
                         onClick={() => { setActiveTicketId(ticket.id); setReplyText(ticket.admin_response || ""); }}
-                        className="foodiz-btn-outline flex items-center gap-2 px-4 py-2 text-xs"
+                        className="weello-btn-outline flex items-center gap-2 px-4 py-2 text-xs"
                       >
                         <MessageSquare size={14}/>
                         Traiter ce ticket

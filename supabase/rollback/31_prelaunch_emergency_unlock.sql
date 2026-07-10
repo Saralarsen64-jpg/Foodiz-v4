@@ -1,6 +1,6 @@
 -- Emergency access rollback for migration 31.
 -- This preserves every pre-registration row while immediately reopening the
--- existing Foodiz application and removing the restrictive global gate.
+-- existing Weello application and removing the restrictive global gate.
 
 BEGIN;
 
@@ -32,4 +32,3 @@ END;
 $$;
 
 COMMIT;
-
