@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Search, Gift, Star, ChevronRight, Flame, Pizza, Wine, ShoppingCart, Sandwich, Salad, Navigation, User, ShoppingBag, Bell, MapPinned, Route, ShieldCheck } from "lucide-react";
 import { WeelloActionCard, WeelloHero, WeelloMetricCard, WeelloPill } from "../../components/WeelloWebUI";
+import { loadClientCatalog } from "../../lib/clientCatalog";
 
 const CATEGORIES = [
   { label: "Market", icon: ShoppingCart, path: "/client/market" },
@@ -12,13 +13,6 @@ const CATEGORIES = [
   { label: "Asiatique", icon: Salad, path: "/client/restaurants?category=asian" },
   { label: "Gastro", icon: Wine, path: "/client/restaurants?category=gastronomic" },
 ];
-
-function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  var R = 6371; var dLat = deg2rad(lat2 - lat1); var dLon = deg2rad(lon2 - lon1);
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
-}
-function deg2rad(deg: number) { return deg * (Math.PI / 180) }
 
 export default function ClientHome() {
   const navigate = useNavigate();
@@ -52,27 +46,23 @@ export default function ClientHome() {
         if (profile?.latitude && profile?.longitude) {
           setLocationEnabled(true);
           setCityName(profile.city || "mon adresse");
-          fetchRestaurants(profile.latitude, profile.longitude);
+          fetchRestaurants();
         }
       }
     };
     fetchInitialData();
   }, []);
 
-  const fetchRestaurants = async (lat: number, lng: number) => {
+  const fetchRestaurants = async () => {
     setLoadingRestos(true);
-    const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true);
-    if (restos) {
-      const filteredRestos = restos.filter((r: any) => {
-        if (r.latitude && r.longitude) return getDistanceFromLatLonInKm(lat, lng, r.latitude, r.longitude) <= 10;
-        return false;
-      });
+    try {
+      const { restaurants: filteredRestos } = await loadClientCatalog();
       const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filteredRestos.map((restaurant: any) => restaurant.id));
       setRestaurants(filteredRestos.map((r: any) => {
         const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === r.id).map((review: any) => review.restaurant_rating).filter(Boolean);
         return { id: r.id, name: r.name, note: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau", temps: "Délai à confirmer", image: r.cover_image, emoji: "🍽️", cuisine: r.cuisine_type || "Restaurant" };
       }));
-    }
+    } catch { setRestaurants([]); }
     setLoadingRestos(false);
   };
 

@@ -4,6 +4,7 @@ import { Search, Flame, Apple, Pizza, Coffee } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import { supabase } from "../../lib/supabase";
 import { calculateClientUnitPriceCents } from "../../lib/engines/weelloEconomicEngine";
+import { loadClientCatalog } from "../../lib/clientCatalog";
 
 const CATEGORIES = [
   { label: "Restaurants", icon: Flame, path: "/client/restaurants" },
@@ -31,29 +32,37 @@ export default function SearchPage() {
 
     const timer = window.setTimeout(async () => {
       setLoading(true);
-      const pattern = `%${query.replace(/[%_]/g, "")}%`;
-      const [restaurantResult, productResult] = await Promise.all([
-        supabase
-          .from("restaurants")
-          .select("id,name,cuisine_type,city,cover_image")
-          .eq("is_active", true)
-          .not("latitude", "is", null)
-          .not("longitude", "is", null)
-          .or(`name.ilike.${pattern},cuisine_type.ilike.${pattern},city.ilike.${pattern}`)
-          .limit(8),
-        supabase
+      try {
+        const catalog = await loadClientCatalog();
+        const normalizedQuery = query.toLocaleLowerCase("fr-FR");
+        const allowedRestaurants = catalog.restaurants;
+        const matchingRestaurants = allowedRestaurants.filter((restaurant) =>
+          [restaurant.name, restaurant.cuisine_type, restaurant.city]
+            .filter(Boolean)
+            .some((value) => String(value).toLocaleLowerCase("fr-FR").includes(normalizedQuery)),
+        ).slice(0, 8);
+        const allowedIds = allowedRestaurants.map((restaurant) => restaurant.id);
+        if (!allowedIds.length) {
+          setRestaurants([]);
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+        const pattern = `%${query.replace(/[%_]/g, "")}%`;
+        const productResult = await supabase
           .from("products")
           .select("id,name,description,image_url,partner_price_cents,restaurant:restaurants!inner(id,name,is_active,latitude,longitude)")
           .eq("is_active", true)
           .eq("restaurant.is_active", true)
+          .in("restaurant_id", allowedIds)
           .or(`name.ilike.${pattern},description.ilike.${pattern},category.ilike.${pattern}`)
-          .limit(12),
-      ]);
-      setRestaurants(restaurantResult.data || []);
-      setProducts((productResult.data || []).filter((product: any) =>
-        Number.isFinite(Number(product.restaurant?.latitude))
-        && Number.isFinite(Number(product.restaurant?.longitude)),
-      ));
+          .limit(12);
+        setRestaurants(matchingRestaurants);
+        setProducts(productResult.data || []);
+      } catch {
+        setRestaurants([]);
+        setProducts([]);
+      }
       setLoading(false);
     }, 300);
 

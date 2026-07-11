@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Mail, Lock, User, Phone, MapPin, Hash, Briefcase, AlertCircle, CheckCircle } from "lucide-react";
 import { normalizePublicSignupRole } from "../../utils/authRoles";
-import WaitlistPage from "../prelaunch/Waitlist";
+import ProfessionalSignupPage from "../prelaunch/Waitlist";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -82,7 +82,7 @@ export default function SignupPage() {
 
   if (role === "partner" || role === "courier") {
     return (
-      <WaitlistPage
+      <ProfessionalSignupPage
         registrationRole={role === "partner" ? "partenaire" : "livreur"}
       />
     );

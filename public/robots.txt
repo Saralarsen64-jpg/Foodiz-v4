@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /client/
+Disallow: /courier/
+Disallow: /partner/
+
+Sitemap: https://weello.app/sitemap.xml

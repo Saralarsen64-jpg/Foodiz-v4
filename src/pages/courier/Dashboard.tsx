@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Bike, CheckCircle2, Clock3, MapPinned, Navigation, Power, WalletCards } from "lucide-react";
+import { ArrowUpRight, Bike, CheckCircle2, Clock3, MapPinned, Navigation, Power, ShieldCheck, WalletCards } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import CourierShell from "../../components/CourierShell";
 import { updateCourierPresence } from "../../lib/courierPresence";
@@ -90,6 +90,13 @@ export default function CourierDashboard() {
     <button disabled={!online} onClick={() => navigate("/courier/deliveries/available")} className="w-full mt-4 rounded-[1.6rem] bg-weello-gold text-weello-black p-5 flex items-center gap-4 disabled:opacity-40"><div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center"><MapPinned size={22} /></div><div className="flex-1 text-left"><p className="font-bold">{available} course{available > 1 ? "s" : ""} disponible{available > 1 ? "s" : ""}</p><p className="text-xs text-black/65 mt-1">Voir les missions autour de vous</p></div><ArrowUpRight size={20} /></button>
 
     <section className="mt-4 grid gap-3">
+      <WeelloActionCard
+        title="Assurez votre activité avec un partenaire Weello"
+        description="Demandez à être rappelé par un partenaire spécialisé. Vous restez libre de choisir votre assureur."
+        icon={ShieldCheck}
+        badge="Mise en relation"
+        onClick={() => navigate("/courier/insurance")}
+      />
       {[
         { label: "Historique", icon: Clock3, path: "/courier/deliveries/history", desc: "Retrouvez les courses terminées et les détails associés." },
         { label: "Mes gains", icon: WalletCards, path: "/courier/revenues", desc: "Suivez vos revenus, primes et pénalités éventuelles." },

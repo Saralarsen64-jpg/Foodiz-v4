@@ -8,6 +8,8 @@ const checkoutApi = readFileSync(new URL("../../netlify/functions/create-checkou
 const financialDocumentApi = readFileSync(new URL("../../netlify/functions/financial-document.ts", import.meta.url), "utf8");
 const paymentIntentApi = readFileSync(new URL("../../netlify/functions/create-payment-intent.ts", import.meta.url), "utf8");
 const stripeWebhookApi = readFileSync(new URL("../../netlify/functions/stripe-webhook.ts", import.meta.url), "utf8");
+const clientCatalogApi = readFileSync(new URL("../../netlify/functions/client-catalog.ts", import.meta.url), "utf8");
+const clientCatalogWeb = readFileSync(new URL("../../src/lib/clientCatalog.ts", import.meta.url), "utf8");
 
 test("le web Weello envoie des headers de sécurité essentiels", () => {
   assert.match(vercelConfig, /Strict-Transport-Security/);
@@ -55,6 +57,7 @@ test("le routeur API applique un pare-feu serveur par rôle", () => {
   assert.match(apiRouter, /ROLE_FORBIDDEN/);
   assert.match(apiRouter, /"admin\/prelaunch": \["admin"\]/);
   assert.match(apiRouter, /"courier-delivery-action": \["courier"\]/);
+  assert.match(apiRouter, /"courier-insurance-referral": \["courier"\]/);
   assert.match(apiRouter, /"partner-order-action": \["partner"\]/);
   assert.match(apiRouter, /"create-checkout-session": \["client"\]/);
   assert.match(apiRouter, /"address-management": \["client", "partner"\]/);
@@ -66,4 +69,12 @@ test("les endpoints sensibles ne renvoient pas les messages techniques bruts au 
   assert.doesNotMatch(stripeWebhookApi, /JSON\.stringify\(\{ error: error\.message \}\)/);
   assert.doesNotMatch(financialDocumentApi, /error\?\.(message|stack)|error\.message/);
   assert.match(financialDocumentApi, /Le document financier n'a pas pu être traité/);
+});
+
+test("le catalogue client impose le rayon de 10 km côté serveur", () => {
+  assert.match(clientCatalogApi, /CLIENT_CATALOG_RADIUS_METERS = 10_000/);
+  assert.match(clientCatalogApi, /distanceMeters > CLIENT_CATALOG_RADIUS_METERS/);
+  assert.match(clientCatalogApi, /OUTSIDE_DELIVERY_RADIUS/);
+  assert.match(clientCatalogApi, /Number\(restaurant\.distance_meters\) <= CLIENT_CATALOG_RADIUS_METERS/);
+  assert.match(clientCatalogWeb, /\/api\/client-catalog/);
 });

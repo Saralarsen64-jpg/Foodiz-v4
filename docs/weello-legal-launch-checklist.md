@@ -7,7 +7,7 @@
 - identité de Sara Larsen, entrepreneur individuel, nom commercial Weello ;
 - SIREN, SIRET, adresse professionnelle, TVA non applicable et contact ;
 - rôle de plateforme et responsabilités respectives client / partenaire / livreur ;
-- prix par tranche, frais de service et frais de livraison réellement codés ;
+- prix final, frais de service et frais de livraison affichés avant paiement, sans publier le modèle économique interne ;
 - paiement Stripe, commande, livraison, annulation, remboursement et droit de rétractation ;
 - fidélité, parrainage, compensations de retard et abonnements Weello+ ;
 - référencement par disponibilité et proximité ;

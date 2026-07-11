@@ -111,8 +111,11 @@ async function logEmailEvent(input: WeelloEmailInput, status: "sent" | "failed" 
 
 export async function sendWeelloEmail(input: WeelloEmailInput) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.WEELLO_EMAIL_FROM || process.env.FOODIZ_EMAIL_FROM;
-  if (!apiKey || !from) {
+  const from = process.env.WEELLO_EMAIL_FROM
+    || process.env.EMAIL_FROM
+    || process.env.FOODIZ_EMAIL_FROM
+    || "Weello <contact@weello.co>";
+  if (!apiKey) {
     await logEmailEvent(input, "skipped", { errorMessage: "Missing Resend environment variables" });
     if (input.required) throw new Error("Missing Resend environment variables");
     return { sent: false, skipped: true };
@@ -122,6 +125,7 @@ export async function sendWeelloEmail(input: WeelloEmailInput) {
     const result = await new Resend(apiKey).emails.send({
       from,
       to: input.to,
+      replyTo: "contact@weello.co",
       subject: input.subject,
       html: emailHtml(input),
     });

@@ -25,27 +25,40 @@ ALTER TABLE public.courier_applications
 
 UPDATE public.prelaunch_driver_details
 SET availability_slots = CASE
-    WHEN coalesce(array_length(availability_slots, 1), 0) > 0 THEN availability_slots
-    WHEN availability IS NOT NULL THEN ARRAY[availability]
+    WHEN availability_slots && ARRAY['matin', 'midi', 'apres_midi', 'soiree', 'nuit', 'week_end']::text[]
+      THEN ARRAY(
+        SELECT DISTINCT slot
+        FROM unnest(availability_slots) AS slot
+        WHERE slot = ANY (ARRAY['matin', 'midi', 'apres_midi', 'soiree', 'nuit', 'week_end']::text[])
+      )
+    WHEN availability = 'journee' THEN ARRAY['matin', 'midi', 'apres_midi']
+    WHEN availability IN ('soiree', 'nuit', 'week_end') THEN ARRAY[availability]
     ELSE '{}'
   END,
   availability_days = CASE
-    WHEN coalesce(array_length(availability_days, 1), 0) > 0 THEN availability_days
+    WHEN availability_days && ARRAY['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']::text[]
+      THEN ARRAY(
+        SELECT DISTINCT day
+        FROM unnest(availability_days) AS day
+        WHERE day = ANY (ARRAY['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']::text[])
+      )
     WHEN availability = 'week_end' THEN ARRAY['samedi', 'dimanche']
     ELSE ARRAY['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
   END
-WHERE coalesce(array_length(availability_slots, 1), 0) = 0
-   OR coalesce(array_length(availability_days, 1), 0) = 0;
+WHERE availability_slots IS NOT NULL
+   OR availability_days IS NOT NULL;
 
 UPDATE public.courier_applications
-SET availability_slots = CASE
-    WHEN coalesce(array_length(availability_slots, 1), 0) > 0 THEN availability_slots
-    ELSE '{}'
-  END,
-  availability_days = CASE
-    WHEN coalesce(array_length(availability_days, 1), 0) > 0 THEN availability_days
-    ELSE '{}'
-  END;
+SET availability_slots = ARRAY(
+    SELECT DISTINCT slot
+    FROM unnest(availability_slots) AS slot
+    WHERE slot = ANY (ARRAY['matin', 'midi', 'apres_midi', 'soiree', 'nuit', 'week_end']::text[])
+  ),
+  availability_days = ARRAY(
+    SELECT DISTINCT day
+    FROM unnest(availability_days) AS day
+    WHERE day = ANY (ARRAY['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']::text[])
+  );
 
 ALTER TABLE public.prelaunch_driver_details
   DROP CONSTRAINT IF EXISTS prelaunch_driver_details_availability_slots_check,

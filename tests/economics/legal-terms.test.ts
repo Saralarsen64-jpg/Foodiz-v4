@@ -7,22 +7,20 @@ const legalPages = readFileSync(
   "utf8",
 );
 
-test("les CGV reprennent les trois tranches du moteur Weello", () => {
-  assert.match(legalPages, /0,50 € à 3,50 €/);
-  assert.match(legalPages, /\+ 1,50 € par article/);
-  assert.match(legalPages, /3,51 € à 8,49 €/);
-  assert.match(legalPages, /\+ 2,90 € par article/);
-  assert.match(legalPages, /à partir de 8,50 €/);
-  assert.match(legalPages, /\+ 4,10 € par article/);
+test("les CGV ne publient aucune tranche du modèle économique interne", () => {
+  assert.doesNotMatch(legalPages, /0,50 € à 3,50 €/);
+  assert.doesNotMatch(legalPages, /3,51 € à 8,49 €/);
+  assert.doesNotMatch(legalPages, /à partir de 8,50 €/);
+  assert.doesNotMatch(legalPages, /supplément Weello correspondant à sa tranche/);
+  assert.doesNotMatch(legalPages, /par article/);
 });
 
-test("les CGV reprennent les frais de service et de livraison codés", () => {
-  assert.match(legalPages, /1 article" value="1,99 €/);
-  assert.match(legalPages, /2 articles" value="1,49 €/);
-  assert.match(legalPages, /3 articles" value="1,19 €/);
-  assert.match(legalPages, /4 articles ou plus" value="0,99 €/);
-  assert.match(legalPages, /3,50 € jusqu’à 5 kilomètres/);
-  assert.match(legalPages, /0,60 € est ajouté par kilomètre commencé/);
+test("les CGV gardent confidentiels les barèmes de service, livraison et compensation", () => {
+  assert.doesNotMatch(legalPages, /1,99 €|1,49 €|1,19 €|0,99 €/);
+  assert.doesNotMatch(legalPages, /3,50 € jusqu’à 5 kilomètres/);
+  assert.doesNotMatch(legalPages, /0,60 € est ajouté par kilomètre commencé/);
+  assert.doesNotMatch(legalPages, /50 points|100 points|200 points/);
+  assert.match(legalPages, /détaillé dans le récapitulatif avant que le client confirme/);
 });
 
 test("les documents Weello ne présentent plus la préinscription comme parcours public", () => {

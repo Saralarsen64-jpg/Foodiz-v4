@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:full": "set -a && . ./.env.local && set +a && npx vercel dev --listen 3000",
+    "check:production-env": "node scripts/check-production-env.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:functions": "tsc -p tsconfig.functions.json",
     "test:security": "node --test tests/security/*.test.ts",

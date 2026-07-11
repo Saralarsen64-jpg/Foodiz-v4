@@ -7,7 +7,12 @@ Cette note décrit les emails transactionnels prévus côté serveur. Les clés 
 À renseigner dans l’environnement de production Netlify/Vercel :
 
 - `RESEND_API_KEY`
-- `WEELLO_EMAIL_FROM` — exemple : `Weello <contact@weello.co>`
+- `WEELLO_EMAIL_FROM` — recommandé : `Weello <contact@weello.co>`
+- `EMAIL_FROM` — alias générique utilisé si `WEELLO_EMAIL_FROM` est absent
+
+L'ancien `FOODIZ_EMAIL_FROM` reste accepté temporairement. La priorité est
+`WEELLO_EMAIL_FROM`, puis `EMAIL_FROM`, puis `FOODIZ_EMAIL_FROM`. Tous les
+messages utilisent `contact@weello.co` comme adresse de réponse.
 
 ## Emails envoyés automatiquement
 

@@ -14,6 +14,16 @@ const reply = (statusCode: number, body: unknown) => ({
   body: JSON.stringify(body),
 });
 
+const CLIENT_CATALOG_RADIUS_METERS = 10_000;
+
+function coordinates(value: { latitude?: unknown; longitude?: unknown } | null | undefined) {
+  const latitude = Number(value?.latitude);
+  const longitude = Number(value?.longitude);
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? { latitude, longitude }
+    : null;
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "GET") return reply(405, { error: "Method Not Allowed" });
 
@@ -23,7 +33,11 @@ const handler: Handler = async (event) => {
 
     const restaurantId = event.queryStringParameters?.restaurantId;
     if (restaurantId) {
-      const [{ data: restaurant, error: restaurantError }, { data: products, error: productsError }] =
+      const [
+        { data: restaurant, error: restaurantError },
+        { data: products, error: productsError },
+        { data: profile },
+      ] =
         await Promise.all([
           adminSupabase
             .from("restaurants")
@@ -40,13 +54,31 @@ const handler: Handler = async (event) => {
             .eq("is_active", true)
             .order("category")
             .order("name"),
+          adminSupabase
+            .from("profiles")
+            .select("latitude,longitude")
+            .eq("id", user.id)
+            .single(),
         ]);
 
       if (restaurantError || !restaurant) return reply(404, { error: "Restaurant unavailable" });
       if (productsError) throw productsError;
 
+      const clientLocation = coordinates(profile);
+      const restaurantLocation = coordinates(restaurant);
+      if (!clientLocation || !restaurantLocation) {
+        return reply(422, { error: "Adresse client requise.", code: "CLIENT_LOCATION_REQUIRED" });
+      }
+      const distanceMeters = calculateStraightLineDistanceMeters(
+        clientLocation,
+        restaurantLocation,
+      );
+      if (distanceMeters > CLIENT_CATALOG_RADIUS_METERS) {
+        return reply(404, { error: "Restaurant unavailable", code: "OUTSIDE_DELIVERY_RADIUS" });
+      }
+
       return reply(200, {
-        restaurant,
+        restaurant: { ...restaurant, distance_meters: distanceMeters },
         products: (products || []).map((product) => {
           const offerActive = productOfferIsActive(product);
           return {
@@ -86,17 +118,13 @@ const handler: Handler = async (event) => {
     ]);
     if (error) throw error;
 
-    const clientLocation = {
-      latitude: Number(profile?.latitude),
-      longitude: Number(profile?.longitude),
-    };
-    const hasClientLocation = Number.isFinite(clientLocation.latitude)
-      && Number.isFinite(clientLocation.longitude);
+    const clientLocation = coordinates(profile);
+    const hasClientLocation = Boolean(clientLocation);
     const restaurants = (data || [])
       .map((restaurant) => ({
         ...restaurant,
         distance_meters: hasClientLocation
-          ? calculateStraightLineDistanceMeters(clientLocation, {
+          ? calculateStraightLineDistanceMeters(clientLocation!, {
               latitude: Number(restaurant.latitude),
               longitude: Number(restaurant.longitude),
             })
@@ -104,7 +132,7 @@ const handler: Handler = async (event) => {
       }))
       .filter((restaurant) => (
         hasClientLocation
-          ? Number(restaurant.distance_meters) <= 25_000
+          ? Number(restaurant.distance_meters) <= CLIENT_CATALOG_RADIUS_METERS
           : restaurant.city?.trim().toLowerCase()
             === profile?.city?.trim().toLowerCase()
       ))
@@ -118,6 +146,7 @@ const handler: Handler = async (event) => {
         available: restaurants.length > 0,
         city: profile?.city || null,
         addressRequired: !hasClientLocation,
+        radiusMeters: CLIENT_CATALOG_RADIUS_METERS,
       },
     });
   } catch (error) {

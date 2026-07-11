@@ -3,13 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { ChevronLeft, Star, Clock, MapPin, ShoppingCart } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
-
-function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  var R = 6371; var dLat = deg2rad(lat2 - lat1); var dLon = deg2rad(lon2 - lon1);
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
-}
-function deg2rad(deg: number) { return deg * (Math.PI / 180) }
+import { loadClientCatalog } from "../../lib/clientCatalog";
 
 export default function MarketPage() {
   const navigate = useNavigate();
@@ -19,29 +13,18 @@ export default function MarketPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('latitude, longitude, city').eq('id', user.id).single();
-        if (profile?.latitude && profile?.longitude) {
-          setCityName(profile.city || "votre adresse");
-
-          // On récupère les établissements (ici on prend tous les actifs, tu pourras filtrer par catégorie plus tard si besoin)
-          const { data: restos } = await supabase.from('restaurants').select('*').eq('is_active', true).or('cuisine_type.ilike.%market%,cuisine_type.ilike.%épicerie%');
-          if (restos) {
-            const filtered = restos.filter((r: any) => {
-              if (r.latitude && r.longitude) {
-                return getDistanceFromLatLonInKm(profile.latitude, profile.longitude, r.latitude, r.longitude) <= 10;
-              }
-              return false;
-            });
-            const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant: any) => restaurant.id));
-            setMarkets(filtered.map((market: any) => {
+      try {
+        const catalog = await loadClientCatalog();
+        setCityName(catalog.coverage.city || "votre adresse");
+        const filtered = catalog.restaurants.filter((restaurant) => /market|épicerie/i.test(restaurant.cuisine_type || ""));
+        if (filtered.length) {
+          const { data: reviews } = await supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").in("orders.restaurant_id", filtered.map((restaurant) => restaurant.id));
+          setMarkets(filtered.map((market) => {
               const values = (reviews || []).filter((review: any) => review.orders?.restaurant_id === market.id).map((review: any) => review.restaurant_rating).filter(Boolean);
               return { ...market, rating: values.length ? (values.reduce((sum: number, value: number) => sum + value, 0) / values.length).toFixed(1) : "Nouveau" };
-            }));
-          }
-        }
-      }
+          }));
+        } else setMarkets([]);
+      } catch { setMarkets([]); }
       setLoading(false);
     };
     fetchData();

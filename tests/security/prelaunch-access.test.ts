@@ -87,10 +87,11 @@ test("les admins conservent leur accès pendant le pré-lancement", () => {
   assert.match(migration, /public\.current_user_has_role\('admin'\)\s+OR/);
 });
 
-test("le routeur API refuse également les contournements directs", () => {
-  assert.match(apiRouter, /APP_NOT_LAUNCHED/);
-  assert.match(apiRouter, /PRELAUNCH_ACTIVATION_REQUIRED/);
-  assert.match(apiRouter, /userHasApplicationAccess/);
+test("le routeur API ouvre l’application tout en conservant le pare-feu par rôle", () => {
+  assert.doesNotMatch(apiRouter, /APP_NOT_LAUNCHED/);
+  assert.doesNotMatch(apiRouter, /PRELAUNCH_ACTIVATION_REQUIRED/);
+  assert.doesNotMatch(apiRouter, /userHasApplicationAccess/);
+  assert.match(apiRouter, /routeAllowsRole/);
 });
 
 test("le SIRET livreur est stocké et validé sur 14 chiffres", () => {

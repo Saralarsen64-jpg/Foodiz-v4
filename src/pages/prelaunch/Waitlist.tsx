@@ -26,9 +26,9 @@ import { supabase } from "../../lib/supabase";
 type Role = "client" | "livreur" | "partenaire";
 
 const ROLES = [
-  { value: "client" as const, label: "Client", detail: "Commandez, cumulez des avantages et découvrez Weello dès son ouverture.", icon: ShoppingBag },
-  { value: "livreur" as const, label: "Livreur", detail: "Déposez votre dossier, faites valider vos justificatifs et rejoignez le pilote Weello.", icon: Bike },
-  { value: "partenaire" as const, label: "Partenaire", detail: "Présentez votre établissement, transmettez vos documents et préparez vos futures ventes.", icon: Store },
+  { value: "client" as const, label: "Client", detail: "Commandez et découvrez les établissements disponibles à moins de 10 km.", icon: ShoppingBag },
+  { value: "livreur" as const, label: "Livreur", detail: "Déposez votre dossier et faites valider vos justificatifs partout en France.", icon: Bike },
+  { value: "partenaire" as const, label: "Partenaire", detail: "Inscrivez votre établissement et transmettez vos documents partout en France. Weello organise en parallèle le recrutement de livreurs à proximité afin d’assurer vos futures livraisons dans votre secteur.", icon: Store },
 ];
 
 const BENEFITS = [
@@ -253,7 +253,7 @@ function DocumentField({
   );
 }
 
-export default function WaitlistPage({
+export default function ProfessionalRegistrationPage({
   registrationRole,
 }: {
   registrationRole?: "livreur" | "partenaire";

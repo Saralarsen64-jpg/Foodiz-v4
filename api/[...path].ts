@@ -1,9 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { adaptNetlifyHandler } from "../netlify/functions/_lib/vercel-adapter.js";
 import {
-  appIsLaunched,
   authenticatedUser,
-  userHasApplicationAccess,
   userRole,
 } from "../netlify/functions/_lib/auth.js";
 import { handler as adminPrelaunch } from "../netlify/functions/admin-prelaunch.js";
@@ -20,6 +18,7 @@ import { handler as courierDeliveries } from "../netlify/functions/courier-deliv
 import { handler as courierDeliveryAction } from "../netlify/functions/courier-delivery-action.js";
 import { handler as courierDocuments } from "../netlify/functions/courier-documents.js";
 import { handler as courierPresence } from "../netlify/functions/courier-presence.js";
+import { handler as courierInsuranceReferral } from "../netlify/functions/courier-insurance-referral.js";
 import { handler as createBillingPortal } from "../netlify/functions/create-billing-portal.js";
 import { handler as createCheckoutSession } from "../netlify/functions/create-checkout-session.js";
 import { handler as createPaymentIntent } from "../netlify/functions/create-payment-intent.js";
@@ -61,6 +60,7 @@ const handlers: Record<string, Handler> = {
   "courier-delivery-action": courierDeliveryAction,
   "courier-documents": courierDocuments,
   "courier-presence": courierPresence,
+  "courier-insurance-referral": courierInsuranceReferral,
   "create-billing-portal": createBillingPortal,
   "create-checkout-session": createCheckoutSession,
   "create-payment-intent": createPaymentIntent,
@@ -138,6 +138,7 @@ const routeRoleAllowlist = {
   "courier-delivery-action": ["courier"],
   "courier-documents": ["courier"],
   "courier-presence": ["courier"],
+  "courier-insurance-referral": ["courier"],
   "create-billing-portal": ["partner"],
   "create-checkout-session": ["client"],
   "create-payment-intent": ["client"],
@@ -174,6 +175,7 @@ const apiRateLimits: Record<string, ApiRateLimit> = {
   "admin/support-ticket-action": { limit: 40, windowMs: 60 * 1000 },
   "create-checkout-session": { limit: 30, windowMs: 5 * 60 * 1000 },
   "create-payment-intent": { limit: 30, windowMs: 5 * 60 * 1000 },
+  "courier-insurance-referral": { limit: 8, windowMs: 10 * 60 * 1000 },
   "prelaunch/activate": { limit: 20, windowMs: 10 * 60 * 1000 },
   "prelaunch/register": { limit: 12, windowMs: 10 * 60 * 1000 },
   "professional/documents": { limit: 30, windowMs: 10 * 60 * 1000 },
@@ -353,28 +355,14 @@ export default {
       const headers = Object.fromEntries(request.headers.entries());
       const user = await authenticatedUser(headers);
       const currentRole = user ? await userRole(user.id) : null;
-      const admin = currentRole === "admin";
       if (!routeAllowsRole(functionName, currentRole)) {
         return jsonWithSecurityHeaders(
           { error: "Accès refusé.", code: "ROLE_FORBIDDEN" },
           { status: user ? 403 : 401 },
         );
       }
-      if (!admin) {
-        const launched = await appIsLaunched();
-        const allowed = user ? await userHasApplicationAccess(user.id) : launched;
-        if (!allowed) {
-          return jsonWithSecurityHeaders(
-            {
-              error: launched
-                ? "Activez votre accès Weello avant de continuer."
-                : "Weello ouvrira bientôt. Votre espace est temporairement verrouillé.",
-              code: launched ? "PRELAUNCH_ACTIVATION_REQUIRED" : "APP_NOT_LAUNCHED",
-            },
-            { status: 423 },
-          );
-        }
-      }
+      // Public registration is open nationwide. Authentication, role checks,
+      // account status and professional validation remain enforced per route.
     }
 
     try {

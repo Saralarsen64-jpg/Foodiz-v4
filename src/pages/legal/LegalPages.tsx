@@ -382,15 +382,6 @@ export function TermsOfUsePage() {
   );
 }
 
-function PriceRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-white/5 py-2 last:border-0">
-      <span>{label}</span>
-      <strong className="text-right text-weello-cream">{value}</strong>
-    </div>
-  );
-}
-
 export function TermsOfSalePage() {
   return (
     <LegalShell
@@ -426,38 +417,27 @@ export function TermsOfSalePage() {
         </p>
       </Block>
 
-      <Block title="3. Prix des produits et modèle tarifaire">
+      <Block title="3. Prix des produits">
         <p>
-          Tous les montants dus par le client sont affichés en euros avant paiement. Le prix public d’un article est
-          calculé à partir du prix partenaire effectif, auquel s’ajoute le supplément Weello correspondant à sa tranche :
+          Tous les montants dus par le client sont affichés en euros avant paiement. Pour chaque produit, le prix public
+          applicable est celui présenté dans l’application au moment de la commande.
         </p>
-        <div className="rounded-2xl border border-weello-gold/15 bg-black/30 px-4 py-2">
-          <PriceRow label="Prix partenaire de 0,50 € à 3,50 €" value="+ 1,50 € par article" />
-          <PriceRow label="Prix partenaire de 3,51 € à 8,49 €" value="+ 2,90 € par article" />
-          <PriceRow label="Prix partenaire à partir de 8,50 €" value="+ 4,10 € par article" />
-        </div>
         <p>
-          Une promotion partenaire réduit d’abord le prix partenaire de référence ; le prix public est ensuite recalculé
-          selon la tranche correspondante. Le prix affiché au panier et confirmé par le serveur au moment du paiement prévaut.
+          Les promotions et réductions éventuelles sont indiquées avant validation. Le prix affiché au panier et confirmé
+          par le serveur au moment du paiement prévaut sur toute présentation antérieure.
         </p>
       </Block>
 
       <Block title="4. Frais de service et de livraison">
-        <p>Les frais de service sont calculés selon le nombre total d’articles dans la commande :</p>
-        <div className="rounded-2xl border border-weello-gold/15 bg-black/30 px-4 py-2">
-          <PriceRow label="1 article" value="1,99 €" />
-          <PriceRow label="2 articles" value="1,49 €" />
-          <PriceRow label="3 articles" value="1,19 €" />
-          <PriceRow label="4 articles ou plus" value="0,99 €" />
-        </div>
         <p>
-          La livraison coûte 3,50 € jusqu’à 5 kilomètres. Au-delà, 0,60 € est ajouté par kilomètre commencé.
-          La distance routière est calculée côté serveur entre le partenaire et l’adresse de livraison. Une distance
-          supérieure à 25 kilomètres est actuellement hors zone technique de commande.
+          Des frais de service et de livraison peuvent s’ajouter au prix des produits. Leur montant dépend notamment du
+          contenu de la commande, de l’établissement et de la distance de livraison. Chaque montant applicable est
+          détaillé dans le récapitulatif avant que le client confirme son obligation de paiement.
         </p>
         <p>
-          Une estimation peut utiliser temporairement une distance de secours lorsque le fournisseur d’itinéraire est
-          indisponible. Le montant total définitif reste présenté avant paiement.
+          La distance utile est calculée côté serveur entre le partenaire et l’adresse de livraison. Une estimation peut
+          utiliser temporairement une méthode de secours lorsque le fournisseur d’itinéraire est indisponible. Le montant
+          total définitif présenté avant paiement reste le seul montant accepté par le client.
         </p>
       </Block>
 
@@ -561,9 +541,9 @@ export function TermsOfSalePage() {
         </p>
         <p>
           Lorsqu’une estimation d’arrivée vérifiée est dépassée après retrait chez le partenaire, le programme peut créditer
-          50 points pour un retard de 10 à 15 minutes, 100 points au-delà de 15 et jusqu’à 20 minutes, puis 200 points au-delà
-          de 20 minutes. Les cas de force majeure, informations GPS insuffisantes ou décision administrative peuvent rendre
-          la règle inapplicable ou justifier une correction auditée.
+          une compensation selon les conditions affichées dans l’application au moment où elle devient applicable. Les cas
+          de force majeure, informations GPS insuffisantes ou décision administrative peuvent rendre la règle inapplicable
+          ou justifier une correction auditée.
         </p>
       </Block>
 

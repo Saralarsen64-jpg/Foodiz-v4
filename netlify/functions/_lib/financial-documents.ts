@@ -101,7 +101,10 @@ export async function renderFinancialDocumentPdf(document: FinancialDocument) {
 export async function sendFinancialDocumentEmail(document: FinancialDocument) {
   const email = document.recipient_email?.trim();
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.WEELLO_EMAIL_FROM || process.env.FOODIZ_EMAIL_FROM;
+  const from = process.env.WEELLO_EMAIL_FROM
+    || process.env.EMAIL_FROM
+    || process.env.FOODIZ_EMAIL_FROM
+    || "Weello <contact@weello.co>";
   if (!email) throw new Error("Recipient email is missing");
   if (!apiKey || !from) throw new Error("Missing Resend environment variables");
 
@@ -111,6 +114,7 @@ export async function sendFinancialDocumentEmail(document: FinancialDocument) {
     const result = await new Resend(apiKey).emails.send({
       from,
       to: email,
+      replyTo: "contact@weello.co",
       subject: receipt ? `Votre reçu Weello ${document.document_number}` : `Votre bordereau Weello ${document.document_number}`,
       html: `<div style="font-family:Arial,sans-serif;color:#171717"><h2 style="color:#b58a3a">${receipt ? "Paiement confirmé" : "Reversement confirmé"}</h2><p>Bonjour,</p><p>${receipt ? "Votre paiement Weello a bien été enregistré." : "Votre règlement Weello a bien été enregistré pour la période indiquée."}</p><p>Le justificatif détaillé <strong>${document.document_number}</strong> est joint à cet email.</p><p>Weello</p></div>`,
       attachments: [{ filename: `${document.document_number}.pdf`, content: Buffer.from(pdf) }],

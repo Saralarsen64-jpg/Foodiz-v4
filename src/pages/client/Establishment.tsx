@@ -12,11 +12,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
-import { calculateClientUnitPriceCents } from "../../lib/engines/weelloEconomicEngine";
-import {
-  effectivePartnerPriceCents,
-  productOfferIsActive,
-} from "../../lib/productOffers";
+import { loadClientEstablishment } from "../../lib/clientCatalog";
 
 export default function EstablishmentPage() {
   const { id } = useParams();
@@ -32,34 +28,29 @@ export default function EstablishmentPage() {
     const fetchEstablishment = async () => {
       if (!id) return;
       const { data: { user } } = await supabase.auth.getUser();
-      const [{ data: restaurant }, { data: products }, { data: reviews }, favoriteResult] = await Promise.all([
-        supabase.from("restaurants").select("*").eq("id", id).eq("is_active", true).not("latitude", "is", null).not("longitude", "is", null).single(),
-        supabase.from("products").select("*").eq("restaurant_id", id).eq("is_active", true).order("category"),
+      const [catalog, { data: reviews }, favoriteResult] = await Promise.all([
+        loadClientEstablishment(id),
         supabase.from("reviews").select("restaurant_rating, orders!inner(restaurant_id)").eq("orders.restaurant_id", id),
         user
           ? supabase.from("client_favorites").select("id").eq("user_id", user.id).eq("restaurant_id", id).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
+      const { restaurant, products } = catalog;
       setFavorite(Boolean(favoriteResult.data));
 
       setEstablishment(restaurant);
       const grouped = (products || []).reduce<Record<string, any[]>>((acc, product) => {
         const category = product.category || "Menu";
-        const offerActive = productOfferIsActive(product);
         acc[category] ||= [];
         acc[category].push({
           id: product.id,
           name: product.name,
           desc: product.description || "",
-          price: calculateClientUnitPriceCents(
-            effectivePartnerPriceCents(product),
-          ) / 100,
-          originalPrice: offerActive
-            ? calculateClientUnitPriceCents(product.partner_price_cents) / 100
+          price: product.client_price_cents / 100,
+          originalPrice: product.original_client_price_cents
+            ? product.original_client_price_cents / 100
             : null,
-          promotionLabel: offerActive
-            ? product.promotion_label || "Offre partenaire"
-            : null,
+          promotionLabel: product.promotion_label,
           points: 0,
           image: product.image_url || restaurant?.cover_image || "/images/auth-restaurant.jpg",
         });

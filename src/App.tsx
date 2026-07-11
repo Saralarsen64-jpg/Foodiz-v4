@@ -61,6 +61,7 @@ import CourierOnboardingPage from "./pages/courier/Onboarding";
 import CourierValidationStatusPage from "./pages/courier/ValidationStatus";
 import CourierDeliveryTrackingPage from "./pages/courier/DeliveryTracking";
 import CourierSettingsPage from "./pages/courier/Settings";
+import CourierInsuranceReferralPage from "./pages/courier/InsuranceReferral";
 
 // Auth Pages
 import RoleSelectPage from "./pages/auth/RoleSelect";
@@ -68,10 +69,6 @@ import LoginPage from "./pages/auth/Login";
 import SignupPage from "./pages/auth/Signup";
 import AuthCallback from "./pages/auth/Callback"; // NOUVEL IMPORT
 import ResetPasswordPage from "./pages/auth/ResetPassword";
-import PrelaunchConfirmed from "./pages/prelaunch/Confirmed";
-import ActivatePrelaunch from "./pages/prelaunch/Activate";
-import PrelaunchCourierDocuments from "./pages/prelaunch/CourierDocuments";
-import PrelaunchPartnerDocuments from "./pages/prelaunch/PartnerDocuments";
 import {
   CookiesPolicyPage,
   LegalNoticePage,
@@ -113,10 +110,10 @@ export default function App() {
 
       {/* ─── AUTH ROUTES (Publiques) ─────────────────────────────────────── */}
       <Route path="/waitlist" element={<Navigate to="/auth" replace />} />
-      <Route path="/prelaunch-confirmed" element={<PrelaunchConfirmed />} />
-      <Route path="/courier-documents" element={<PrelaunchCourierDocuments />} />
-      <Route path="/partner-documents" element={<PrelaunchPartnerDocuments />} />
-      <Route path="/activate" element={<ActivatePrelaunch />} />
+      <Route path="/prelaunch-confirmed" element={<Navigate to="/auth" replace />} />
+      <Route path="/courier-documents" element={<Navigate to="/auth/signup?role=courier" replace />} />
+      <Route path="/partner-documents" element={<Navigate to="/auth/signup?role=partner" replace />} />
+      <Route path="/activate" element={<Navigate to="/auth" replace />} />
       <Route path="/auth" element={<RoleSelectPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/signup" element={<SignupPage />} />
@@ -196,6 +193,7 @@ export default function App() {
         <Route path="/courier/settings" element={<CourierSettingsPage />} />
         <Route path="/courier/payouts" element={<CourierPayoutsPage />} />
         <Route path="/courier/profile" element={<CourierProfilePage />} />
+        <Route path="/courier/insurance" element={<CourierInsuranceReferralPage />} />
         <Route path="/courier/support" element={<CourierSupportPage />} />
         <Route path="/courier/help-center" element={<CourierHelpCenterPage />} />
       </Route>
