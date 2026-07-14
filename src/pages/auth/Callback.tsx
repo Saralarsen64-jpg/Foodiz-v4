@@ -10,16 +10,36 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // 1. Récupérer la session. Supabase échange automatiquement le hash de l'URL (#access_token=...) contre une session valide.
-        // C'est CETTE étape qui confirme l'email côté Supabase (passe le statut de pending à active).
+        const url = new URL(window.location.href);
+        const callbackError = url.searchParams.get("error_description")
+          || url.searchParams.get("error");
+        if (callbackError) throw new Error(callbackError);
+
+        // Supabase peut utiliser un code PKCE, un token_hash personnalisé ou
+        // l'ancien hash implicite selon la configuration Auth et le template.
+        const code = url.searchParams.get("code");
+        const tokenHash = url.searchParams.get("token_hash");
+        const otpType = url.searchParams.get("type");
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        } else if (tokenHash) {
+          const supportedTypes = new Set(["signup", "email", "recovery", "invite", "magiclink", "email_change"]);
+          if (!otpType || !supportedTypes.has(otpType)) throw new Error("Type de confirmation invalide");
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: otpType as "signup" | "email" | "recovery" | "invite" | "magiclink" | "email_change",
+          });
+          if (error) throw error;
+        }
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
         if (sessionError || !session) {
           setError("Lien de confirmation invalide, expiré ou déjà utilisé.");
           return;
         }
 
-        // 2. Rediriger vers l'étape réellement accessible pour ce compte.
         navigate(await resolveRedirectPath());
 
       } catch (err) {

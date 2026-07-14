@@ -18,3 +18,11 @@ test("les emails utilisent la chaîne de compatibilité Weello sans exposer Rese
     assert.doesNotMatch(source, /import\.meta\.env\.RESEND_API_KEY|VITE_RESEND_API_KEY/);
   }
 });
+
+test("le callback accepte les formats de confirmation Supabase actuels", () => {
+  const callback = readFileSync(join(root, "src/pages/auth/Callback.tsx"), "utf8");
+  assert.match(callback, /exchangeCodeForSession\(code\)/);
+  assert.match(callback, /verifyOtp\(/);
+  assert.match(callback, /token_hash/);
+  assert.match(callback, /error_description/);
+});
