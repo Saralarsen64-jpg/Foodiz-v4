@@ -4,8 +4,8 @@ Application React Native/Expo destinée aux clients, partenaires et livreurs
 Weello sur iOS et Android. L'administration reste sur le portail web sécurisé.
 
 Les applications iOS, Android et le site web utilisent le même backend Supabase
-existant. Son nom interne peut encore contenir Foodiz sans être visible des
-utilisateurs ; il ne faut pas créer un second projet Supabase pour le mobile.
+existant. Son identifiant historique n'est pas visible des utilisateurs ; il ne
+faut pas créer un second projet Supabase pour le mobile.
 
 ## Configuration locale
 

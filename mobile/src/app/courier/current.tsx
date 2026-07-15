@@ -412,7 +412,7 @@ export default function CurrentDeliveryScreen() {
         <Text style={weelloText.body}>
           {continuousTracking
             ? 'La position est actualisée pendant la course, même si vous consultez votre navigation. Le suivi s’arrête à la livraison.'
-            : 'Weello utilise votre position uniquement pendant cette course afin que le client puisse suivre son arrivée en direct.'}
+            : 'Weello collecte et partage votre position précise avec le client uniquement pendant cette course, y compris lorsque l’application est en arrière-plan ou que l’écran est verrouillé. Le suivi s’arrête automatiquement à la livraison.'}
         </Text>
         {!continuousTracking ? (
           <WeelloButton

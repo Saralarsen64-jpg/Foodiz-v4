@@ -13,6 +13,7 @@ Dernière vérification technique : 10 juillet 2026.
 - Bundle ID iOS et package Android : `app.weello`.
 - Icône Weello sans transparence : configurée sur iOS et Android.
 - Suppression/anonymisation du compte : disponible dans chaque espace.
+- Page publique de demande de suppression : `https://weello.app/suppression-compte`.
 - CGU : case explicite obligatoire à l’inscription mobile.
 - Mot de passe oublié et lien profond de récupération : implémentés.
 - Suivi GPS : premier plan et arrière-plan pendant une course active.
@@ -43,7 +44,7 @@ Dernière vérification technique : 10 juillet 2026.
 5. Tester sur un vrai iPhone et un vrai Android :
    - création et confirmation du compte client ;
    - adresse et position ;
-   - affichage des restaurants à moins de 25 km ;
+   - affichage des restaurants et épiciers à 10 km maximum ;
    - demande de déploiement lorsque la zone est vide ;
    - produit normal et produit en offre ;
    - paiement Stripe Test ;

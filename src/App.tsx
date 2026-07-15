@@ -96,6 +96,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminServiceAreas from "./pages/admin/ServiceAreas";
 import InterfaceStudio from "./pages/dev/InterfaceStudio";
 import ProfessionalConfirmed from "./pages/auth/ProfessionalConfirmed";
+import AccountDeletionPage from "./pages/legal/AccountDeletion";
 
 export default function App() {
   return (
@@ -127,6 +128,7 @@ export default function App() {
       <Route path="/cgv" element={<TermsOfSalePage />} />
       <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
       <Route path="/cookies" element={<CookiesPolicyPage />} />
+      <Route path="/suppression-compte" element={<AccountDeletionPage />} />
 
       {/* ─── ROUTES PROTÉGÉES PAR RÔLE ───────────────────────────────────── */}
       <Route element={<ProtectedRoute allowedRoles={["client"]} />}>
