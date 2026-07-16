@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock } from "lucide-react";
 import toast from "react-hot-toast";
@@ -10,9 +10,50 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(true);
+  const [linkValid, setLinkValid] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const prepareRecoverySession = async () => {
+      try {
+        const url = new URL(window.location.href);
+        const callbackError = url.searchParams.get("error_description")
+          || url.searchParams.get("error");
+        if (callbackError) throw new Error(callbackError);
+
+        const code = url.searchParams.get("code");
+        const tokenHash = url.searchParams.get("token_hash");
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        } else if (tokenHash) {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: "recovery",
+          });
+          if (error) throw error;
+        }
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) throw error || new Error("Recovery session unavailable");
+        if (active) setLinkValid(true);
+      } catch {
+        if (active) setLinkValid(false);
+      } finally {
+        if (active) setCheckingLink(false);
+      }
+    };
+    void prepareRecoverySession();
+    return () => { active = false; };
+  }, []);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!linkValid) {
+      toast.error("Le lien est invalide ou expiré. Demandez-en un nouveau.");
+      return;
+    }
     if (password.length < 8) {
       toast.error("Le mot de passe doit contenir au moins 8 caractères.");
       return;
@@ -32,5 +73,5 @@ export default function ResetPasswordPage() {
     navigate("/auth/login", { replace: true });
   };
 
-  return <div className="min-h-screen bg-weello-black flex items-center justify-center p-4"><div className="w-full max-w-md weello-card p-8 border border-weello-gold/20"><div className="flex justify-center mb-6"><Logo size="md" /></div><h1 className="weello-title text-2xl text-center">Nouveau mot de passe</h1><p className="text-sm text-weello-gray text-center mt-2 mb-6">Choisissez un nouveau mot de passe sécurisé.</p><form onSubmit={submit} className="space-y-4">{[{ value: password, set: setPassword, placeholder: "Nouveau mot de passe" }, { value: confirmation, set: setConfirmation, placeholder: "Confirmer le mot de passe" }].map((field) => <div key={field.placeholder} className="flex items-center gap-3 px-4 py-4 rounded-2xl border border-weello-gold/20 bg-weello-black"><Lock size={17} className="text-weello-gold" /><input type="password" value={field.value} onChange={(event) => field.set(event.target.value)} placeholder={field.placeholder} className="flex-1 bg-transparent text-weello-cream outline-none text-sm" required /></div>)}<button disabled={loading} className="weello-btn w-full py-4 disabled:opacity-50">{loading ? "Modification..." : "Modifier mon mot de passe"}</button></form></div></div>;
+  return <div className="min-h-screen bg-weello-black flex items-center justify-center p-4"><div className="w-full max-w-md weello-card p-8 border border-weello-gold/20"><div className="flex justify-center mb-6"><Logo size="md" /></div><h1 className="weello-title text-2xl text-center">Nouveau mot de passe</h1>{checkingLink ? <p className="text-sm text-weello-gray text-center mt-4">Vérification du lien sécurisé…</p> : !linkValid ? <div className="mt-5 text-center"><p className="text-sm text-weello-red">Ce lien est invalide, expiré ou déjà utilisé.</p><button type="button" onClick={() => navigate("/auth/login")} className="mt-5 text-sm text-weello-gold underline">Demander un nouveau lien</button></div> : <><p className="text-sm text-weello-gray text-center mt-2 mb-6">Choisissez un nouveau mot de passe sécurisé.</p><form onSubmit={submit} className="space-y-4">{[{ value: password, set: setPassword, placeholder: "Nouveau mot de passe" }, { value: confirmation, set: setConfirmation, placeholder: "Confirmer le mot de passe" }].map((field) => <div key={field.placeholder} className="flex items-center gap-3 px-4 py-4 rounded-2xl border border-weello-gold/20 bg-weello-black"><Lock size={17} className="text-weello-gold" /><input type="password" value={field.value} onChange={(event) => field.set(event.target.value)} placeholder={field.placeholder} className="flex-1 bg-transparent text-weello-cream outline-none text-sm" required /></div>)}<button disabled={loading} className="weello-btn w-full py-4 disabled:opacity-50">{loading ? "Modification..." : "Modifier mon mot de passe"}</button></form></>}</div></div>;
 }

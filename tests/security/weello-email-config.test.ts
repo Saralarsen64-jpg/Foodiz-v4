@@ -26,3 +26,11 @@ test("le callback accepte les formats de confirmation Supabase actuels", () => {
   assert.match(callback, /token_hash/);
   assert.match(callback, /error_description/);
 });
+
+test("la récupération de mot de passe prépare une session avant la modification", () => {
+  const reset = readFileSync(join(root, "src/pages/auth/ResetPassword.tsx"), "utf8");
+  assert.match(reset, /exchangeCodeForSession\(code\)/);
+  assert.match(reset, /verifyOtp\(/);
+  assert.match(reset, /type: "recovery"/);
+  assert.match(reset, /if \(!linkValid\)/);
+});
