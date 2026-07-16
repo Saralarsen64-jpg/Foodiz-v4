@@ -13,6 +13,21 @@ export default function ResetPasswordPage() {
   const [checkingLink, setCheckingLink] = useState(true);
   const [linkValid, setLinkValid] = useState(false);
 
+  const passwordErrorMessage = (error: { code?: string; message?: string }) => {
+    const code = error.code || "";
+    const message = (error.message || "").toLowerCase();
+    if (code === "same_password" || message.includes("same password") || message.includes("different from the old")) {
+      return "Choisissez un mot de passe différent de l’ancien.";
+    }
+    if (code === "weak_password" || message.includes("weak") || message.includes("characters")) {
+      return "Ce mot de passe est trop faible. Utilisez au moins 10 caractères avec une majuscule, une minuscule, un chiffre et un symbole.";
+    }
+    if (code === "session_not_found" || code === "refresh_token_not_found" || message.includes("session")) {
+      return "La session de récupération n’est plus valide. Demandez un nouveau lien.";
+    }
+    return "Le mot de passe n’a pas pu être modifié. Choisissez-en un nouveau plus robuste et réessayez.";
+  };
+
   useEffect(() => {
     let active = true;
     const prepareRecoverySession = async () => {
@@ -66,7 +81,7 @@ export default function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      toast.error("Le lien est invalide ou expiré. Demandez-en un nouveau.");
+      toast.error(passwordErrorMessage(error));
       return;
     }
     toast.success("Votre mot de passe a été modifié.");

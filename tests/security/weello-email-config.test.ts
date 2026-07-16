@@ -33,4 +33,7 @@ test("la récupération de mot de passe prépare une session avant la modificati
   assert.match(reset, /verifyOtp\(/);
   assert.match(reset, /type: "recovery"/);
   assert.match(reset, /if \(!linkValid\)/);
+  assert.match(reset, /same_password/);
+  assert.match(reset, /weak_password/);
+  assert.match(reset, /session_not_found/);
 });
