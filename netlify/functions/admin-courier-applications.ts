@@ -79,6 +79,34 @@ const handler: Handler = async (event) => {
     return reply(400, { error: "Requête invalide." });
   }
 
+  if (body.action === "get_document_url") {
+    const documentId = String(body.documentId || "");
+    if (!documentId) return reply(400, { error: "Document manquant." });
+
+    const { data: document, error: documentError } = await adminSupabase
+      .from("courier_documents")
+      .select("id,storage_path,original_name")
+      .eq("id", documentId)
+      .maybeSingle();
+    if (documentError || !document) {
+      return reply(404, { error: "Ce justificatif est introuvable." });
+    }
+
+    const { data: signedDocument, error: signedUrlError } = await adminSupabase.storage
+      .from("courier-documents")
+      .createSignedUrl(
+        document.storage_path,
+        5 * 60,
+        body.download === true ? { download: document.original_name || true } : undefined,
+      );
+    if (signedUrlError || !signedDocument?.signedUrl) {
+      console.error("Admin courier document URL failed", signedUrlError);
+      return reply(500, { error: "Impossible d’ouvrir ce justificatif. Vérifiez que le fichier existe toujours." });
+    }
+
+    return reply(200, { signedUrl: signedDocument.signedUrl });
+  }
+
   if (body.action === "set_access") {
     const targetUserId = String(body.userId || "");
     if (!targetUserId) return reply(400, { error: "Utilisateur manquant." });

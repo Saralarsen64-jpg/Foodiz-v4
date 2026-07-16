@@ -4,6 +4,9 @@ import toast from "react-hot-toast";
 import AdminShell from "../../components/AdminShell";
 import { supabase } from "../../lib/supabase";
 
+const useWeelloBrand = (value: string | null | undefined) =>
+  (value || "").replace(/foodiz/gi, "Weello");
+
 export default function AdminBroadcast() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -74,7 +77,7 @@ export default function AdminBroadcast() {
 
     <section className="weello-card overflow-hidden">
       <div className="border-b border-weello-gold/10 p-5"><h2 className="weello-title text-lg">Historique</h2></div>
-      {history.length === 0 ? <div className="p-6 text-sm text-weello-gray">Aucune diffusion enregistrée.</div> : <div className="divide-y divide-white/5">{history.map((item) => <article key={item.id} className="flex flex-col gap-3 p-5 md:flex-row md:items-center"><CheckCircle size={17} className="text-weello-green"/><div className="flex-1"><p className="font-semibold text-weello-cream">{item.title}</p><p className="mt-1 text-xs text-weello-gray">{item.message}</p></div><div className="text-xs text-weello-gray md:text-right"><p>{item.recipients_count} destinataire(s)</p><p>{item.sent_at ? new Date(item.sent_at).toLocaleString("fr-FR") : "-"}</p></div></article>)}</div>}
+      {history.length === 0 ? <div className="p-6 text-sm text-weello-gray">Aucune diffusion enregistrée.</div> : <div className="divide-y divide-white/5">{history.map((item) => <article key={item.id} className="flex flex-col gap-3 p-5 md:flex-row md:items-center"><CheckCircle size={17} className="text-weello-green"/><div className="flex-1"><p className="font-semibold text-weello-cream">{useWeelloBrand(item.title)}</p><p className="mt-1 text-xs text-weello-gray">{useWeelloBrand(item.message)}</p></div><div className="text-xs text-weello-gray md:text-right"><p>{item.recipients_count} destinataire(s)</p><p>{item.sent_at ? new Date(item.sent_at).toLocaleString("fr-FR") : "-"}</p></div></article>)}</div>}
     </section>
   </AdminShell>;
 }

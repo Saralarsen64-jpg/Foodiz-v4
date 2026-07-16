@@ -4,6 +4,7 @@ import {
   Bike,
   CheckCircle2,
   ExternalLink,
+  Download,
   FileCheck2,
   FileText,
   MapPin,
@@ -153,6 +154,27 @@ export default function AdminCourierApplicationsPage() {
     }
   };
 
+  const openDocument = async (document: CourierDocument, download = false) => {
+    const popup = window.open("", "_blank");
+    try {
+      const payload = await adminCourierRequest("POST", {
+        action: "get_document_url",
+        documentId: document.id,
+        download,
+      });
+      if (!payload.signedUrl) throw new Error("Lien du justificatif indisponible.");
+      if (popup) {
+        popup.opener = null;
+        popup.location.href = payload.signedUrl;
+      } else {
+        window.location.assign(payload.signedUrl);
+      }
+    } catch (error: any) {
+      popup?.close();
+      toast.error(error.message || "Impossible d’ouvrir ce justificatif.");
+    }
+  };
+
   const toggleReplacement = (applicationId: string, documentType: DocumentType) => {
     setReplacementDocuments((current) => {
       const selected = current[applicationId] || [];
@@ -283,24 +305,31 @@ export default function AdminCourierApplicationsPage() {
                 </div>
 
                 <div className="mt-4 space-y-2">
+                  <p className="px-1 text-[10px] text-weello-gray">
+                    Justificatifs conservés dans l’espace privé Weello et accessibles à tout moment.
+                  </p>
                   {(["identity_front", "identity_back", "activity_proof"] as DocumentType[]).map((documentType) => {
                     const document = item.documents.find((candidate) => candidate.document_type === documentType);
                     const replacementSelected = (replacementDocuments[item.id] || []).includes(documentType);
                     return (
                       <div key={documentType} className={`flex items-center gap-3 rounded-2xl border p-3 ${document ? "border-weello-gold/15 bg-black/25" : "border-weello-red/20 bg-weello-red/5"}`}>
-                        <button
-                          type="button"
-                          disabled={!document?.signed_url}
-                          onClick={() => document?.signed_url && window.open(document.signed_url, "_blank", "noopener,noreferrer")}
-                          className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-50"
-                        >
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
                           {document ? <FileCheck2 size={17} className="shrink-0 text-weello-green" /> : <XCircle size={17} className="shrink-0 text-weello-red" />}
                           <span className="min-w-0">
                             <span className="block text-xs text-weello-cream">{documentLabels[documentType]}</span>
                             <span className="mt-1 block truncate text-[9px] text-weello-gray">{document?.original_name || "Document absent"}</span>
                           </span>
-                          {document?.signed_url && <ExternalLink size={14} className="ml-auto shrink-0 text-weello-gold" />}
-                        </button>
+                        </div>
+                        {document && (
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button type="button" onClick={() => void openDocument(document)} aria-label={`Voir ${documentLabels[documentType]}`} className="rounded-lg border border-weello-gold/20 p-2 text-weello-gold" title="Voir">
+                              <ExternalLink size={14} />
+                            </button>
+                            <button type="button" onClick={() => void openDocument(document, true)} aria-label={`Télécharger ${documentLabels[documentType]}`} className="rounded-lg border border-weello-gold/20 p-2 text-weello-gold" title="Télécharger">
+                              <Download size={14} />
+                            </button>
+                          </div>
+                        )}
                         {document && (
                           <label className="flex shrink-0 items-center gap-2 text-[9px] text-weello-gray">
                             <input type="checkbox" checked={replacementSelected} onChange={() => toggleReplacement(item.id, documentType)} className="accent-[#D8A84F]" />
