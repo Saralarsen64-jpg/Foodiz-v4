@@ -7,7 +7,7 @@ Dernière vérification technique : 10 juillet 2026.
 - Expo Doctor : 21/21.
 - TypeScript web, fonctions et mobile : OK.
 - ESLint mobile : OK.
-- Tests sécurité, économie et routage : 86/86.
+- Tests sécurité, économie et routage : 93/93.
 - Build web : OK.
 - Export Metro iOS et Android : OK.
 - Bundle ID iOS et package Android : `app.weello`.
@@ -24,8 +24,11 @@ Dernière vérification technique : 10 juillet 2026.
 
 ## Actions obligatoires avant les builds stores
 
-1. Tester puis appliquer dans l’ordre les migrations Supabase `42`, `43`, `44`
-   et `45`. Ne pas appliquer uniquement la migration de marque `45`.
+1. Tester puis appliquer dans l’ordre les migrations Supabase `42` à `47`.
+   Les migrations `46` (inscriptions professionnelles et activation des villes)
+   et `47` (demandes de rappel assurance livreur) sont requises en plus de la
+   migration de marque `45`. Vérifier ensuite que la liste des migrations
+   locales et distantes est strictement identique.
 2. Ajouter dans Supabase Auth > URL Configuration :
    - Site URL : `https://weello.app`
    - `weello://login`

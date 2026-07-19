@@ -32,6 +32,13 @@ npx vercel env pull /tmp/weello-production.env --environment=production --yes
 set -a && . /tmp/weello-production.env && set +a
 npm run check:production-env
 npx supabase migration list
+npm run check:production-deployment
+```
+
+Après l'ouverture officielle, exécuter aussi :
+
+```bash
+npm run check:production-deployment -- --expect-open
 ```
 
 Les migrations locales et distantes doivent être alignées. Dans Supabase Auth,

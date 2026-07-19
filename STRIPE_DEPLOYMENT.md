@@ -13,31 +13,21 @@
    - **Publishable Key** (pk_*) → `VITE_STRIPE_PUBLISHABLE_KEY`
    - **Secret Key** (sk_*) → `STRIPE_SECRET_KEY`
 
-### 1.3 Créer les plans d'abonnement Weello+
+### 1.3 Créer les prix d'abonnement Weello+
 1. Allez à https://dashboard.stripe.com/products
-2. Créez 4 prix pour les plans:
+2. Créez les six prix live correspondant aux plans présents dans Weello :
 
 ```
-Plan Basic (Mensuel)
-├─ Prix: 19.99€/mois
-├─ ID du prix: price_basic_monthly_xxx
-└─ Features: 50 commandes/mois, Analytics basique
-
-Plan Basic (Annuel)
-├─ Prix: 199.99€/an
-├─ ID du prix: price_basic_yearly_xxx
-└─ Économies: 20%
-
-Plan Pro (Mensuel)
-├─ Prix: 49.99€/mois
-├─ ID du prix: price_pro_monthly_xxx
-└─ Features: Commandes illimitées, Analytics avancé
-
-Plan Pro (Annuel)
-├─ Prix: 499.99€/an
-├─ ID du prix: price_pro_yearly_xxx
-└─ Économies: 17%
+Discovery : mensuel et annuel
+Boost : mensuel et annuel
+Domination : mensuel et annuel
 ```
+
+Renseignez leurs identifiants `price_...` dans les six variables
+`STRIPE_PLAN_DISCOVERY_*`, `STRIPE_PLAN_BOOST_*` et
+`STRIPE_PLAN_DOMINATION_*`. Les montants et avantages doivent correspondre aux
+plans validés dans la base Supabase ; ne réutilisez pas l'ancienne grille
+Basic/Pro.
 
 ### 1.4 Configurer le Webhook
 1. Allez à https://dashboard.stripe.com/webhooks
@@ -56,10 +46,10 @@ Plan Pro (Annuel)
 
 ---
 
-## 2️⃣ Configuration Netlify
+## 2️⃣ Configuration Vercel
 
 ### 2.1 Variables d'environnement
-Allez à **Site Settings > Build & deploy > Environment**
+Allez à **Project Settings > Environment Variables** du projet Vercel Weello.
 
 Ajoutez:
 ```
@@ -69,6 +59,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 VITE_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
 STRIPE_SECRET_KEY=sk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
+ALLOW_LIVE_PAYMENTS=true
 STRIPE_PLAN_DISCOVERY_MONTHLY=price_discovery_monthly_xxx
 STRIPE_PLAN_DISCOVERY_YEARLY=price_discovery_yearly_xxx
 STRIPE_PLAN_BOOST_MONTHLY=price_boost_monthly_xxx
@@ -77,8 +68,10 @@ STRIPE_PLAN_DOMINATION_MONTHLY=price_domination_monthly_xxx
 STRIPE_PLAN_DOMINATION_YEARLY=price_domination_yearly_xxx
 ```
 
-### 2.2 Permettre les imports Stripe dans Functions
-Le fichier `package.json` doit avoir les dépendances nécessaires. Les Netlify Functions utilisent Node.js, donc `stripe` doit être disponible.
+### 2.2 Vérifier les fonctions serveur
+Le fichier `package.json` contient les dépendances nécessaires. Les handlers
+historiques sont adaptés par l'API Vercel : il ne faut pas créer un site
+Netlify ni configurer des routes `/.netlify/functions`.
 
 Vérifiez que `stripe` est installé:
 ```bash
@@ -87,19 +80,17 @@ npm install stripe
 
 ---
 
-## 3️⃣ Déployer sur Netlify
+## 3️⃣ Déployer sur Vercel
 
 ### 3.1 Connexion au repo
-```bash
-# Connectez votre repo GitHub à Netlify
-# Allez à https://netlify.com > New site from Git
-```
+Connectez le dépôt GitHub au projet Vercel qui possède le domaine
+`weello.app`.
 
 ### 3.2 Configuration build
-Netlify détecte automatiquement:
+Vercel utilise :
 - **Build command**: `npm run build`
-- **Functions directory**: `netlify/functions`
-- **Publish directory**: `dist`
+- **API**: `api/[...path].ts`
+- **Configuration**: `vercel.json`
 
 ### 3.3 Pousser le code
 ```bash
@@ -108,7 +99,8 @@ git commit -m "feat: Stripe integration Phase 2"
 git push origin main
 ```
 
-Netlify déploiera automatiquement et vos Netlify Functions seront disponibles à `/.netlify/functions/...`
+Vercel déploiera automatiquement et les endpoints seront disponibles sous
+`/api/...`.
 
 ---
 
@@ -134,7 +126,7 @@ partenaire et livreur avant d'activer `create-payout`.
 ### 4.3 Souscription Weello+
 ```
 1. Partenaire va aux settings
-2. Choisit un plan (Basic/Pro, Mensuel/Annuel)
+2. Choisit un plan (Discovery, Boost ou Domination ; mensuel ou annuel)
 3. createSubscription() initialise l'abonnement
 4. Client complète le paiement
 5. Partenaire a accès aux features Premium
@@ -146,8 +138,8 @@ partenaire et livreur avant d'activer `create-payout`.
 ## 5️⃣ Résolution de Problèmes
 
 ### ❌ Erreur: "Webhook endpoint failed"
-- Vérifiez que `STRIPE_WEBHOOK_SECRET` est correct dans Netlify
-- Vérifiez que la fonction `stripe-webhook.ts` compile
+- Vérifiez que `STRIPE_WEBHOOK_SECRET` est correct dans Vercel
+- Vérifiez les logs de la fonction Vercel `stripe-webhook`
 - Testez avec `stripe trigger` en mode test
 
 ### ❌ Erreur: "PaymentIntent failed"
@@ -156,7 +148,7 @@ partenaire et livreur avant d'activer `create-payout`.
 - Vérifiez le montant en centimes
 
 ### ❌ Erreur: "Missing price IDs"
-- Vérifiez que tous les `STRIPE_PLAN_*` sont configurés dans Netlify
+- Vérifiez que tous les `STRIPE_PLAN_*` sont configurés dans Vercel
 - Créez les produits dans Stripe Dashboard
 - Copiez exactement les IDs
 
@@ -177,8 +169,8 @@ STRIPE_WEBHOOK_SECRET=whsec_test_xxx
 ```
 
 ### 6.2 Cartes de test
-- **Succès**: `4242 4242 4242 4242` / Expiry: `12/25` / CVC: `123`
-- **Déclinée**: `4000 0000 0000 0002` / Expiry: `12/25` / CVC: `123`
+- **Succès**: `4242 4242 4242 4242` / Expiry: `12/34` / CVC: `123`
+- **Déclinée**: `4000 0000 0000 0002` / Expiry: `12/34` / CVC: `123`
 
 ### 6.3 Tester localement les Webhooks
 ```bash
@@ -189,7 +181,7 @@ brew install stripe/stripe-cli/stripe
 stripe login
 
 # Écouter les webhooks localement
-stripe listen --forward-to localhost:5173/api/stripe-webhook
+stripe listen --forward-to localhost:3000/api/stripe-webhook
 
 # Dans un autre terminal, déclencher un événement
 stripe trigger payment_intent.succeeded
@@ -200,7 +192,8 @@ stripe trigger payment_intent.succeeded
 ## 7️⃣ Mise en Production
 
 ### ⚠️ Checklist avant LIVE
-- [ ] Toutes les variables Netlify configurées
+- [ ] Toutes les variables Vercel configurées
+- [ ] `ALLOW_LIVE_PAYMENTS=true` défini seulement après recette Stripe Live
 - [ ] Webhook configuré avec URL PRODUCTION
 - [ ] Plans Stripe créés avec tarifs FINAUX
 - [ ] Page juridique "CGU Paiements" ajoutée
@@ -212,7 +205,7 @@ stripe trigger payment_intent.succeeded
 
 ### 🔒 Sécurité
 - ✅ Jamais pusher les clés secrètes
-- ✅ Utiliser les variables Netlify
+- ✅ Utiliser les variables Vercel
 - ✅ Valider côté serveur dans les Functions
 - ✅ Chiffrer les données sensibles
 - ✅ HTTPS obligatoire
@@ -220,7 +213,7 @@ stripe trigger payment_intent.succeeded
 
 ### 📊 Monitoring
 - Dashboard Stripe: https://dashboard.stripe.com
-- Netlify Functions logs: https://app.netlify.com > Functions
+- Vercel Runtime Logs: tableau de bord Vercel > Logs
 - Supabase logs: https://supabase.com > Logs
 
 ---
