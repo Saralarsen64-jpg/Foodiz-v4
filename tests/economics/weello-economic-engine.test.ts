@@ -24,7 +24,7 @@ test("tranche 1 applique exactement le supplément et la répartition officiels"
     clientPriceCents: 500,
     supplementCents: 150,
     tier: 1,
-    foodizRevenueCents: 50,
+    weelloRevenueCents: 50,
     courierDirectCents: 50,
     loyaltyFundCents: 10,
     referralFundCents: 10,
@@ -40,7 +40,7 @@ test("tranche 2 commence à 3,51 EUR et totalise 2,90 EUR", () => {
   assert.equal(split.supplementCents, 290);
   assert.equal(split.clientPriceCents, 641);
   assert.equal(
-    split.foodizRevenueCents +
+    split.weelloRevenueCents +
       split.courierDirectCents +
       split.loyaltyFundCents +
       split.referralFundCents +
@@ -56,7 +56,7 @@ test("tranche 3 commence à 8,50 EUR et totalise 4,10 EUR", () => {
   assert.equal(split.supplementCents, 410);
   assert.equal(split.clientPriceCents, 1260);
   assert.equal(
-    split.foodizRevenueCents +
+    split.weelloRevenueCents +
       split.courierDirectCents +
       split.loyaltyFundCents +
       split.referralFundCents +

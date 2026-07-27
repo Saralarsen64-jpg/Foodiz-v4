@@ -161,13 +161,32 @@ const handler: Handler = async (event) => {
     const geocoded = await geocodeAddress(`${address}, ${postalCode} ${city}, France`);
     coordinates = { latitude: geocoded.latitude, longitude: geocoded.longitude };
   } catch (error) {
-    console.error("Professional registration geocoding failed", error);
-    const retryable = error instanceof RoutingProviderError && error.retryable;
-    return reply(retryable ? 503 : 422, {
-      error: retryable
-        ? "La vérification d’adresse est momentanément indisponible. Réessayez dans quelques minutes."
-        : "L’adresse professionnelle n’a pas pu être vérifiée. Corrigez-la avant de continuer.",
-    });
+    // Certaines adresses professionnelles (zones d'activité, lieux-dits,
+    // nouvelles voies) ne sont pas encore connues du fournisseur. Un second
+    // essai sur la commune permet de créer le dossier ; l'adresse complète
+    // reste ensuite contrôlée par l'équipe avant toute activation.
+    if (error instanceof RoutingProviderError && error.code === "address_not_found") {
+      try {
+        const geocodedCity = await geocodeAddress(`${postalCode} ${city}, France`);
+        coordinates = { latitude: geocodedCity.latitude, longitude: geocodedCity.longitude };
+      } catch (fallbackError) {
+        console.error("Professional registration geocoding fallback failed", fallbackError);
+        const retryable = fallbackError instanceof RoutingProviderError && fallbackError.retryable;
+        return reply(retryable ? 503 : 422, {
+          error: retryable
+            ? "La vérification d’adresse est momentanément indisponible. Réessayez dans quelques minutes."
+            : "La ville ou le code postal professionnel n’a pas pu être vérifié.",
+        });
+      }
+    } else {
+      console.error("Professional registration geocoding failed", error);
+      const retryable = error instanceof RoutingProviderError && error.retryable;
+      return reply(retryable ? 503 : 422, {
+        error: retryable
+          ? "La vérification d’adresse est momentanément indisponible. Réessayez dans quelques minutes."
+          : "L’adresse professionnelle n’a pas pu être vérifiée. Corrigez-la avant de continuer.",
+      });
+    }
   }
 
   const appUrl = publicAppUrl();

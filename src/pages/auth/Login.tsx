@@ -107,7 +107,7 @@ export default function LoginPage() {
 
           <button type="button" onClick={handleForgotPassword} className="text-weello-gold text-xs font-medium block ml-auto">Mot de passe oublié ?</button>
 
-          <button type="submit" disabled={loading} className="w-full weello-btn !py-4">
+          <button type="submit" disabled={loading} className="w-full weello-auth-action rounded-2xl !py-4 font-bold">
             {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>

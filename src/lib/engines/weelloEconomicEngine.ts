@@ -8,7 +8,7 @@ export interface ItemBreakdown {
   tier: 1 | 2 | 3;
   courierDirectCents: number;
   courierPrimeCents: number;
-  foodizRevenueCents: number;
+  weelloRevenueCents: number;
   loyaltyFundCents: number;
   referralFundCents: number;
   internalFeesCents: number;
@@ -19,7 +19,7 @@ export interface OrderTotals {
   itemCount: number;
   partnerTotalCents: number;
   clientItemsTotalCents: number;
-  foodizRevenueCents: number;
+  weelloRevenueCents: number;
   courierEarningsCents: number;
   courierPrimeFundCents: number;
   loyaltyFundCents: number;
@@ -50,7 +50,7 @@ export function calculateItemSplit(partnerPriceCents: number): ItemBreakdown {
       clientPriceCents: partnerPriceCents + 150,
       supplementCents: 150,
       tier: 1,
-      foodizRevenueCents: 50,
+      weelloRevenueCents: 50,
       courierDirectCents: 50,
       loyaltyFundCents: 10,
       referralFundCents: 10,
@@ -66,7 +66,7 @@ export function calculateItemSplit(partnerPriceCents: number): ItemBreakdown {
       clientPriceCents: partnerPriceCents + 290,
       supplementCents: 290,
       tier: 2,
-      foodizRevenueCents: 100,
+      weelloRevenueCents: 100,
       courierDirectCents: 100,
       loyaltyFundCents: 20,
       referralFundCents: 20,
@@ -81,7 +81,7 @@ export function calculateItemSplit(partnerPriceCents: number): ItemBreakdown {
     clientPriceCents: partnerPriceCents + 410,
     supplementCents: 410,
     tier: 3,
-    foodizRevenueCents: 150,
+    weelloRevenueCents: 150,
     courierDirectCents: 130,
     loyaltyFundCents: 30,
     referralFundCents: 30,
@@ -140,7 +140,7 @@ export function calculateWeelloOrder(
       return {
         partnerTotalCents: totals.partnerTotalCents + split.partnerPriceCents,
         clientItemsTotalCents: totals.clientItemsTotalCents + split.clientPriceCents,
-        foodizRevenueCents: totals.foodizRevenueCents + split.foodizRevenueCents,
+        weelloRevenueCents: totals.weelloRevenueCents + split.weelloRevenueCents,
         courierEarningsCents: totals.courierEarningsCents + split.courierDirectCents,
         courierPrimeFundCents: totals.courierPrimeFundCents + split.courierPrimeCents,
         loyaltyFundCents: totals.loyaltyFundCents + split.loyaltyFundCents,
@@ -152,7 +152,7 @@ export function calculateWeelloOrder(
     {
       partnerTotalCents: 0,
       clientItemsTotalCents: 0,
-      foodizRevenueCents: 0,
+      weelloRevenueCents: 0,
       courierEarningsCents: 0,
       courierPrimeFundCents: 0,
       loyaltyFundCents: 0,

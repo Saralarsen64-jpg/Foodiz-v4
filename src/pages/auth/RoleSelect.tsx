@@ -246,7 +246,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="weello-premium-button flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-extrabold text-weello-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-weello-gold focus-visible:ring-offset-2 focus-visible:ring-offset-weello-black disabled:cursor-wait disabled:opacity-60"
+            className="weello-premium-button flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-weello-gold focus-visible:ring-offset-2 focus-visible:ring-offset-weello-black disabled:cursor-wait disabled:opacity-60"
           >
             {loading ? (
               <>
@@ -324,7 +324,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => navigate("/auth/signup?role=partner")}
-                className="weello-premium-button pointer-events-auto mb-2 w-full rounded-xl py-2.5 text-xs font-extrabold text-weello-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-weello-cream"
+                className="weello-premium-button pointer-events-auto mb-2 w-full rounded-xl py-2.5 text-xs font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-weello-cream"
               >
                 S'inscrire
               </button>
@@ -385,7 +385,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => navigate("/auth/signup?role=courier")}
-                className="weello-premium-button pointer-events-auto mb-2 w-full rounded-xl py-2.5 text-xs font-extrabold text-weello-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-weello-cream"
+                className="weello-premium-button pointer-events-auto mb-2 w-full rounded-xl py-2.5 text-xs font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-weello-cream"
               >
                 S'inscrire
               </button>

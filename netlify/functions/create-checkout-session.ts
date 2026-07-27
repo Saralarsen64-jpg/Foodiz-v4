@@ -315,7 +315,7 @@ const handler: Handler = async (event) => {
         courier_prime_fund_cents: totals.courierPrimeFundCents,
         loyalty_fund_cents: totals.loyaltyFundCents,
         referral_fund_cents: totals.referralFundCents,
-        foodiz_revenue_cents: totals.foodizRevenueCents,
+        foodiz_revenue_cents: totals.weelloRevenueCents,
         system_reserve_cents: totals.systemReserveCents,
         points_redeemed_cents: 0,
         advantage_discount_cents: advantageDiscountCents,

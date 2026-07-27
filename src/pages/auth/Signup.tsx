@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { Mail, Lock, User, Phone, MapPin, Hash, Briefcase, AlertCircle, CheckCircle } from "lucide-react";
 import { normalizePublicSignupRole } from "../../utils/authRoles";
 import ProfessionalSignupPage from "../prelaunch/Waitlist";
+import { FRENCH_CITY_SUGGESTIONS } from "../../lib/frenchCities";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -141,7 +142,7 @@ export default function SignupPage() {
             </div>
             <div className="flex items-center gap-2 px-3 py-3 rounded-xl border border-weello-gold/30 bg-weello-black">
               <MapPin size={16} className="text-weello-gold" />
-              <input type="text" required value={city} onChange={(e) => setCity(e.target.value)} className="flex-1 bg-transparent text-weello-cream outline-none text-sm" placeholder="Ville" />
+              <input type="text" required list="weello-cities" value={city} onChange={(e) => setCity(e.target.value)} className="flex-1 bg-transparent text-weello-cream outline-none text-sm" placeholder="Ville — choisissez ou saisissez" />
             </div>
           </div>
 
@@ -167,10 +168,11 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full weello-btn py-4 mt-2 text-base font-bold disabled:opacity-50">
+          <button type="submit" disabled={loading} className="w-full weello-auth-action rounded-2xl py-4 mt-2 text-base font-bold disabled:opacity-50">
             {loading ? "Création en cours..." : "Créer mon compte"}
           </button>
         </form>
+        <datalist id="weello-cities">{FRENCH_CITY_SUGGESTIONS.map((cityName) => <option key={cityName} value={cityName} />)}</datalist>
         
         <p className="text-center text-xs text-weello-gray mt-6">
           Déjà un compte ? <button onClick={() => navigate(`/auth/login?role=${role}`)} className="text-weello-gold font-bold hover:underline">Se connecter</button>
