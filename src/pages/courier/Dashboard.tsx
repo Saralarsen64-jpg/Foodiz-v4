@@ -15,30 +15,36 @@ export default function CourierDashboard() {
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [available, setAvailable] = useState(0);
   const [activeOrder, setActiveOrder] = useState<any>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const load = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const [{ data: profile }, { data: delivered }, { data: active }] = await Promise.all([
-      supabase.from("profiles").select("full_name, courier_online").eq("id", user.id).single(),
-      supabase.from("orders").select("delivery_fee_cents, courier_earnings_cents, courier_prime_fund_cents, courier_delay_penalty_cents").eq("courier_id", user.id).eq("status", "delivered").gte("delivered_at", today.toISOString()),
-      supabase.from("orders").select("id, status, delivery_address, restaurant:restaurants(name)").eq("courier_id", user.id).in("status", ["pickup", "picked_up", "delivering"]).limit(1).maybeSingle(),
-    ]);
-    setName(profile?.full_name?.split(" ")[0] || "Livreur"); setOnline(Boolean(profile?.courier_online));
-    setTodayDeliveries(delivered?.length || 0); setTodayEarnings((delivered || []).reduce((sum, order) => sum + (order.delivery_fee_cents || 0) + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0) - (order.courier_delay_penalty_cents || 0), 0) / 100);
-    setActiveOrder(active);
-    if (profile?.courier_online) {
-      try {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const [{ data: profile, error: profileError }, { data: delivered, error: deliveredError }, { data: active, error: activeError }] = await Promise.all([
+        supabase.from("profiles").select("full_name, courier_online").eq("id", user.id).single(),
+        supabase.from("orders").select("delivery_fee_cents, courier_earnings_cents, courier_prime_fund_cents, courier_delay_penalty_cents").eq("courier_id", user.id).eq("status", "delivered").gte("delivered_at", today.toISOString()),
+        supabase.from("orders").select("id, status, delivery_address, restaurant:restaurants(name)").eq("courier_id", user.id).in("status", ["pickup", "picked_up", "delivering"]).limit(1).maybeSingle(),
+      ]);
+      if (profileError || deliveredError || activeError) throw profileError || deliveredError || activeError;
+
+      setName(profile?.full_name?.split(" ")[0] || "Livreur"); setOnline(Boolean(profile?.courier_online));
+      setTodayDeliveries(delivered?.length || 0); setTodayEarnings((delivered || []).reduce((sum, order) => sum + (order.delivery_fee_cents || 0) + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0) - (order.courier_delay_penalty_cents || 0), 0) / 100);
+      setActiveOrder(active);
+      if (profile?.courier_online) {
         await updateCourierPresence(true);
         const { data: { session } } = await supabase.auth.getSession();
         const response = await fetch("/api/courier-deliveries", { headers: { Authorization: `Bearer ${session?.access_token || ""}` } });
         const payload = await response.json().catch(() => ({}));
         setAvailable(response.ok ? payload.deliveries?.length || 0 : 0);
-      } catch {
+      } else {
         setAvailable(0);
       }
-    } else {
+      setLoadError(false);
+    } catch (error) {
+      console.error("Courier dashboard loading error", error);
+      setLoadError(true);
       setAvailable(0);
     }
   };
@@ -55,6 +61,14 @@ export default function CourierDashboard() {
       toast.error(error.message || "Impossible de modifier votre disponibilité.");
     }
   };
+
+  if (loadError) return <CourierShell>
+    <section className="rounded-[1.75rem] border border-red-400/20 bg-red-400/[0.06] p-6 text-center">
+      <h1 className="text-xl font-bold text-weello-cream">Votre espace livreur est momentanément indisponible</h1>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-weello-gray">Votre dossier reste validé et votre compte est bien conservé. Réessayez dans un instant.</p>
+      <button type="button" onClick={() => void load()} className="mt-5 rounded-2xl bg-weello-cream px-5 py-3 text-sm font-bold text-weello-black hover:bg-white">Réessayer</button>
+    </section>
+  </CourierShell>;
 
   return <CourierShell>
     <WeelloHero

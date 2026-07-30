@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import "./index.css";
 import App from "./App";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import { migrateLegacyStorage } from "./lib/storageMigration";
 
 // Run a best-effort migration of legacy `foodiz_*` storage keys to `weello_*`.
@@ -12,7 +13,9 @@ migrateLegacyStorage();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
       <Toaster
         position="top-center"
         toastOptions={{
