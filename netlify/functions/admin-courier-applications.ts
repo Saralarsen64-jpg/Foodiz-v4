@@ -1,6 +1,7 @@
 import type { Handler } from "@netlify/functions";
 import { adminSupabase, authenticatedUser, userRole } from "./_lib/auth.js";
 import { createLaunchToken, sendPrelaunchEmail } from "./_lib/prelaunch.js";
+import { geocodeAddress } from "./_lib/routingProvider.js";
 
 const reply = (statusCode: number, body: unknown) => ({
   statusCode,
@@ -105,6 +106,39 @@ const handler: Handler = async (event) => {
     }
 
     return reply(200, { signedUrl: signedDocument.signedUrl });
+  }
+
+  if (body.action === "assign_service_area") {
+    const applicationId = String(body.applicationId || "");
+    const { data: application } = await adminSupabase
+      .from("courier_applications")
+      .select("id,user_id,address,postal_code,city")
+      .eq("id", applicationId)
+      .maybeSingle();
+    if (!application?.address || !application.postal_code || !application.city) {
+      return reply(409, { error: "L’adresse, le code postal et la ville sont nécessaires avant d’attribuer une zone." });
+    }
+    let location;
+    try {
+      location = await geocodeAddress(`${application.address}, ${application.postal_code} ${application.city}, France`);
+    } catch {
+      try { location = await geocodeAddress(`${application.postal_code} ${application.city}, France`); }
+      catch { return reply(422, { error: "Impossible de localiser cette ville automatiquement. Vérifiez l’adresse déclarée avant l’activation." }); }
+    }
+    const { data: serviceAreaId, error: areaError } = await adminSupabase.rpc("ensure_service_area_server", {
+      target_city: application.city,
+      target_postal_code: application.postal_code,
+      target_latitude: location.latitude,
+      target_longitude: location.longitude,
+    });
+    if (areaError || !serviceAreaId) return reply(409, { error: areaError?.message || "Impossible de créer la zone de service." });
+    const now = new Date().toISOString();
+    const [applicationUpdate, profileUpdate] = await Promise.all([
+      adminSupabase.from("courier_applications").update({ service_area_id: serviceAreaId, updated_at: now }).eq("id", application.id),
+      adminSupabase.from("profiles").update({ latitude: location.latitude, longitude: location.longitude, updated_at: now }).eq("id", application.user_id),
+    ]);
+    if (applicationUpdate.error || profileUpdate.error) return reply(500, { error: "La zone a été créée mais le dossier n’a pas pu être relié." });
+    return reply(200, { assigned: true, serviceAreaId });
   }
 
   if (body.action === "set_access") {

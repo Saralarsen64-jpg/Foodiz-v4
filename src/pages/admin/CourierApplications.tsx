@@ -175,6 +175,15 @@ export default function AdminCourierApplicationsPage() {
     }
   };
 
+  const assignServiceArea = async (item: CourierApplicationRow) => {
+    setBusy(item.id);
+    try {
+      await adminCourierRequest("POST", { action: "assign_service_area", applicationId: item.id });
+      toast.success("Zone de service créée et attribuée.");
+      await loadItems();
+    } catch (error: any) { toast.error(error.message); } finally { setBusy(""); }
+  };
+
   const toggleReplacement = (applicationId: string, documentType: DocumentType) => {
     setReplacementDocuments((current) => {
       const selected = current[applicationId] || [];
@@ -282,6 +291,9 @@ export default function AdminCourierApplicationsPage() {
                     <p className={item.status === "validated" ? "mt-1 text-weello-green" : "mt-1 text-weello-gold"}>{item.status === "validated" ? "Validé" : "À contrôler"}</p>
                   </div>
                 </div>
+                {!item.service_area_id && (
+                  <button disabled={busy === item.id} onClick={() => void assignServiceArea(item)} className="mt-3 w-full rounded-xl border border-weello-gold/30 bg-weello-gold/10 px-3 py-3 text-xs font-semibold text-weello-gold disabled:opacity-40">Créer / attribuer la zone depuis l’adresse</button>
+                )}
 
                 <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs">
                   <p className="font-semibold text-weello-cream">Disponibilités souhaitées</p>

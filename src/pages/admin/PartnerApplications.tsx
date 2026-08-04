@@ -202,6 +202,15 @@ export default function AdminPartnerApplicationsPage() {
     }
   };
 
+  const assignServiceArea = async (item: PartnerApplication) => {
+    setBusy(item.id);
+    try {
+      await adminPartnerRequest("POST", { action: "assign_service_area", applicationId: item.id });
+      toast.success("Zone de service créée et attribuée.");
+      await loadItems();
+    } catch (error: any) { toast.error(error.message); } finally { setBusy(""); }
+  };
+
   const toggleReplacement = (applicationId: string, documentType: DocumentType) => {
     setReplacementDocuments((current) => {
       const selected = current[applicationId] || [];
@@ -286,6 +295,9 @@ export default function AdminPartnerApplicationsPage() {
                   <div><p className="text-weello-gray">Dossier</p><p className={item.compliance_status === "approved" ? "mt-1 text-weello-green" : "mt-1 text-weello-gold"}>{item.compliance_status === "approved" ? "Validé" : "À contrôler"}</p></div>
                   <div><p className="text-weello-gray">Vente</p><p className={item.restaurant?.is_active ? "mt-1 text-weello-green" : "mt-1 text-weello-gray"}>{item.restaurant?.is_active ? "Active" : "Inactive"}</p></div>
                 </div>
+                {!item.service_area_id && (
+                  <button disabled={busy === item.id} onClick={() => void assignServiceArea(item)} className="mt-3 w-full rounded-xl border border-weello-gold/30 bg-weello-gold/10 px-3 py-3 text-xs font-semibold text-weello-gold disabled:opacity-40">Créer / attribuer la zone depuis l’adresse</button>
+                )}
 
                 <div className="mt-4 space-y-2">
                   {required.map((documentType) => {
