@@ -50,15 +50,6 @@ function legacyAvailability(slots: string[], flexible: boolean) {
   return flexible || slots.length > 0 ? "journee" : "";
 }
 
-function publicAppUrl() {
-  return String(
-    process.env.APP_URL
-    || process.env.URL
-    || process.env.DEPLOY_PRIME_URL
-    || "https://weello.app",
-  ).replace(/\/+$/, "");
-}
-
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") return reply(405, { error: "Method Not Allowed" });
 
@@ -180,32 +171,33 @@ const handler: Handler = async (event) => {
     }
   }
 
-  const appUrl = publicAppUrl();
   const fullName = `${firstName} ${lastName}`.trim();
-  const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
-    type: "signup",
+  // Creating a professional account must not depend on a confirmation-link
+  // provider. The account remains pending and cannot operate until an admin
+  // reviews its documents, while the person can immediately sign in to follow
+  // their dossier.
+  const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
     email,
     password,
-    options: {
-      redirectTo: `${appUrl}/auth/callback`,
-      data: {
-        role: authRole,
-        first_name: firstName,
-        last_name: lastName,
-        full_name: fullName,
-        phone,
-        address,
-        postal_code: postalCode,
-        city,
-        business_name: role === "partenaire" ? establishmentName : undefined,
-        siret,
-        cgu_accepted: true,
-        marketing_consent: marketingConsent,
-      },
+    email_confirm: true,
+    user_metadata: {
+      role: authRole,
+      first_name: firstName,
+      last_name: lastName,
+      full_name: fullName,
+      phone,
+      address,
+      postal_code: postalCode,
+      city,
+      business_name: role === "partenaire" ? establishmentName : undefined,
+      siret,
+      cgu_accepted: true,
+      marketing_consent: marketingConsent,
     },
   });
-  if (linkError || !linkData.user || !linkData.properties?.action_link) {
-    const duplicate = linkError?.message.toLowerCase().includes("already");
+  if (authError || !authData.user) {
+    console.error("Professional auth user creation failed", authError);
+    const duplicate = authError?.message.toLowerCase().includes("already");
     return reply(duplicate ? 409 : 500, {
       error: duplicate
         ? "Cette adresse possède déjà un compte Weello."
@@ -213,7 +205,7 @@ const handler: Handler = async (event) => {
     });
   }
 
-  const userId = linkData.user.id;
+  const userId = authData.user.id;
   const uploadToken = createLaunchToken();
   const uploadTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -328,25 +320,23 @@ const handler: Handler = async (event) => {
 
     await sendPrelaunchEmail({
       to: email,
-      subject: "Confirmez votre compte professionnel Weello",
+      subject: "Votre compte professionnel Weello est créé",
       headline: "Votre dossier Weello est créé",
       body: [
         `Bonjour ${firstName}, votre compte ${role === "partenaire" ? "partenaire" : "livreur"} est créé et vos justificatifs vont être transmis pour vérification.`,
         coordinates ? "" : "Votre adresse professionnelle sera vérifiée par notre équipe avant toute activation.",
-        "Confirmez maintenant votre adresse email. Vous pourrez ensuite suivre l’avancement de votre dossier depuis votre espace Weello.",
+        "Vous pouvez vous connecter dès maintenant pour suivre l’avancement de votre dossier depuis votre espace Weello.",
       ],
-      actionLabel: "Confirmer mon adresse email",
-      actionUrl: linkData.properties.action_link,
       recipientUserId: userId,
       emailType: "professional_signup_confirmation",
-      required: true,
+      required: false,
     });
 
     return reply(201, {
       registered: true,
       role,
       documentUploadToken: uploadToken.raw,
-      emailConfirmationRequired: true,
+      emailConfirmationRequired: false,
     });
   } catch (error) {
     console.error("Professional registration failed", error);

@@ -44,7 +44,8 @@ test("un échec de géocodage ne bloque jamais le dépôt d’un dossier profess
 });
 
 test("le compte Auth et le rôle sont créés côté serveur sans écrire de préinscription", () => {
-  assert.match(registration, /auth\.admin\.generateLink/);
+  assert.match(registration, /auth\.admin\.createUser/);
+  assert.match(registration, /email_confirm: true/);
   assert.match(registration, /role: authRole/);
   assert.doesNotMatch(registration, /\.from\("prelaunch_profiles"\)/);
   assert.doesNotMatch(registration, /\.from\("prelaunch_partner_details"\)/);
