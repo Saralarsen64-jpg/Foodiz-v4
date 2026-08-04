@@ -96,6 +96,21 @@ const handler: Handler = async (event) => {
   }
 
   const action = String(body.action || "");
+  if (action === "get_document_url") {
+    const documentId = String(body.documentId || "");
+    if (!documentId) return reply(400, { error: "Document manquant." });
+    const { data: document, error: documentError } = await adminSupabase
+      .from("partner_documents")
+      .select("id,storage_path,original_name")
+      .eq("id", documentId)
+      .maybeSingle();
+    if (documentError || !document) return reply(404, { error: "Ce justificatif est introuvable." });
+    const { data, error } = await adminSupabase.storage
+      .from("partner-documents")
+      .createSignedUrl(document.storage_path, 5 * 60, body.download === true ? { download: document.original_name || true } : undefined);
+    if (error || !data?.signedUrl) return reply(500, { error: "Impossible d’ouvrir ce justificatif." });
+    return reply(200, { signedUrl: data.signedUrl });
+  }
   if (action === "assign_service_area") {
     const applicationId = String(body.applicationId || "");
     const { data: application } = await adminSupabase
