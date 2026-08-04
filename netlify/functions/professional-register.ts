@@ -181,7 +181,11 @@ const handler: Handler = async (event) => {
     password,
     email_confirm: true,
     user_metadata: {
-      role: authRole,
+      // The database bootstrap has a legacy failure in its professional
+      // branch. Create through its stable client branch, then assign the
+      // professional role and dossier below with the service role.
+      role: "client",
+      professional_role: authRole,
       first_name: firstName,
       last_name: lastName,
       full_name: fullName,
@@ -231,6 +235,7 @@ const handler: Handler = async (event) => {
     const { error: profileError } = await adminSupabase
       .from("profiles")
       .update({
+        role: authRole,
         first_name: firstName,
         last_name: lastName,
         full_name: fullName,
@@ -251,7 +256,8 @@ const handler: Handler = async (event) => {
       const [{ error: applicationError }, { error: restaurantError }] = await Promise.all([
         adminSupabase
           .from("partner_applications")
-          .update({
+          .upsert({
+            user_id: userId,
             business_name: establishmentName,
             siret,
             phone,
@@ -271,11 +277,11 @@ const handler: Handler = async (event) => {
             document_upload_token_hash: uploadToken.hash,
             document_upload_token_expires_at: uploadTokenExpiresAt,
             updated_at: now,
-          })
-          .eq("user_id", userId),
+          }, { onConflict: "user_id" }),
         adminSupabase
           .from("restaurants")
-          .update({
+          .insert({
+            owner_id: userId,
             name: establishmentName,
             siret,
             phone,
@@ -288,14 +294,14 @@ const handler: Handler = async (event) => {
             status: "pending",
             is_active: false,
             updated_at: now,
-          })
-          .eq("owner_id", userId),
+          }),
       ]);
       if (applicationError || restaurantError) throw applicationError || restaurantError;
     } else {
       const { error: applicationError } = await adminSupabase
         .from("courier_applications")
-        .update({
+        .upsert({
+          user_id: userId,
           legal_name: fullName,
           siret,
           address,
@@ -313,8 +319,7 @@ const handler: Handler = async (event) => {
           document_upload_token_hash: uploadToken.hash,
           document_upload_token_expires_at: uploadTokenExpiresAt,
           updated_at: now,
-        })
-        .eq("user_id", userId);
+        }, { onConflict: "user_id" });
       if (applicationError) throw applicationError;
     }
 
