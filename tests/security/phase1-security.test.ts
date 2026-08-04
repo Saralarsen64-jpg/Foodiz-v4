@@ -35,6 +35,15 @@ test("the phase 1 migration removes both legacy auth triggers", () => {
   );
 });
 
+test("la migration de production supprime le déclencheur de fidélité obsolète", () => {
+  const legacyTriggerCleanup = readFileSync(
+    join(root, "supabase/migrations/48_remove_legacy_auth_loyalty_trigger.sql"),
+    "utf8",
+  );
+  assert.match(legacyTriggerCleanup, /DROP TRIGGER IF EXISTS on_user_created_loyalty ON auth\.users;/);
+  assert.match(legacyTriggerCleanup, /DROP FUNCTION IF EXISTS public\.create_loyalty_balance\(\);/);
+});
+
 test("the authoritative database trigger whitelists only public roles", () => {
   assert.match(
     migration,
