@@ -167,6 +167,12 @@ export default function AdminShell({
               </div>
             </div>
           </header>
+          <nav className="flex gap-2 overflow-x-auto border-b border-weello-gold/10 bg-black px-4 py-3 lg:hidden" aria-label="Navigation administration">
+            {ADMIN_ITEMS.filter((item) => ["/admin", "/admin/partner-applications", "/admin/courier-applications", "/admin/orders", "/admin/service-areas"].includes(item.path)).map((item) => {
+              const active = location.pathname === item.path;
+              return <Link key={item.path} to={item.path} className={`shrink-0 rounded-xl border px-3 py-2 text-xs ${active ? "border-weello-gold/35 bg-weello-gold/10 text-weello-gold" : "border-white/10 text-weello-gray"}`}><span className="flex items-center gap-1.5"><item.icon size={14} />{item.label}</span></Link>;
+            })}
+          </nav>
 
           <main className="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">{children}</main>
         </div>

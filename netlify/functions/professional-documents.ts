@@ -283,6 +283,38 @@ const handler: Handler = async (event) => {
     });
   }
 
+  // A completed dossier must be visible to the administration immediately.
+  // Notifications are in-app; email delivery remains best-effort so it can
+  // never block the applicant after the documents have been safely stored.
+  const { data: administrators } = await adminSupabase
+    .from("profiles")
+    .select("id,email")
+    .eq("role", "admin");
+  const applicantLabel = role === "partenaire" ? "partenaire" : "livreur";
+  if ((administrators || []).length) {
+    await adminSupabase.from("notifications").insert(
+      administrators!.map((administrator) => ({
+        user_id: administrator.id,
+        type: "alert",
+        title: `Nouveau dossier ${applicantLabel} à contrôler`,
+        message: `Les justificatifs d’un ${applicantLabel} viennent d’être déposés et attendent votre décision.`,
+      })),
+    );
+    await Promise.all((administrators || []).filter((administrator) => administrator.email).map((administrator) =>
+      sendPrelaunchEmail({
+        to: administrator.email!,
+        subject: `Weello — nouveau dossier ${applicantLabel} à contrôler`,
+        headline: "Un dossier attend votre décision",
+        body: `Les justificatifs d’un ${applicantLabel} viennent d’être déposés. Ouvrez l’administration Weello pour les consulter et rendre votre décision.`,
+        actionLabel: "Ouvrir les dossiers",
+        actionUrl: `${(process.env.APP_URL || "https://weello.app").replace(/\/$/, "")}/admin/${role === "partenaire" ? "partner-applications" : "courier-applications"}`,
+        recipientUserId: administrator.id,
+        emailType: "professional_documents_received",
+        required: false,
+      }).catch((error) => console.error("Admin dossier notification email failed", error)),
+    ));
+  }
+
   return reply(200, {
     submitted: true,
     reviewStatus: "pending_review",

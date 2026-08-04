@@ -94,6 +94,7 @@ type DashboardData = {
   totalOrders: number;
   totalCollected: number;
   tickets: number;
+  pendingPartnerDossiers: number;
 };
 
 const emptyData: DashboardData = {
@@ -106,6 +107,7 @@ const emptyData: DashboardData = {
   totalOrders: 0,
   totalCollected: 0,
   tickets: 0,
+  pendingPartnerDossiers: 0,
 };
 
 function restaurantOf(order: OrderRow) {
@@ -156,6 +158,7 @@ export default function AdminDashboard() {
           balances,
           tickets,
           areasResponse,
+          partnerApplicationsResponse,
         ] = await Promise.all([
           supabase
             .from("profiles")
@@ -188,6 +191,9 @@ export default function AdminDashboard() {
           fetch("/api/admin/service-areas", {
             headers: { Authorization: `Bearer ${session?.access_token || ""}` },
           }),
+          fetch("/api/admin/partner-applications", {
+            headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+          }),
         ]);
 
         if (profiles.error) throw profiles.error;
@@ -202,6 +208,13 @@ export default function AdminDashboard() {
           areas = payload.areas || [];
           areaRequests = payload.requests || [];
         }
+        let pendingPartnerDossiers = 0;
+        if (partnerApplicationsResponse.ok) {
+          const payload = await partnerApplicationsResponse.json();
+          pendingPartnerDossiers = (payload.applications || []).filter((application: { compliance_status?: string }) =>
+            ["documents_required", "pending_review", "replacement_requested"].includes(application.compliance_status || ""),
+          ).length;
+        }
 
         if (!active) return;
         setData({
@@ -214,6 +227,7 @@ export default function AdminDashboard() {
           totalOrders: orderCount.count || 0,
           totalCollected: Number(balances.data?.client_collected_cents || 0),
           tickets: tickets.count || 0,
+          pendingPartnerDossiers,
         });
       } catch (caught) {
         if (!active) return;
@@ -385,8 +399,8 @@ export default function AdminDashboard() {
       path: "/admin/orders",
     },
     {
-      label: "Partenaires actifs",
-      value: metrics.activePartners.toLocaleString("fr-FR"),
+      label: "Dossiers partenaires à traiter",
+      value: data.pendingPartnerDossiers.toLocaleString("fr-FR"),
       icon: Store,
       path: "/admin/partner-applications",
     },
@@ -706,9 +720,9 @@ export default function AdminDashboard() {
               <Store className="text-weello-gold" size={19} />
               <span className="flex-1">
                 <strong className="block text-sm text-weello-cream">Partenaires</strong>
-                <span className="text-[10px] text-weello-gray">Dossiers et documents</span>
+                <span className="text-[10px] text-weello-gray">Dossiers et documents à contrôler</span>
               </span>
-              <ChevronRight size={17} className="text-weello-gold" />
+              <span className="flex items-center gap-2"><strong className="text-xl text-weello-gold">{data.pendingPartnerDossiers}</strong><ChevronRight size={17} className="text-weello-gold" /></span>
             </button>
             <button
               type="button"
