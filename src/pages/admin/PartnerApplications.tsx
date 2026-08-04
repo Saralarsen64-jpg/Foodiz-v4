@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   CheckCircle2,
@@ -103,11 +104,12 @@ function requiredDocuments(item: PartnerApplication): DocumentType[] {
 }
 
 export default function AdminPartnerApplicationsPage() {
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState<PartnerApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [search, setSearch] = useState("");
-  const [city, setCity] = useState("all");
+  const [city, setCity] = useState(() => searchParams.get("city") || "all");
   const [comments, setComments] = useState<Record<string, string>>({});
   const [replacementDocuments, setReplacementDocuments] = useState<Record<string, DocumentType[]>>({});
   const [replacementLinks, setReplacementLinks] = useState<Record<string, string>>({});

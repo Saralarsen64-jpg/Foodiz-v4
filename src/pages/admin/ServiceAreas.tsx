@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bike, MapPinned, RefreshCw, Store } from "lucide-react";
 import toast from "react-hot-toast";
 import AdminShell from "../../components/AdminShell";
@@ -49,6 +50,7 @@ const statusLabels: Record<Area["status"], string> = {
 };
 
 export default function AdminServiceAreasPage() {
+  const navigate = useNavigate();
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -163,6 +165,17 @@ export default function AdminServiceAreasPage() {
                     Partenaires {area.counts.partnerDocumentsToReview || 0} · Livreurs {area.counts.courierDocumentsToReview || 0}
                   </p>
                 </div>
+
+                {(area.counts.partnerDocumentsToReview || area.counts.partnerApplications) ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/admin/partner-applications?city=${encodeURIComponent(area.city)}`)}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-weello-gold/30 bg-weello-gold/10 px-4 py-3 text-xs font-semibold text-weello-gold"
+                  >
+                    <Store size={15} />
+                    {area.counts.partnerDocumentsToReview ? `Traiter les ${area.counts.partnerDocumentsToReview} document(s) partenaire` : "Voir les dossiers partenaires"}
+                  </button>
+                ) : null}
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_150px_auto]">
                   <select value={draft.status} onChange={(event) => setDrafts((current) => ({ ...current, [area.id]: { ...draft, status: event.target.value as Area["status"] } }))} className="rounded-xl border border-weello-gold/15 bg-black/30 px-3 py-3 text-xs text-weello-cream outline-none">
