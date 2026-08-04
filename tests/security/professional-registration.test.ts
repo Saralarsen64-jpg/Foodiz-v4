@@ -36,6 +36,13 @@ test("le serveur exige un SIRET, un mot de passe robuste et le consentement CGU"
   assert.match(registration, /Vous devez accepter les CGU/);
 });
 
+test("un échec de géocodage ne bloque jamais le dépôt d’un dossier professionnel", () => {
+  assert.match(registration, /let coordinates: \{ latitude: number; longitude: number \} \| null = null/);
+  assert.match(registration, /if \(coordinates\) \{/);
+  assert.match(registration, /latitude: coordinates\?\.latitude \?\? null/);
+  assert.doesNotMatch(registration, /L’adresse professionnelle n’a pas pu être vérifiée/);
+});
+
 test("le compte Auth et le rôle sont créés côté serveur sans écrire de préinscription", () => {
   assert.match(registration, /auth\.admin\.generateLink/);
   assert.match(registration, /role: authRole/);

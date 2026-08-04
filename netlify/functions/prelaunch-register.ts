@@ -198,10 +198,8 @@ const handler: Handler = async (event) => {
       };
     } catch (error) {
       console.error("Prelaunch professional geocoding failed", error);
-      const message = error instanceof RoutingProviderError && error.retryable
-        ? "La vérification d’adresse est momentanément indisponible. Réessayez dans quelques minutes."
-        : "L’adresse professionnelle n’a pas pu être vérifiée. Corrigez-la avant de continuer.";
-      return { statusCode: error instanceof RoutingProviderError && error.retryable ? 503 : 422, body: JSON.stringify({ error: message }) };
+      // The legacy prelaunch flow follows the same rule as current signup:
+      // geocoding can assist review but must never reject a professional dossier.
     }
   }
 
@@ -268,17 +266,20 @@ const handler: Handler = async (event) => {
     if (profileError || !profile) throw profileError || new Error("Prelaunch profile creation failed");
 
     if (role === "partenaire") {
-      if (!professionalCoordinates) throw new Error("Verified partner coordinates missing");
-      const { data: serviceAreaId, error: serviceAreaError } = await adminSupabase.rpc(
-        "ensure_service_area_server",
-        {
-          target_city: city,
-          target_postal_code: postalCode,
-          target_latitude: professionalCoordinates.latitude,
-          target_longitude: professionalCoordinates.longitude,
-        },
-      );
-      if (serviceAreaError || !serviceAreaId) throw serviceAreaError || new Error("Service area creation failed");
+      let serviceAreaId: string | null = null;
+      if (professionalCoordinates) {
+        const { data, error: serviceAreaError } = await adminSupabase.rpc(
+          "ensure_service_area_server",
+          {
+            target_city: city,
+            target_postal_code: postalCode,
+            target_latitude: professionalCoordinates.latitude,
+            target_longitude: professionalCoordinates.longitude,
+          },
+        );
+        if (serviceAreaError || !data) throw serviceAreaError || new Error("Service area creation failed");
+        serviceAreaId = data;
+      }
 
       const { error } = await adminSupabase.from("prelaunch_partner_details").insert({
         prelaunch_profile_id: profile.id,
@@ -305,8 +306,8 @@ const handler: Handler = async (event) => {
             address,
             postal_code: postalCode,
             city,
-            latitude: professionalCoordinates.latitude,
-            longitude: professionalCoordinates.longitude,
+            latitude: professionalCoordinates?.latitude ?? null,
+            longitude: professionalCoordinates?.longitude ?? null,
             service_area_id: serviceAreaId,
             establishment_type: establishmentType,
             handles_animal_products: handlesAnimalProducts,
@@ -325,8 +326,8 @@ const handler: Handler = async (event) => {
             address,
             postal_code: postalCode,
             city,
-            latitude: professionalCoordinates.latitude,
-            longitude: professionalCoordinates.longitude,
+            latitude: professionalCoordinates?.latitude ?? null,
+            longitude: professionalCoordinates?.longitude ?? null,
             service_area_id: serviceAreaId,
             status: "pending",
             is_active: false,
@@ -338,17 +339,20 @@ const handler: Handler = async (event) => {
     }
 
     if (role === "livreur") {
-      if (!professionalCoordinates) throw new Error("Verified courier coordinates missing");
-      const { data: serviceAreaId, error: serviceAreaError } = await adminSupabase.rpc(
-        "ensure_service_area_server",
-        {
-          target_city: city,
-          target_postal_code: postalCode,
-          target_latitude: professionalCoordinates.latitude,
-          target_longitude: professionalCoordinates.longitude,
-        },
-      );
-      if (serviceAreaError || !serviceAreaId) throw serviceAreaError || new Error("Service area creation failed");
+      let serviceAreaId: string | null = null;
+      if (professionalCoordinates) {
+        const { data, error: serviceAreaError } = await adminSupabase.rpc(
+          "ensure_service_area_server",
+          {
+            target_city: city,
+            target_postal_code: postalCode,
+            target_latitude: professionalCoordinates.latitude,
+            target_longitude: professionalCoordinates.longitude,
+          },
+        );
+        if (serviceAreaError || !data) throw serviceAreaError || new Error("Service area creation failed");
+        serviceAreaId = data;
+      }
 
       const { error } = await adminSupabase.from("prelaunch_driver_details").insert({
         prelaunch_profile_id: profile.id,

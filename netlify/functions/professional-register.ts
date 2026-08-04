@@ -156,7 +156,10 @@ const handler: Handler = async (event) => {
   if (existingPhone) return reply(409, { error: "Ce numéro de téléphone est déjà associé à un compte Weello." });
   if (partnerSiret || courierSiret) return reply(409, { error: "Ce SIRET est déjà associé à un dossier Weello." });
 
-  let coordinates: { latitude: number; longitude: number };
+  // A mapping provider is useful to prepare a service area, but it must never
+  // prevent a legitimate professional from filing a dossier. Coordinates stay
+  // empty until the team checks the address when the provider cannot resolve it.
+  let coordinates: { latitude: number; longitude: number } | null = null;
   try {
     const geocoded = await geocodeAddress(`${address}, ${postalCode} ${city}, France`);
     coordinates = { latitude: geocoded.latitude, longitude: geocoded.longitude };
@@ -171,21 +174,9 @@ const handler: Handler = async (event) => {
         coordinates = { latitude: geocodedCity.latitude, longitude: geocodedCity.longitude };
       } catch (fallbackError) {
         console.error("Professional registration geocoding fallback failed", fallbackError);
-        const retryable = fallbackError instanceof RoutingProviderError && fallbackError.retryable;
-        return reply(retryable ? 503 : 422, {
-          error: retryable
-            ? "La vérification d’adresse est momentanément indisponible. Réessayez dans quelques minutes."
-            : "La ville ou le code postal professionnel n’a pas pu être vérifié.",
-        });
       }
     } else {
       console.error("Professional registration geocoding failed", error);
-      const retryable = error instanceof RoutingProviderError && error.retryable;
-      return reply(retryable ? 503 : 422, {
-        error: retryable
-          ? "La vérification d’adresse est momentanément indisponible. Réessayez dans quelques minutes."
-          : "L’adresse professionnelle n’a pas pu être vérifiée. Corrigez-la avant de continuer.",
-      });
     }
   }
 
@@ -227,17 +218,21 @@ const handler: Handler = async (event) => {
   const uploadTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
   try {
-    const { data: serviceAreaId, error: serviceAreaError } = await adminSupabase.rpc(
-      "ensure_service_area_server",
-      {
-        target_city: city,
-        target_postal_code: postalCode,
-        target_latitude: coordinates.latitude,
-        target_longitude: coordinates.longitude,
-      },
-    );
-    if (serviceAreaError || !serviceAreaId) {
-      throw serviceAreaError || new Error("Service area creation failed");
+    let serviceAreaId: string | null = null;
+    if (coordinates) {
+      const { data, error: serviceAreaError } = await adminSupabase.rpc(
+        "ensure_service_area_server",
+        {
+          target_city: city,
+          target_postal_code: postalCode,
+          target_latitude: coordinates.latitude,
+          target_longitude: coordinates.longitude,
+        },
+      );
+      if (serviceAreaError || !data) {
+        throw serviceAreaError || new Error("Service area creation failed");
+      }
+      serviceAreaId = data;
     }
 
     const now = new Date().toISOString();
@@ -251,8 +246,8 @@ const handler: Handler = async (event) => {
         address,
         postal_code: postalCode,
         city,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
+        latitude: coordinates?.latitude ?? null,
+        longitude: coordinates?.longitude ?? null,
         cgu_accepted: true,
         status: "pending",
         updated_at: now,
@@ -272,8 +267,8 @@ const handler: Handler = async (event) => {
             address,
             postal_code: postalCode,
             city,
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
+            latitude: coordinates?.latitude ?? null,
+            longitude: coordinates?.longitude ?? null,
             service_area_id: serviceAreaId,
             establishment_type: establishmentType,
             handles_animal_products: handlesAnimalProducts,
@@ -295,8 +290,8 @@ const handler: Handler = async (event) => {
             address,
             postal_code: postalCode,
             city,
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
+            latitude: coordinates?.latitude ?? null,
+            longitude: coordinates?.longitude ?? null,
             service_area_id: serviceAreaId,
             status: "pending",
             is_active: false,
@@ -337,6 +332,7 @@ const handler: Handler = async (event) => {
       headline: "Votre dossier Weello est créé",
       body: [
         `Bonjour ${firstName}, votre compte ${role === "partenaire" ? "partenaire" : "livreur"} est créé et vos justificatifs vont être transmis pour vérification.`,
+        coordinates ? "" : "Votre adresse professionnelle sera vérifiée par notre équipe avant toute activation.",
         "Confirmez maintenant votre adresse email. Vous pourrez ensuite suivre l’avancement de votre dossier depuis votre espace Weello.",
       ],
       actionLabel: "Confirmer mon adresse email",
