@@ -29,6 +29,7 @@ const handler: Handler = async (event) => {
       { data: documents, error: documentsError },
       { data: prelaunchProfiles, error: prelaunchError },
       { data: serviceAreas, error: areasError },
+      { data: profiles, error: profilesError },
     ] = await Promise.all([
       adminSupabase
         .from("partner_applications")
@@ -36,8 +37,7 @@ const handler: Handler = async (event) => {
           id,user_id,business_name,siret,phone,email,address,postal_code,city,
           latitude,longitude,status,rejection_reason,reviewed_at,created_at,
           service_area_id,establishment_type,handles_animal_products,sells_alcohol,
-          requires_hygiene_proof,compliance_status,compliance_comment,documents_submitted_at,
-          profiles:profiles!partner_applications_user_id_fkey(first_name,last_name,email,phone,status)
+          requires_hygiene_proof,compliance_status,compliance_comment,documents_submitted_at
         `)
         .order("created_at", { ascending: false }),
       adminSupabase
@@ -54,8 +54,11 @@ const handler: Handler = async (event) => {
       adminSupabase
         .from("service_areas")
         .select("id,city,department_code,status,delivery_radius_km"),
+      adminSupabase
+        .from("profiles")
+        .select("id,first_name,last_name,email,phone,status"),
     ]);
-    const loadError = applicationsError || restaurantsError || documentsError || prelaunchError || areasError;
+    const loadError = applicationsError || restaurantsError || documentsError || prelaunchError || areasError || profilesError;
     if (loadError) {
       console.error("Admin partner applications load failed", loadError);
       return reply(500, { error: "Impossible de charger les dossiers partenaires." });
@@ -74,10 +77,12 @@ const handler: Handler = async (event) => {
     const restaurantByOwner = new Map((restaurants || []).map((restaurant) => [restaurant.owner_id, restaurant]));
     const prelaunchByUser = new Map((prelaunchProfiles || []).map((profile) => [profile.user_id, profile]));
     const areaById = new Map((serviceAreas || []).map((area) => [area.id, area]));
+    const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
 
     return reply(200, {
       applications: (applications || []).map((application) => ({
         ...application,
+        profiles: profileById.get(application.user_id) || null,
         restaurant: restaurantByOwner.get(application.user_id) || null,
         prelaunch: prelaunchByUser.get(application.user_id) || null,
         service_area: application.service_area_id ? areaById.get(application.service_area_id) || null : null,
