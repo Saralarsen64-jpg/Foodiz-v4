@@ -159,7 +159,7 @@ const handler: Handler = async (event) => {
     // nouvelles voies) ne sont pas encore connues du fournisseur. Un second
     // essai sur la commune permet de créer le dossier ; l'adresse complète
     // reste ensuite contrôlée par l'équipe avant toute activation.
-    if (error instanceof RoutingProviderError && error.code === "address_not_found") {
+    if (error instanceof RoutingProviderError) {
       try {
         const geocodedCity = await geocodeAddress(`${postalCode} ${city}, France`);
         coordinates = { latitude: geocodedCity.latitude, longitude: geocodedCity.longitude };
@@ -256,7 +256,7 @@ const handler: Handler = async (event) => {
       const [{ error: applicationError }, { error: restaurantError }] = await Promise.all([
         adminSupabase
           .from("partner_applications")
-          .upsert({
+          .insert({
             user_id: userId,
             business_name: establishmentName,
             siret,
@@ -277,7 +277,7 @@ const handler: Handler = async (event) => {
             document_upload_token_hash: uploadToken.hash,
             document_upload_token_expires_at: uploadTokenExpiresAt,
             updated_at: now,
-          }, { onConflict: "user_id" }),
+          }),
         adminSupabase
           .from("restaurants")
           .insert({
@@ -300,7 +300,7 @@ const handler: Handler = async (event) => {
     } else {
       const { error: applicationError } = await adminSupabase
         .from("courier_applications")
-        .upsert({
+        .insert({
           user_id: userId,
           legal_name: fullName,
           siret,
@@ -319,7 +319,7 @@ const handler: Handler = async (event) => {
           document_upload_token_hash: uploadToken.hash,
           document_upload_token_expires_at: uploadTokenExpiresAt,
           updated_at: now,
-        }, { onConflict: "user_id" });
+        });
       if (applicationError) throw applicationError;
     }
 
