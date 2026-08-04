@@ -3,22 +3,74 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Phone, User } from "lucide-react";
 import { getOrder } from "../../lib/orders";
 import { getPartnerOrderCustomers } from "../../lib/orderContacts";
+import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
 
 export default function PartnerOrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [menuProducts, setMenuProducts] = useState<any[]>([]);
+  const [resolutions, setResolutions] = useState<any[]>([]);
+  const [replacementByItem, setReplacementByItem] = useState<Record<string, string>>({});
+  const [resolvingItem, setResolvingItem] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     Promise.all([getOrder(id), getPartnerOrderCustomers()])
-      .then(([orderData, contacts]) => {
+      .then(async ([orderData, contacts]) => {
         const contact = contacts.find((item) => item.order_id === id);
         setOrder({ ...orderData, client: contact || null });
+        const [{ data: menuProducts }, { data: itemResolutions }] = await Promise.all([
+          supabase.from("products").select("id,name,is_active").eq("restaurant_id", orderData.restaurant_id).eq("is_active", true).order("name"),
+          supabase.from("order_item_resolutions").select("*, proposed_product:products!order_item_resolutions_proposed_product_id_fkey(name)").eq("order_id", id),
+        ]);
+        setMenuProducts(menuProducts || []);
+        setResolutions(itemResolutions || []);
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const resolveItem = async (item: any, action: "propose_replacement" | "refund_unavailable") => {
+    if (!id) return;
+    const replacementProductId = replacementByItem[item.id];
+    if (action === "propose_replacement" && !replacementProductId) {
+      toast.error("Choisissez d’abord le produit de remplacement.");
+      return;
+    }
+    setResolvingItem(item.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch("/api/order-item-resolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
+        body: JSON.stringify({ orderId: id, orderItemId: item.id, action, replacementProductId }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const messages: Record<string, string> = {
+          CLIENT_REQUESTED_REFUND: "Le client a demandé le remboursement si l’article est indisponible.",
+          REPLACEMENT_PRICE_TOO_HIGH: "Le remplacement ne peut pas être plus cher pour le client.",
+        };
+        throw new Error(messages[payload.error] || "Cette action est impossible pour le moment.");
+      }
+      if (action === "propose_replacement") {
+        const replacement = menuProducts.find((product) => product.id === replacementProductId);
+        setResolutions((current) => [...current, { order_item_id: item.id, status: "proposed", proposed_product: replacement }]);
+        setOrder((current: any) => ({ ...current, order_items: current.order_items.map((row: any) => row.id === item.id ? { ...row, fulfillment_status: "replacement_proposed" } : row) }));
+        toast.success("Remplacement envoyé au client pour validation.");
+      } else {
+        setResolutions((current) => [...current, { order_item_id: item.id, status: "refunded" }]);
+        setOrder((current: any) => ({ ...current, order_items: current.order_items.map((row: any) => row.id === item.id ? { ...row, fulfillment_status: "refunded" } : row) }));
+        toast.success("Article retiré et remboursement lancé.");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Aucun changement n’a été appliqué.");
+    } finally {
+      setResolvingItem(null);
+    }
+  };
 
   if (loading) return <div className="min-h-screen bg-weello-black flex items-center justify-center text-weello-gray">Chargement...</div>;
   if (!order) return <div className="min-h-screen bg-weello-black flex items-center justify-center text-weello-gray">Commande introuvable.</div>;
@@ -74,15 +126,28 @@ export default function PartnerOrderDetail() {
         <div className="weello-card p-5">
           <h3 className="weello-title text-sm mb-4">Produits</h3>
           <div className="space-y-3">
-            {products.map((p: any) => (
-              <div key={p.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-weello-gold text-xs font-medium">x{p.quantity}</span>
-                  <span className="text-sm text-weello-cream">{p.product?.name || "Produit"}</span>
+            {products.map((p: any) => {
+              const resolution = resolutions.find((row) => row.order_item_id === p.id);
+              const canResolve = ["pending", "preparing"].includes(order.status) && p.fulfillment_status === "available" && !resolution;
+              return <div key={p.id} className="rounded-xl border border-weello-gold/10 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2"><span className="text-weello-gold text-xs font-medium">x{p.quantity}</span><span className="text-sm text-weello-cream">{p.product?.name || "Produit"}</span></div>
+                  <span className="text-weello-cream text-sm">{((p.partner_total_price_cents ?? p.total_price_cents) / 100).toFixed(2).replace(".", ",")} €</span>
                 </div>
-                <span className="text-weello-cream text-sm">{((p.partner_total_price_cents ?? p.total_price_cents) / 100).toFixed(2).replace(".", ",")} €</span>
-              </div>
-            ))}
+                {resolution && <p className={`mt-2 text-[11px] ${resolution.status === "refunded" ? "text-weello-green" : resolution.status === "replaced" ? "text-weello-green" : "text-weello-gold"}`}>{resolution.status === "proposed" ? `Remplacement proposé : ${resolution.proposed_product?.name || "produit"}` : resolution.status === "replaced" ? "Remplacement accepté par le client" : "Article indisponible : remboursement traité"}</p>}
+                {canResolve && <div className="mt-3 rounded-lg bg-weello-black/30 p-2.5">
+                  <p className="text-[10px] text-weello-gray mb-2">Article indisponible ? Proposez un équivalent ou remboursez cet article.</p>
+                  <div className="flex gap-2">
+                    <select value={replacementByItem[p.id] || ""} onChange={(event) => setReplacementByItem((current) => ({ ...current, [p.id]: event.target.value }))} className="min-w-0 flex-1 rounded-lg border border-weello-gold/20 bg-weello-black px-2 py-2 text-xs text-weello-cream">
+                      <option value="">Produit de remplacement</option>
+                      {menuProducts.filter((product) => product.id !== p.product_id).map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+                    </select>
+                    <button disabled={resolvingItem === p.id} onClick={() => void resolveItem(p, "propose_replacement")} className="rounded-lg border border-weello-gold/35 px-2 py-2 text-[11px] text-weello-gold disabled:opacity-50">Proposer</button>
+                  </div>
+                  <button disabled={resolvingItem === p.id} onClick={() => void resolveItem(p, "refund_unavailable")} className="mt-2 text-[11px] text-weello-red underline disabled:opacity-50">Indisponible : retirer et rembourser</button>
+                </div>}
+              </div>;
+            })}
           </div>
         </div>
 

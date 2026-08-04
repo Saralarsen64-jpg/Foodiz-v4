@@ -34,6 +34,7 @@ export default function CheckoutPage() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [missingItemPreference, setMissingItemPreference] = useState<"ask_before_replacement" | "refund_unavailable">("ask_before_replacement");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -157,6 +158,7 @@ export default function CheckoutPage() {
           restaurantId: establishmentId,
           useAdvantage,
           expectedTotalCents: quote.finalClientTotalCents,
+          missingItemPreference,
           items: items.map((item) => ({
             productId: item.id,
             quantity: item.quantity,
@@ -291,6 +293,19 @@ export default function CheckoutPage() {
             </div>
           </div>
         )}
+
+        <div className="weello-card p-4 border-weello-gold/20">
+          <h3 className="weello-title text-sm mb-2">Si un article est indisponible</h3>
+          <p className="text-[11px] text-weello-gray mb-3">Le partenaire ne remplacera jamais un article sans votre accord.</p>
+          <label className="flex items-start gap-3 py-2 cursor-pointer">
+            <input type="radio" name="missing-item" checked={missingItemPreference === "ask_before_replacement"} onChange={() => setMissingItemPreference("ask_before_replacement")} className="mt-0.5 accent-weello-gold" />
+            <span><span className="block text-xs text-weello-cream">Me proposer un remplacement</span><span className="block text-[10px] text-weello-gray mt-0.5">Vous validez le produit proposé, sans supplément.</span></span>
+          </label>
+          <label className="flex items-start gap-3 py-2 cursor-pointer">
+            <input type="radio" name="missing-item" checked={missingItemPreference === "refund_unavailable"} onChange={() => setMissingItemPreference("refund_unavailable")} className="mt-0.5 accent-weello-gold" />
+            <span><span className="block text-xs text-weello-cream">Retirer et rembourser l’article</span><span className="block text-[10px] text-weello-gray mt-0.5">Le partenaire lance le remboursement de l’article indisponible.</span></span>
+          </label>
+        </div>
 
         {/* Bouton validation */}
         <button

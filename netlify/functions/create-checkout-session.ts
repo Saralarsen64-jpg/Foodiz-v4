@@ -53,18 +53,22 @@ const handler: Handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ error: "Invalid session" }) };
     }
 
-    const { restaurantId, items, useAdvantage, quoteOnly, expectedTotalCents, paymentMode } = JSON.parse(event.body || "{}") as {
+    const { restaurantId, items, useAdvantage, quoteOnly, expectedTotalCents, paymentMode, missingItemPreference } = JSON.parse(event.body || "{}") as {
       restaurantId?: string;
       items?: CheckoutItem[];
       useAdvantage?: boolean;
       quoteOnly?: boolean;
       expectedTotalCents?: number;
       paymentMode?: "checkout" | "mobile";
+      missingItemPreference?: "ask_before_replacement" | "refund_unavailable";
     };
 
     if (!restaurantId || !Array.isArray(items) || items.length === 0) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing checkout data" }) };
     }
+    const safeMissingItemPreference = missingItemPreference === "refund_unavailable"
+      ? "refund_unavailable"
+      : "ask_before_replacement";
 
     const normalizedItems = items
       .map((item) => ({
@@ -319,6 +323,7 @@ const handler: Handler = async (event) => {
         system_reserve_cents: totals.systemReserveCents,
         points_redeemed_cents: 0,
         advantage_discount_cents: advantageDiscountCents,
+        missing_item_preference: safeMissingItemPreference,
         estimated_time_mins: route.durationMinutes,
         delivery_route_distance_meters: route.distanceMeters,
         delivery_route_duration_seconds: route.durationSeconds,

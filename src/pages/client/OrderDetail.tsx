@@ -17,6 +17,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [receipt, setReceipt] = useState<any>(null);
+  const [resolutions, setResolutions] = useState<any[]>([]);
+  const [resolvingItem, setResolvingItem] = useState<string | null>(null);
   const paymentSucceeded = params.get("payment") === "success";
 
   useEffect(() => {
@@ -31,11 +33,34 @@ export default function OrderDetailPage() {
     void Promise.all([
       getOrder(id).then(setOrder),
       supabase.from("financial_documents").select("id,document_number,status,last_emailed_at").eq("order_id", id).eq("document_type", "client_payment_receipt").maybeSingle().then(({ data }) => setReceipt(data)),
+      supabase.from("order_item_resolutions").select("*, proposed_product:products!order_item_resolutions_proposed_product_id_fkey(name)").eq("order_id", id).then(({ data }) => setResolutions(data || [])),
     ]).finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <div className="py-20 text-center text-weello-gray animate-pulse">Chargement de la commande...</div>;
   if (!order) return <div className="py-20 text-center text-weello-gray">Commande introuvable.</div>;
+
+  const decideReplacement = async (item: any, action: "accept_replacement" | "reject_replacement") => {
+    if (!id) return;
+    setResolvingItem(item.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch("/api/order-item-resolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
+        body: JSON.stringify({ orderId: id, orderItemId: item.id, action }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Action impossible");
+      setResolutions((current) => current.map((row) => row.order_item_id === item.id ? { ...row, status: payload.status } : row));
+      setOrder((current: any) => ({ ...current, order_items: current.order_items.map((row: any) => row.id === item.id ? { ...row, fulfillment_status: payload.status === "replaced" ? "replaced" : "refunded" } : row) }));
+      toast.success(action === "accept_replacement" ? "Remplacement accepté." : "Remboursement de l’article lancé.");
+    } catch (error: any) {
+      toast.error(error.message || "Votre choix n’a pas pu être enregistré.");
+    } finally {
+      setResolvingItem(null);
+    }
+  };
 
   return (
     <div className="animate-fade-in-up">
@@ -46,12 +71,19 @@ export default function OrderDetailPage() {
       <div className="weello-card p-5 mb-6">
         <h2 className="weello-title text-sm mb-4">Récapitulatif</h2>
         <div className="space-y-3 mb-4">
-          {order.order_items?.map((item: any) => (
-            <div key={item.id} className="flex justify-between text-sm">
-              <span className="text-weello-cream">{item.quantity}x {item.product?.name || "Produit"}</span>
-              <span className="text-weello-cream">{(item.total_price_cents / 100).toFixed(2)} €</span>
-            </div>
-          ))}
+          {order.order_items?.map((item: any) => {
+            const resolution = resolutions.find((row) => row.order_item_id === item.id);
+            return <div key={item.id} className="rounded-lg py-1.5">
+              <div className="flex justify-between text-sm"><span className="text-weello-cream">{item.quantity}x {item.product?.name || "Produit"}</span><span className="text-weello-cream">{(item.total_price_cents / 100).toFixed(2)} €</span></div>
+              {resolution?.status === "proposed" && <div className="mt-3 rounded-xl border border-weello-gold/25 bg-weello-gold/5 p-3">
+                <p className="text-xs text-weello-cream"><span className="font-semibold">Article indisponible.</span> Le partenaire propose : {resolution.proposed_product?.name || "un produit de remplacement"}.</p>
+                <p className="mt-1 text-[10px] text-weello-gray">Aucun supplément ne vous sera facturé.</p>
+                <div className="mt-3 flex gap-2"><button disabled={resolvingItem === item.id} onClick={() => void decideReplacement(item, "accept_replacement")} className="flex-1 rounded-lg bg-weello-green px-3 py-2 text-xs font-medium text-white disabled:opacity-50">Accepter</button><button disabled={resolvingItem === item.id} onClick={() => void decideReplacement(item, "reject_replacement")} className="flex-1 rounded-lg border border-weello-red/40 px-3 py-2 text-xs font-medium text-weello-red disabled:opacity-50">Rembourser</button></div>
+              </div>}
+              {resolution?.status === "replaced" && <p className="mt-1 text-[11px] text-weello-green">Remplacé par {resolution.proposed_product?.name || "le produit accepté"}.</p>}
+              {resolution?.status === "refunded" && <p className="mt-1 text-[11px] text-weello-green">Article indisponible : remboursement lancé.</p>}
+            </div>;
+          })}
         </div>
         <div className="border-t border-weello-gold/10 pt-3 flex justify-between">
           <span className="text-weello-cream font-semibold">Total payé</span>

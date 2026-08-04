@@ -29,6 +29,7 @@ import { handler as weelloPlus } from "../netlify/functions/weello-plus.js";
 import { handler as getSubscription } from "../netlify/functions/get-subscription.js";
 import { handler as launchStatus } from "../netlify/functions/launch-status.js";
 import { handler as partnerOrderAction } from "../netlify/functions/partner-order-action.js";
+import { handler as orderItemResolution } from "../netlify/functions/order-item-resolution.js";
 import { handler as partnerDocuments } from "../netlify/functions/partner-documents.js";
 import { handler as prelaunchActivate } from "../netlify/functions/prelaunch-activate.js";
 import { handler as prelaunchRegister } from "../netlify/functions/prelaunch-register.js";
@@ -71,6 +72,7 @@ const handlers: Record<string, Handler> = {
   "get-subscription": getSubscription,
   "launch-status": launchStatus,
   "partner-order-action": partnerOrderAction,
+  "order-item-resolution": orderItemResolution,
   "partner-documents": partnerDocuments,
   "prelaunch/activate": prelaunchActivate,
   "prelaunch/courier-documents": prelaunchCourierDocuments,
@@ -148,6 +150,7 @@ const routeRoleAllowlist = {
   "weello-plus": ["partner"],
   "get-subscription": ["partner"],
   "partner-order-action": ["partner"],
+  "order-item-resolution": ["client", "partner"],
   "partner-documents": ["partner"],
   "request-service-area": ["client"],
   "support-diagnostic": ["courier", "partner"],
@@ -175,6 +178,7 @@ const apiRateLimits: Record<string, ApiRateLimit> = {
   "admin/support-ticket-action": { limit: 40, windowMs: 60 * 1000 },
   "create-checkout-session": { limit: 30, windowMs: 5 * 60 * 1000 },
   "create-payment-intent": { limit: 30, windowMs: 5 * 60 * 1000 },
+  "order-item-resolution": { limit: 20, windowMs: 5 * 60 * 1000 },
   "courier-insurance-referral": { limit: 8, windowMs: 10 * 60 * 1000 },
   "prelaunch/activate": { limit: 20, windowMs: 10 * 60 * 1000 },
   "prelaunch/register": { limit: 12, windowMs: 10 * 60 * 1000 },
