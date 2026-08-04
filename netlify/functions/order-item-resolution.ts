@@ -96,6 +96,15 @@ async function refundResolution(resolutionId: string, order: any, item: any) {
   }
 }
 
+async function hasAnotherFulfillableItem(orderId: string, excludedItemId: string) {
+  const { data, error } = await adminSupabase
+    .from("order_items")
+    .select("id,fulfillment_status")
+    .eq("order_id", orderId);
+  if (error) throw error;
+  return (data || []).some((row) => row.id !== excludedItemId && row.fulfillment_status !== "refunded");
+}
+
 const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") return reply(405, { error: "Method Not Allowed" });
   try {
@@ -150,6 +159,7 @@ const handler: Handler = async (event) => {
 
     if (action === "refund_unavailable") {
       if (!isPartner || item.fulfillment_status !== "available" || existing) return reply(409, { error: "REFUND_NOT_AVAILABLE" });
+      if (!await hasAnotherFulfillableItem(orderId, item.id)) return reply(409, { error: "LAST_ITEM_UNAVAILABLE" });
       const { data: resolution, error } = await adminSupabase.from("order_item_resolutions").insert({
         order_id: orderId, order_item_id: item.id, original_product_id: item.product_id,
         original_client_total_cents: item.total_price_cents, original_partner_total_cents: item.partner_total_price_cents,
@@ -169,6 +179,7 @@ const handler: Handler = async (event) => {
     }
 
     if (!isClient || !existing || existing.status !== "proposed") return reply(409, { error: "REFUND_NOT_PENDING" });
+    if (!await hasAnotherFulfillableItem(orderId, item.id)) return reply(409, { error: "LAST_ITEM_UNAVAILABLE" });
     return refundResolution(existing.id, order, item);
   } catch (error) {
     console.error("Order item resolution failed", error);

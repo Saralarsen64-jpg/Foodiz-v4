@@ -52,6 +52,7 @@ export default function PartnerOrderDetail() {
         const messages: Record<string, string> = {
           CLIENT_REQUESTED_REFUND: "Le client a demandé le remboursement si l’article est indisponible.",
           REPLACEMENT_PRICE_TOO_HIGH: "Le remplacement ne peut pas être plus cher pour le client.",
+          LAST_ITEM_UNAVAILABLE: "Tous les articles seraient indisponibles : refusez plutôt la commande entière pour rembourser aussi les frais.",
         };
         throw new Error(messages[payload.error] || "Cette action est impossible pour le moment.");
       }
