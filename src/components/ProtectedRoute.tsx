@@ -75,12 +75,17 @@ export default function ProtectedRoute({
       }
 
       if (currentRole === "partner") {
-        const { data: restaurant } = await supabase
-          .from("restaurants")
-          .select("status,is_active")
-          .eq("owner_id", currentSession.user.id)
-          .maybeSingle();
-        setValidationRedirect(!restaurant ? "/partner/onboarding" : restaurant.status === "active" && restaurant.is_active ? null : "/partner/validation-status");
+        const [{ data: restaurant }, { data: application }] = await Promise.all([
+          supabase.from("restaurants").select("id").eq("owner_id", currentSession.user.id).maybeSingle(),
+          supabase.from("partner_applications").select("compliance_status,status").eq("user_id", currentSession.user.id).maybeSingle(),
+        ]);
+        setValidationRedirect(
+          !restaurant
+            ? "/partner/onboarding"
+            : application?.compliance_status === "approved" || application?.status === "validated"
+              ? null
+              : "/partner/validation-status",
+        );
         return;
       }
 
