@@ -20,6 +20,7 @@ const handler: Handler = async (event) => {
       { data: documents, error: documentsError },
       { data: prelaunchProfiles, error: prelaunchError },
       { data: serviceAreas, error: areasError },
+      { data: profiles, error: profilesError },
     ] = await Promise.all([
       adminSupabase
         .from("courier_applications")
@@ -27,8 +28,7 @@ const handler: Handler = async (event) => {
           id,user_id,city,vehicle_type,legal_name,siret,address,postal_code,status,
           document_review_status,document_review_comment,identity_name_confirmed,
           business_identity_confirmed,dispatch_priority_score,reviewed_at,created_at,service_area_id,
-          availability_slots,availability_days,availability_flexible,
-          profiles:profiles!courier_applications_user_id_fkey(first_name,last_name,email,phone)
+          availability_slots,availability_days,availability_flexible
         `)
         .order("created_at", { ascending: false }),
       adminSupabase
@@ -42,9 +42,12 @@ const handler: Handler = async (event) => {
       adminSupabase
         .from("service_areas")
         .select("id,city,department_code,status,delivery_radius_km"),
+      adminSupabase
+        .from("profiles")
+        .select("id,first_name,last_name,email,phone"),
     ]);
-    if (applicationsError || documentsError || prelaunchError || areasError) {
-      console.error("Admin courier applications load failed", applicationsError || documentsError || prelaunchError || areasError);
+    if (applicationsError || documentsError || prelaunchError || areasError || profilesError) {
+      console.error("Admin courier applications load failed", applicationsError || documentsError || prelaunchError || areasError || profilesError);
       return reply(500, { error: "Impossible de charger les dossiers livreurs." });
     }
 
@@ -60,10 +63,12 @@ const handler: Handler = async (event) => {
     }, {});
     const prelaunchByUser = new Map((prelaunchProfiles || []).map((profile) => [profile.user_id, profile]));
     const areaById = new Map((serviceAreas || []).map((area) => [area.id, area]));
+    const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
 
     return reply(200, {
       applications: (applications || []).map((application) => ({
         ...application,
+        profiles: profileById.get(application.user_id) || null,
         prelaunch: prelaunchByUser.get(application.user_id) || null,
         service_area: application.service_area_id ? areaById.get(application.service_area_id) || null : null,
         documents: byUser[application.user_id] || [],
