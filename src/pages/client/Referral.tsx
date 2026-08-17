@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Copy, CheckCircle, Gift, ChevronLeft } from "lucide-react";
+import { Copy, CheckCircle, Gift, ChevronLeft, Users, Sparkles } from "lucide-react";
 
 export default function ReferralPage() {
   const navigate = useNavigate();
@@ -46,9 +46,12 @@ export default function ReferralPage() {
       </div>
       
       <h1 className="weello-title text-3xl text-weello-cream mb-2">Parrainage Weello</h1>
-      <p className="text-weello-gray text-sm mb-8 max-w-xs mx-auto">
-        Partagez votre code. Le parrainage est validé uniquement après la première commande payée et acceptée de votre filleul. Aucun point n'est crédité à la simple inscription.
-      </p>
+      <p className="text-weello-gray text-sm mb-6 max-w-xs mx-auto">Invitez vos proches et gagnez des points.</p>
+
+      <div className="grid w-full max-w-sm grid-cols-2 gap-3 mb-7">
+        <div className="weello-card p-4 text-left border-weello-gold/25"><Sparkles size={18} className="text-weello-gold"/><p className="mt-3 text-2xl font-serif italic text-weello-cream">500</p><p className="text-[10px] uppercase tracking-wider text-weello-gray">points par parrainage</p></div>
+        <div className="weello-card p-4 text-left border-weello-gold/15"><Users size={18} className="text-weello-gold"/><p className="mt-3 text-2xl font-serif italic text-weello-cream">{referralCount}</p><p className="text-[10px] uppercase tracking-wider text-weello-gray">parrainages validés</p></div>
+      </div>
 
       {/* Zone de copie du lien */}
       <div className="w-full max-w-sm weello-card p-2 flex items-center gap-2 border-weello-gold/30 mb-10 bg-[#0A0A0A]">
@@ -58,11 +61,7 @@ export default function ReferralPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-sm weello-card p-6 bg-gradient-to-br from-weello-gold/5 to-weello-card border border-weello-gold/20 relative overflow-hidden">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-weello-gold">Parrainages validés</p>
-        <p className="mt-3 text-4xl font-serif italic text-weello-cream">{referralCount}</p>
-        <p className="mt-3 text-xs leading-relaxed text-weello-gray">Un parrainage passe en statut validé après le paiement puis l'acceptation de la première commande du filleul.</p>
-      </div>
+      <p className="max-w-sm text-[11px] leading-relaxed text-weello-gray">Les 500 points sont ajoutés après la première commande validée de votre proche.</p>
     </div>
   );
 }

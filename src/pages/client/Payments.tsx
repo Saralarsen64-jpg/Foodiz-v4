@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, CreditCard, Download, ReceiptText, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Download, ReceiptText } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
 import { downloadFinancialDocument } from "../../lib/financialDocuments";
@@ -36,28 +36,6 @@ export default function PaymentsPage() {
     </header>
 
     <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
-      <section className="rounded-[2rem] border border-weello-gold/25 bg-[linear-gradient(145deg,rgba(216,168,79,0.18),rgba(17,17,17,0.98)_45%)] p-6 shadow-[0_0_45px_rgba(216,168,79,0.08)]">
-        <div className="flex items-start gap-4">
-          <div className="rounded-2xl border border-weello-gold/25 bg-weello-gold/10 p-3 text-weello-gold"><ShieldCheck size={24}/></div>
-          <div>
-            <h2 className="weello-title text-xl text-weello-cream">Paiement sécurisé par Stripe</h2>
-            <p className="mt-2 text-sm leading-relaxed text-weello-gray">
-              Weello ne collecte pas et ne stocke pas vos numéros de carte. Les paiements sont saisis uniquement dans l’espace sécurisé Stripe au moment de commander.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="weello-card p-5">
-        <div className="flex items-center gap-3">
-          <CreditCard size={20} className="text-weello-gold"/>
-          <div>
-            <p className="font-semibold text-weello-cream">Cartes enregistrées</p>
-            <p className="mt-1 text-xs text-weello-gray">Aucune carte n’est enregistrée directement dans Weello.</p>
-          </div>
-        </div>
-      </section>
-
       <section>
         <h2 className="weello-title mb-3 flex items-center gap-2 text-sm"><ReceiptText size={17} className="text-weello-gold"/>Mes reçus</h2>
         {loading ? <div className="weello-card p-5 text-center text-sm text-weello-gray animate-pulse">Chargement des reçus...</div> : receipts.length === 0 ? <div className="weello-card p-5 text-center text-sm text-weello-gray">Aucun reçu disponible pour le moment.</div> : <div className="space-y-3">

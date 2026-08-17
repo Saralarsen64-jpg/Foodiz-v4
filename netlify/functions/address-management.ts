@@ -69,9 +69,17 @@ const handler: Handler = async (event) => {
         });
       }
 
-      const geocoded = await geocodeAddress(
-        `${address}, ${postalCode} ${city}, France`,
-      );
+      let geocoded;
+      try {
+        geocoded = await geocodeAddress(`${address}, ${postalCode} ${city}, France`);
+      } catch (error) {
+        if (!(error instanceof RoutingProviderError)) throw error;
+        // Some providers reject otherwise valid French street addresses when
+        // their result omits one locality field. A postal-code/city retry is
+        // a safe fallback for address registration; the full address remains
+        // stored and used for display.
+        geocoded = await geocodeAddress(`${postalCode} ${city}, France`);
+      }
       const { data: addressId, error } = await adminSupabase.rpc(
         "save_client_delivery_address_server",
         {
