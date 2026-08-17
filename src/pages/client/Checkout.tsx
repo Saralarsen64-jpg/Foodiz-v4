@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, CheckCircle, MapPin, Loader } from "lucide-react";
+import { ChevronLeft, CheckCircle, MapPin, Loader, ShoppingBag, Truck } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
@@ -35,6 +35,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [missingItemPreference, setMissingItemPreference] = useState<"ask_before_replacement" | "refund_unavailable">("ask_before_replacement");
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<"delivery" | "pickup">("delivery");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -112,6 +113,7 @@ export default function CheckoutPage() {
               restaurantId: establishmentId,
               quoteOnly: true,
               useAdvantage,
+              fulfillmentMethod,
               items: items.map((item) => ({
                 productId: item.id,
                 quantity: item.quantity,
@@ -134,7 +136,7 @@ export default function CheckoutPage() {
     };
 
     loadData();
-  }, [establishmentId, items, navigate, useAdvantage]);
+  }, [establishmentId, items, navigate, useAdvantage, fulfillmentMethod]);
 
   const handleConfirmOrder = async () => {
     if (!establishmentId || items.length === 0 || !quote) {
@@ -158,6 +160,7 @@ export default function CheckoutPage() {
           restaurantId: establishmentId,
           useAdvantage,
           expectedTotalCents: quote.finalClientTotalCents,
+          fulfillmentMethod,
           missingItemPreference,
           items: items.map((item) => ({
             productId: item.id,
@@ -219,7 +222,12 @@ export default function CheckoutPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Adresse de livraison */}
-        <div className="weello-card p-4 flex items-start gap-4">
+        <div className="weello-card p-4">
+          <h3 className="weello-title text-sm mb-3">Comment souhaitez-vous recevoir votre commande ?</h3>
+          <div className="grid grid-cols-2 gap-2"><button onClick={() => setFulfillmentMethod("delivery")} className={`rounded-xl border p-3 text-left ${fulfillmentMethod === "delivery" ? "border-weello-gold bg-weello-gold/10 text-weello-gold" : "border-weello-gold/15 text-weello-gray"}`}><Truck size={17}/><span className="mt-2 block text-xs font-semibold">Livraison</span></button><button onClick={() => setFulfillmentMethod("pickup")} className={`rounded-xl border p-3 text-left ${fulfillmentMethod === "pickup" ? "border-weello-gold bg-weello-gold/10 text-weello-gold" : "border-weello-gold/15 text-weello-gray"}`}><ShoppingBag size={17}/><span className="mt-2 block text-xs font-semibold">À emporter</span></button></div>
+        </div>
+
+        {fulfillmentMethod === "delivery" && <div className="weello-card p-4 flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-weello-gold/10 flex items-center justify-center shrink-0">
             <MapPin size={18} className="text-weello-gold" />
           </div>
@@ -233,7 +241,7 @@ export default function CheckoutPage() {
               Modifier l'adresse
             </button>
           </div>
-        </div>
+        </div>}
 
         {/* Résumé commande */}
         <div className="weello-card p-4 space-y-3 border-weello-gold/20">

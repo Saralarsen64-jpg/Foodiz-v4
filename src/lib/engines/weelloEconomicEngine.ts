@@ -129,6 +129,7 @@ export function isValidCoordinates(latitude: unknown, longitude: unknown): boole
 export function calculateWeelloOrder(
   items: { partnerPriceCents: number }[],
   distanceKm: number,
+  fulfillmentMethod: "delivery" | "pickup" = "delivery",
 ): OrderTotals {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("At least one item is required");
@@ -163,11 +164,13 @@ export function calculateWeelloOrder(
   );
 
   const serviceFeeCents = calculateServiceFee(items.length);
-  const deliveryFeeCents = calculateDeliveryFee(distanceKm);
+  const deliveryFeeCents = fulfillmentMethod === "delivery" ? calculateDeliveryFee(distanceKm) : 0;
 
   return {
     itemCount: items.length,
     ...itemTotals,
+    courierEarningsCents: fulfillmentMethod === "delivery" ? itemTotals.courierEarningsCents : 0,
+    courierPrimeFundCents: fulfillmentMethod === "delivery" ? itemTotals.courierPrimeFundCents : 0,
     serviceFeeCents,
     deliveryFeeCents,
     finalClientTotalCents:

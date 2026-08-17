@@ -53,7 +53,7 @@ const handler: Handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ error: "Invalid session" }) };
     }
 
-    const { restaurantId, items, useAdvantage, quoteOnly, expectedTotalCents, paymentMode, missingItemPreference } = JSON.parse(event.body || "{}") as {
+    const { restaurantId, items, useAdvantage, quoteOnly, expectedTotalCents, paymentMode, missingItemPreference, fulfillmentMethod } = JSON.parse(event.body || "{}") as {
       restaurantId?: string;
       items?: CheckoutItem[];
       useAdvantage?: boolean;
@@ -61,6 +61,7 @@ const handler: Handler = async (event) => {
       expectedTotalCents?: number;
       paymentMode?: "checkout" | "mobile";
       missingItemPreference?: "ask_before_replacement" | "refund_unavailable";
+      fulfillmentMethod?: "delivery" | "pickup";
     };
 
     if (!restaurantId || !Array.isArray(items) || items.length === 0) {
@@ -69,6 +70,7 @@ const handler: Handler = async (event) => {
     const safeMissingItemPreference = missingItemPreference === "refund_unavailable"
       ? "refund_unavailable"
       : "ask_before_replacement";
+    const safeFulfillmentMethod = fulfillmentMethod === "pickup" ? "pickup" : "delivery";
 
     const normalizedItems = items
       .map((item) => ({
@@ -118,7 +120,7 @@ const handler: Handler = async (event) => {
     const deliveryAddress = [client.address, client.postal_code, client.city]
       .filter(Boolean)
       .join(", ");
-    if (!deliveryAddress) {
+    if (safeFulfillmentMethod === "delivery" && !deliveryAddress) {
       return { statusCode: 400, body: JSON.stringify({ error: "Adresse de livraison requise" }) };
     }
 
@@ -133,10 +135,10 @@ const handler: Handler = async (event) => {
       });
     });
 
-    if (
+    if (safeFulfillmentMethod === "delivery" && (
       !isValidCoordinates(client.latitude, client.longitude) ||
       !isValidCoordinates(restaurant.latitude, restaurant.longitude)
-    ) {
+    )) {
       return {
         statusCode: 400,
         body: JSON.stringify({
@@ -145,7 +147,7 @@ const handler: Handler = async (event) => {
       };
     }
 
-    const route = await calculateRoute(
+    const route = safeFulfillmentMethod === "delivery" ? await calculateRoute(
       {
         latitude: Number(restaurant.latitude),
         longitude: Number(restaurant.longitude),
@@ -154,9 +156,9 @@ const handler: Handler = async (event) => {
         latitude: Number(client.latitude),
         longitude: Number(client.longitude),
       },
-    );
-    const distanceKm = route.distanceKm;
-    if (distanceKm > 25) {
+    ) : null;
+    const distanceKm = route?.distanceKm || 0;
+    if (safeFulfillmentMethod === "delivery" && distanceKm > 25) {
       return {
         statusCode: 422,
         body: JSON.stringify({
@@ -165,7 +167,7 @@ const handler: Handler = async (event) => {
         }),
       };
     }
-    const totals = calculateWeelloOrder(calculationItems, distanceKm);
+    const totals = calculateWeelloOrder(calculationItems, distanceKm, safeFulfillmentMethod);
     const { data: reservedRows } = await supabase
       .from("order_advantage_redemptions")
       .select("points_cost")
@@ -267,7 +269,7 @@ const handler: Handler = async (event) => {
             advantageDiscountCents,
             finalClientTotalCents: amountToPayCents,
             distanceKm,
-            estimatedTimeMins: route.durationMinutes,
+            estimatedTimeMins: route?.durationMinutes || null,
           },
         }),
       };
@@ -306,10 +308,11 @@ const handler: Handler = async (event) => {
         client_id: authData.user.id,
         restaurant_id: restaurantId,
         status: "pending",
+        fulfillment_method: safeFulfillmentMethod,
         payment_status: amountToPayCents === 0 ? "completed" : "pending",
-        delivery_address: deliveryAddress,
-        client_latitude: client.latitude,
-        client_longitude: client.longitude,
+        delivery_address: safeFulfillmentMethod === "delivery" ? deliveryAddress : null,
+        client_latitude: safeFulfillmentMethod === "delivery" ? client.latitude : null,
+        client_longitude: safeFulfillmentMethod === "delivery" ? client.longitude : null,
         final_client_total_cents: amountToPayCents,
         partner_total_cents: totals.partnerTotalCents,
         service_fee_cents: totals.serviceFeeCents,
@@ -324,11 +327,11 @@ const handler: Handler = async (event) => {
         points_redeemed_cents: 0,
         advantage_discount_cents: advantageDiscountCents,
         missing_item_preference: safeMissingItemPreference,
-        estimated_time_mins: route.durationMinutes,
-        delivery_route_distance_meters: route.distanceMeters,
-        delivery_route_duration_seconds: route.durationSeconds,
-        delivery_route_provider: route.provider,
-        delivery_route_is_fallback: route.isFallback,
+        estimated_time_mins: route?.durationMinutes || null,
+        delivery_route_distance_meters: route?.distanceMeters || null,
+        delivery_route_duration_seconds: route?.durationSeconds || null,
+        delivery_route_provider: route?.provider || null,
+        delivery_route_is_fallback: route?.isFallback || false,
         delivery_route_calculated_at: new Date().toISOString(),
       })
       .select("id")

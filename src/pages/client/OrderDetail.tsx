@@ -101,13 +101,17 @@ export default function OrderDetailPage() {
         <p className="text-sm text-weello-cream">{order.delivery_address || "Adresse non renseignée"}</p>
       </div>
 
-      {!['delivered', 'cancelled'].includes(order.status) && order.payment_status === 'completed' && (
+      {order.fulfillment_method === 'pickup' && !['delivered', 'cancelled'].includes(order.status) && (
+        <div className="weello-card mb-5 p-4 text-center"><p className="text-sm font-semibold text-weello-cream">Commande à emporter</p><p className="mt-1 text-xs text-weello-gray">Présentez-vous chez le partenaire lorsque la commande est prête.</p></div>
+      )}
+
+      {order.fulfillment_method !== 'pickup' && !['delivered', 'cancelled'].includes(order.status) && order.payment_status === 'completed' && (
         <button onClick={() => navigate(`/client/orders/${id}/tracking`)} className="w-full weello-btn py-4 text-base mb-3 flex items-center justify-center gap-2">
           <Navigation size={18} /> Suivre la commande et voir mon code
         </button>
       )}
 
-      {!['delivered', 'cancelled'].includes(order.status) && order.payment_status === 'completed' && (
+      {order.fulfillment_method !== 'pickup' && !['delivered', 'cancelled'].includes(order.status) && order.payment_status === 'completed' && (
         <p className="mb-5 flex items-center justify-center gap-2 text-center text-xs text-weello-gray"><ShieldCheck size={14} className="text-weello-gold" />Le code à 6 chiffres est personnel. Donnez-le uniquement après réception.</p>
       )}
 

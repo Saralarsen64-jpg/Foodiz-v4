@@ -122,6 +122,7 @@ const handler: Handler = async (event) => {
         .from("orders")
         .select("id,delivery_fee_cents,courier_earnings_cents,courier_prime_fund_cents,estimated_time_mins,client_latitude,client_longitude,delivery_route_distance_meters,delivery_route_duration_seconds,delivery_route_provider,delivery_route_is_fallback,restaurant:restaurants(name,address,postal_code,city,latitude,longitude),order_items(quantity)")
         .eq("status", "ready")
+        .eq("fulfillment_method", "delivery")
         .is("courier_id", null)
         .eq("payment_status", "completed")
         .order("created_at", { ascending: true })
