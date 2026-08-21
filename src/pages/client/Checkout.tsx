@@ -4,6 +4,7 @@ import { ChevronLeft, CheckCircle, MapPin, Loader, ShoppingBag, Truck } from "lu
 import { useCart } from "../../context/CartContext";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import InfoHint from "../../components/InfoHint";
 
 const PENDING_CHECKOUT_KEY = "weello_pending_checkout_order";
 
@@ -223,7 +224,7 @@ export default function CheckoutPage() {
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Adresse de livraison */}
         <div className="weello-card p-4">
-          <h3 className="weello-title text-sm mb-3">Comment souhaitez-vous recevoir votre commande ?</h3>
+          <h3 className="weello-title text-sm mb-3">Votre commande, à votre façon</h3>
           <div className="grid grid-cols-2 gap-2"><button onClick={() => setFulfillmentMethod("delivery")} className={`rounded-xl border p-3 text-left ${fulfillmentMethod === "delivery" ? "border-weello-gold bg-weello-gold/10 text-weello-gold" : "border-weello-gold/15 text-weello-gray"}`}><Truck size={17}/><span className="mt-2 block text-xs font-semibold">Livraison</span></button><button onClick={() => setFulfillmentMethod("pickup")} className={`rounded-xl border p-3 text-left ${fulfillmentMethod === "pickup" ? "border-weello-gold bg-weello-gold/10 text-weello-gold" : "border-weello-gold/15 text-weello-gray"}`}><ShoppingBag size={17}/><span className="mt-2 block text-xs font-semibold">À emporter</span></button></div>
         </div>
 
@@ -245,7 +246,7 @@ export default function CheckoutPage() {
 
         {/* Résumé commande */}
         <div className="weello-card p-4 space-y-3 border-weello-gold/20">
-          <h3 className="weello-title text-sm">Résumé de votre commande</h3>
+          <h3 className="weello-title text-sm">Votre sélection</h3>
           
           {(quote?.items || []).map(item => (
             <div key={item.productId} className="flex items-center justify-between text-xs text-weello-gray py-2 border-b border-weello-gold/10">
@@ -264,10 +265,10 @@ export default function CheckoutPage() {
                 <span className="text-weello-gray">Frais de service</span>
                 <span className="text-weello-cream">{(quote.serviceFeeCents / 100).toFixed(2)}€</span>
               </div>
-              <div className="flex justify-between text-xs">
+              {fulfillmentMethod === "delivery" && <div className="flex justify-between text-xs">
                 <span className="text-weello-gray">Livraison ({quote.distanceKm.toFixed(1)}km)</span>
                 <span className="text-weello-cream">{(quote.deliveryFeeCents / 100).toFixed(2)}€</span>
-              </div>
+              </div>}
 
               {useAdvantage && lockedAdvantage && quote.advantageDiscountCents > 0 && (
                 <div className="flex justify-between text-xs text-weello-green">
@@ -303,15 +304,14 @@ export default function CheckoutPage() {
         )}
 
         <div className="weello-card p-4 border-weello-gold/20">
-          <h3 className="weello-title text-sm mb-2">Si un article est indisponible</h3>
-          <p className="text-[11px] text-weello-gray mb-3">Le partenaire ne remplacera jamais un article sans votre accord.</p>
+          <div className="mb-3 flex items-center gap-2"><h3 className="weello-title text-sm">Si un article manque</h3><InfoHint label="Informations sur les articles indisponibles">Aucun remplacement n’est effectué sans votre accord. Un remplacement proposé ne peut pas augmenter le prix.</InfoHint></div>
           <label className="flex items-start gap-3 py-2 cursor-pointer">
             <input type="radio" name="missing-item" checked={missingItemPreference === "ask_before_replacement"} onChange={() => setMissingItemPreference("ask_before_replacement")} className="mt-0.5 accent-weello-gold" />
-            <span><span className="block text-xs text-weello-cream">Me proposer un remplacement</span><span className="block text-[10px] text-weello-gray mt-0.5">Vous validez le produit proposé, sans supplément.</span></span>
+            <span><span className="block text-xs text-weello-cream">Me proposer un remplacement</span></span>
           </label>
           <label className="flex items-start gap-3 py-2 cursor-pointer">
             <input type="radio" name="missing-item" checked={missingItemPreference === "refund_unavailable"} onChange={() => setMissingItemPreference("refund_unavailable")} className="mt-0.5 accent-weello-gold" />
-            <span><span className="block text-xs text-weello-cream">Retirer et rembourser l’article</span><span className="block text-[10px] text-weello-gray mt-0.5">Le partenaire lance le remboursement de l’article indisponible.</span></span>
+            <span><span className="block text-xs text-weello-cream">Retirer et rembourser l’article</span></span>
           </label>
         </div>
 
@@ -327,7 +327,7 @@ export default function CheckoutPage() {
               Paiement en cours...
             </>
           ) : quote ? (
-            `Payer ma commande ${(quote.finalClientTotalCents / 100).toFixed(2)}€`
+            `Passer au paiement · ${(quote.finalClientTotalCents / 100).toFixed(2)}€`
           ) : (
             'Chargement...'
           )}

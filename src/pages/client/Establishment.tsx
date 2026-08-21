@@ -152,7 +152,7 @@ export default function EstablishmentPage() {
 
       {/* Menu Categories & Black Cards */}
       <div className="mt-8 space-y-10 pb-32 px-2">
-        {loading && <div className="text-center py-10 text-weello-gray animate-pulse">Chargement du menu...</div>}
+        {loading && <div className="text-center py-10 text-weello-gray animate-pulse">La carte arrive…</div>}
         {!loading && categories.length === 0 && <div className="weello-card p-6 text-center text-weello-gray">Aucun produit disponible actuellement.</div>}
         {categories.map((category: any) => (
           <div key={category.id}>
@@ -207,9 +207,10 @@ export default function EstablishmentPage() {
                       <span />
                       <button
                         onClick={() => addToCart(item)}
-                        className="w-9 h-9 rounded-full bg-weello-gold text-weello-black flex items-center justify-center hover:bg-weello-gold-light transition-all shadow-lg shadow-weello-gold/20 active:scale-95"
+                        aria-label={`Ajouter ${item.name} au panier`}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-weello-gold px-3 py-2 text-xs font-bold text-weello-black hover:bg-weello-gold-light transition-all shadow-lg shadow-weello-gold/20 active:scale-95"
                       >
-                        <Plus size={18} strokeWidth={3} />
+                        <Plus size={16} strokeWidth={3} /> Ajouter
                       </button>
                     </div>
                   </div>
@@ -234,7 +235,7 @@ export default function EstablishmentPage() {
                   {itemCount}
                 </span>
               </div>
-              <span className="text-weello-black text-sm font-semibold">Voir le panier</span>
+              <span className="text-weello-black text-sm font-semibold">Voir ma sélection</span>
             </div>
             <span className="text-weello-black font-bold">
               {subtotal.toFixed(2).replace(".", ",")} €

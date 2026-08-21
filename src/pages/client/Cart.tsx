@@ -12,8 +12,8 @@ export default function CartPage() {
         <div className="w-20 h-20 rounded-full bg-weello-card border border-weello-gold/20 flex items-center justify-center mb-6">
           <ShoppingBag size={32} className="text-weello-gray" />
         </div>
-        <h1 className="weello-title text-2xl text-weello-cream mb-2">Votre panier est vide</h1>
-        <p className="text-weello-gray text-sm mb-8">Ajoutez des plats délicieux pour commencer votre commande.</p>
+        <h1 className="weello-title text-2xl text-weello-cream mb-2">Votre sélection est vide</h1>
+        <p className="text-weello-gray text-sm mb-8">Une envie mérite un premier choix.</p>
         <button onClick={() => navigate("/client/restaurants")} className="weello-btn px-8 py-3">Découvrir les restaurants</button>
       </div>
     );
@@ -27,7 +27,7 @@ export default function CartPage() {
       <header className="bg-weello-card border-b border-weello-gold/10 px-4 py-3 sticky top-0 z-30">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="text-weello-gold"><ChevronLeft size={24} /></button>
-          <h1 className="weello-title text-lg">Mon Panier</h1>
+          <h1 className="weello-title text-lg">Votre sélection</h1>
           <button onClick={clearCart} className="text-weello-red text-xs font-bold uppercase">Tout vider</button>
         </div>
       </header>
@@ -53,11 +53,11 @@ export default function CartPage() {
       <div className="fixed bottom-0 left-0 w-full bg-weello-card border-t border-weello-gold/20 p-4 z-40">
         <div className="max-w-lg mx-auto">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-weello-gray text-sm">Sous-total articles</span>
+            <span className="text-weello-gray text-sm">Votre sélection</span>
             <span className="text-weello-cream text-2xl font-serif italic font-bold">{subtotal.toFixed(2)} €</span>
           </div>
           <button onClick={() => navigate("/client/checkout")} className="w-full weello-btn py-4 flex items-center justify-center gap-2 text-lg">
-            Commander <ChevronRight size={20} />
+            Continuer <ChevronRight size={20} />
           </button>
         </div>
       </div>

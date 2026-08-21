@@ -94,27 +94,28 @@ export default function ClientHome() {
           {cityName ? `Livraison à ${cityName}` : "Choisir une adresse de livraison"}
         </button>
         <h1 className="relative mt-2 font-serif text-2xl italic text-weello-cream">
-          {firstName ? `Bonjour ${firstName}` : "Bon appétit !"}
+          {firstName ? `Bon appétit, ${firstName}` : "Qu’est-ce qui vous ferait plaisir ?"}
         </h1>
       </header>
 
       <div className="space-y-8 px-1 pt-5">
         <form onSubmit={submitSearch} className="flex items-center rounded-2xl border border-weello-gold/20 bg-weello-card px-4 shadow-lg shadow-black/30">
           <Search size={19} className="shrink-0 text-weello-gold" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Restaurant, plat, commerce..." className="w-full bg-transparent px-3 py-4 text-sm text-weello-cream outline-none placeholder:text-weello-gray/60" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Une envie ? plat, restaurant, commerce…" className="w-full bg-transparent px-3 py-4 text-sm text-weello-cream outline-none placeholder:text-weello-gray/60" />
         </form>
 
         <section className="grid grid-cols-2 gap-3">
           {[
-            { title: "Restaurants", image: "/images/auth-restaurant.jpg", path: "/client/restaurants" },
-            { title: "Market", image: "/images/market-bio.jpg", path: "/client/market" },
+            { title: "Restaurants", eyebrow: "Une table vous attend", image: "/images/auth-restaurant.jpg", path: "/client/restaurants" },
+            { title: "Market", eyebrow: "Vos essentiels, tout près", image: "/images/market-bio.jpg", path: "/client/market" },
           ].map((card) => (
             <button key={card.title} type="button" onClick={() => navigate(card.path)} className="group relative aspect-[4/5] overflow-hidden rounded-3xl border border-weello-gold/20 text-left shadow-xl shadow-black/40">
               <img src={card.image} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
               <span className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
               <span className="absolute inset-x-0 bottom-0 p-4">
                 <span className="block font-serif text-xl italic text-weello-cream">{card.title}</span>
-                <span className="mt-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-weello-gold">Découvrir <ChevronRight size={11} /></span>
+                <span className="mt-1 block text-[10px] text-weello-cream/75">{card.eyebrow}</span>
+                <span className="mt-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-weello-gold">Découvrir <ChevronRight size={11} /></span>
               </span>
             </button>
           ))}
@@ -136,14 +137,14 @@ export default function ClientHome() {
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-weello-gold text-black"><Gift size={20} /></span>
           <span className="min-w-0 flex-1">
             <span className="block font-serif text-lg italic text-weello-cream">Weello Club</span>
-            <span className="mt-1 block text-xs text-weello-gray">Vos points et vos avantages</span>
+            <span className="mt-1 block text-xs text-weello-gray">Vos petits plaisirs vous récompensent</span>
           </span>
           <span className="text-right"><strong className="block text-xl text-weello-gold">{points.toLocaleString("fr-FR")}</strong><span className="text-[10px] text-weello-gray">points</span></span>
         </button>
 
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="weello-title text-lg">Autour de vous</h2>
+            <h2 className="weello-title text-lg">Les bonnes adresses près de vous</h2>
             <button type="button" onClick={() => navigate("/client/restaurants")} className="flex items-center gap-1 text-xs text-weello-gold">Voir tout <ChevronRight size={12} /></button>
           </div>
           {loading ? (
@@ -163,7 +164,7 @@ export default function ClientHome() {
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate font-serif text-base italic text-weello-cream">{restaurant.name}</h3>
                     <p className="mt-1 truncate text-[11px] text-weello-gray">{restaurant.cuisine_type || "Restaurant"}</p>
-                    <span className="mt-2 inline-flex items-center gap-1 text-[10px] text-weello-gold"><Star size={10} fill="currentColor" /> Découvrir</span>
+                    <span className="mt-2 inline-flex items-center gap-1 text-[10px] text-weello-gold"><Star size={10} fill="currentColor" /> Voir la carte</span>
                   </div>
                   <ChevronRight size={16} className="text-weello-gold/60" />
                 </button>
