@@ -32,6 +32,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
+import InfoHint from "../../components/InfoHint";
 import Logo from "../../components/Logo";
 import { supabase } from "../../lib/supabase";
 import { getPartnerOrderCustomers } from "../../lib/orderContacts";
@@ -306,13 +307,13 @@ export default function PartnerDashboard() {
   ];
 
   const quickActions = [
-    { label: "Créer un produit", icon: Plus, path: "/partner/products/new", desc: "Ajouter un nouveau plat" },
-    { label: "Créer une catégorie", icon: FolderPlus, path: "/partner/menu", desc: "Structurer votre carte" },
-    { label: "Photo fiche établissement", icon: ImageIcon, path: "/partner/settings", desc: "Mettre à jour la couverture" },
-    { label: "Photos produits", icon: UtensilsCrossed, path: "/partner/products", desc: "Éditer les cartes plats" },
-    { label: "Weello+", icon: Megaphone, path: "/partner/marketing", desc: "Envoyer une campagne locale" },
-    { label: "Historique commandes", icon: History, path: "/partner/orders/history", desc: "Revoir toutes les ventes" },
-    { label: "Virements", icon: Wallet, path: "/partner/payouts", desc: "Consulter les règlements enregistrés" },
+    { label: "Créer un produit", icon: Plus, path: "/partner/products/new" },
+    { label: "Créer une catégorie", icon: FolderPlus, path: "/partner/menu" },
+    { label: "Photo établissement", icon: ImageIcon, path: "/partner/settings" },
+    { label: "Photos produits", icon: UtensilsCrossed, path: "/partner/products" },
+    { label: "Weello+", icon: Megaphone, path: "/partner/marketing" },
+    { label: "Historique", icon: History, path: "/partner/orders/history" },
+    { label: "Virements", icon: Wallet, path: "/partner/payouts" },
   ];
 
   const sidebarItems = [
@@ -391,9 +392,10 @@ export default function PartnerDashboard() {
             <div className="p-6">
               <p className="text-[10px] uppercase tracking-[0.22em] text-weello-gold font-bold mb-2">Espace Partenaire Weello</p>
               <h2 className="weello-title text-3xl mb-2">Bonjour, {restaurantName}</h2>
-              <p className="text-weello-gray text-sm max-w-xl leading-relaxed">
-                Pilotez votre activité, votre carte, vos visuels et vos revenus depuis un cockpit unique pensé pour la performance et l’image premium de votre établissement.
-              </p>
+              <div className="flex items-center gap-2 text-xs text-weello-gray">
+                <span>Votre espace de gestion</span>
+                <InfoHint label="À propos de votre espace partenaire">Gérez les commandes, la carte, vos revenus et les informations de votre établissement depuis cet espace.</InfoHint>
+              </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
                 {[
                   { label: "Commandes livrées aujourd'hui", value: todayOrdersCount, icon: ShoppingBag, change: "Réel" },
@@ -434,14 +436,11 @@ export default function PartnerDashboard() {
 
         <section className="grid gap-4 xl:grid-cols-[1.05fr_.95fr]">
           <article className="weello-card border-weello-gold/25 bg-[radial-gradient(circle_at_top_left,rgba(216,168,79,.14),transparent_35%),#080808] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[.24em] text-weello-gold">Tour de contrôle</p>
-                <h2 className="weello-title mt-1 text-2xl">Commandes à piloter maintenant</h2>
-                <p className="mt-2 max-w-xl text-xs leading-relaxed text-weello-gray">
-                  Une commande bien rythmée rassure le client, protège le livreur et donne envie de revenir.
-                </p>
-              </div>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[.24em] text-weello-gold">Tour de contrôle</p>
+                  <h2 className="weello-title mt-1 text-2xl">Commandes à piloter maintenant</h2>
+                </div>
               <button onClick={() => navigate("/partner/orders/current")} className="rounded-2xl bg-weello-gold px-4 py-3 text-xs font-black text-weello-black transition hover:scale-[1.02]">
                 Ouvrir les commandes
               </button>
@@ -508,9 +507,7 @@ export default function PartnerDashboard() {
               <div className="mt-6 flex items-end justify-between gap-4">
                 <div>
                   <p className="text-6xl font-serif italic text-weello-cream">{readinessScore}%</p>
-                  <p className="mt-2 text-xs leading-relaxed text-weello-gray">
-                    Score calculé sur la fiche, le menu, les visuels, le support et les signaux de vente.
-                  </p>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-weello-gray"><span>Préparation</span><InfoHint label="Calcul du score">Ce score tient compte du dossier, de la fiche établissement, de la carte, des visuels et du support.</InfoHint></div>
                 </div>
                 <div className="hidden h-24 w-24 shrink-0 items-center justify-center rounded-full border border-weello-gold/30 bg-black/35 sm:flex">
                   <Sparkles size={30} className="text-weello-gold" />
@@ -520,7 +517,6 @@ export default function PartnerDashboard() {
               <div className="mt-6 rounded-2xl border border-weello-gold/15 bg-black/30 p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-weello-gold">Action prioritaire</p>
                 <p className="mt-2 text-base font-semibold text-weello-cream">{priorityItem.label}</p>
-                <p className="mt-1 text-xs leading-relaxed text-weello-gray">{priorityItem.detail}</p>
                 <button
                   onClick={() => navigate(priorityItem.path)}
                   className="mt-4 inline-flex items-center gap-2 rounded-full bg-weello-gold px-4 py-2 text-xs font-bold text-weello-black transition hover:scale-[1.02]"
@@ -535,7 +531,6 @@ export default function PartnerDashboard() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="weello-title text-xl">Plan d’action partenaire</h2>
-                <p className="mt-1 text-xs text-weello-gray">Les détails qui transforment une fiche en vraie vitrine Weello.</p>
               </div>
               <span className="rounded-full border border-weello-gold/20 px-3 py-1 text-[10px] uppercase tracking-widest text-weello-gold">
                 {readinessItems.filter((item) => item.ready).length}/{readinessItems.length}
@@ -564,7 +559,7 @@ export default function PartnerDashboard() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-weello-cream">{item.label}</p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-weello-gray">{item.detail}</p>
+                      <span className="mt-2 inline-flex"><InfoHint label={`Informations : ${item.label}`}>{item.detail}</InfoHint></span>
                     </div>
                   </div>
                 </button>
@@ -573,46 +568,10 @@ export default function PartnerDashboard() {
           </article>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {[
-            {
-              title: "Photos qui donnent faim",
-              text: "Une photo claire, lumineuse et cohérente augmente la confiance avant même le premier clic.",
-              icon: Camera,
-              path: "/partner/products",
-            },
-            {
-              title: "Carte courte, lisible, rentable",
-              text: "Mettez en avant les produits stars, les formules simples et les plats faciles à livrer.",
-              icon: UtensilsCrossed,
-              path: "/partner/menu",
-            },
-            {
-              title: "Réactivité = préférence",
-              text: "Plus vos commandes sont acceptées et préparées vite, plus l’expérience Weello devient mémorable.",
-              icon: Clock,
-              path: "/partner/orders/current",
-            },
-          ].map((tip) => (
-            <button
-              key={tip.title}
-              onClick={() => navigate(tip.path)}
-              className="weello-card group border-weello-gold/15 bg-[linear-gradient(145deg,rgba(216,168,79,.08),rgba(10,10,10,.98)_34%)] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-weello-gold/35"
-            >
-              <GoldIcon icon={tip.icon} size={20} />
-              <h3 className="mt-4 font-semibold text-weello-cream">{tip.title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-weello-gray">{tip.text}</p>
-              <p className="mt-4 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-weello-gold">
-                Optimiser <ChevronRight size={12} />
-              </p>
-            </button>
-          ))}
-        </section>
-
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="weello-title text-lg">Outils de gestion</h2>
-            <span className="text-[10px] text-weello-gray uppercase tracking-widest">Menu, visuels, revenus</span>
+            <InfoHint label="Informations sur les outils">Gérez ici votre carte, vos visuels, vos campagnes et vos règlements.</InfoHint>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {quickActions.map((action) => (
@@ -625,7 +584,6 @@ export default function PartnerDashboard() {
                   <GoldIcon icon={action.icon} size={18} />
                 </div>
                 <p className="text-sm font-medium text-weello-cream">{action.label}</p>
-                <p className="text-[10px] text-weello-gray mt-1">{action.desc}</p>
               </button>
             ))}
           </div>
@@ -634,8 +592,7 @@ export default function PartnerDashboard() {
         <div className="weello-card p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
             <div>
-              <h3 className="weello-title text-lg">Graphique intelligent</h3>
-              <p className="text-weello-gray text-xs mt-1">Évolution du chiffre d’affaires de la journée à l’année</p>
+              <div className="flex items-center gap-2"><h3 className="weello-title text-lg">Chiffre d’affaires</h3><InfoHint label="Informations sur le chiffre d’affaires">Les montants sont calculés à partir des commandes livrées sur la période choisie.</InfoHint></div>
             </div>
             <div className="flex gap-2 overflow-x-auto scrollbar-none">
               {[
@@ -678,9 +635,8 @@ export default function PartnerDashboard() {
               <div className="w-12 h-12 rounded-2xl bg-weello-gold/10 border border-weello-gold/15 flex items-center justify-center mb-4">
                 <GoldIcon icon={BarChart3} size={18} />
               </div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-weello-gray font-bold mb-2">Période sélectionnée</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-weello-gray font-bold mb-2">Période</p>
               <p className="text-3xl font-serif italic text-weello-gold font-bold">{currentRevenue.toFixed(0)}€</p>
-              <p className="text-weello-gray text-xs mt-2">Lecture intelligente du chiffre d’affaires selon l’horizon choisi.</p>
             </div>
           </div>
         </div>

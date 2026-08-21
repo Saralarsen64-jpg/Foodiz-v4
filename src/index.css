@@ -153,6 +153,36 @@ a:focus-visible {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
+.weello-info-trigger {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(216, 168, 79, .32);
+  border-radius: 999px;
+  color: #D8A84F;
+  background: rgba(216, 168, 79, .08);
+  transition: transform .18s ease, background .18s ease;
+}
+.weello-info-trigger:hover { transform: translateY(-1px); background: rgba(216, 168, 79, .17); }
+.weello-info-popover {
+  position: absolute;
+  z-index: 80;
+  top: 30px;
+  right: 0;
+  width: min(280px, calc(100vw - 40px));
+  padding: 13px 30px 13px 14px;
+  border: 1px solid rgba(216,168,79,.3);
+  border-radius: 14px;
+  background: #15130f;
+  box-shadow: 0 18px 48px rgba(0,0,0,.58);
+  color: #d7d0c6;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+}
+
 .weello-gradient-gold,
 .weello-gradient-gold {
   background: linear-gradient(135deg, rgba(216, 168, 79, 0.1), rgba(216, 168, 79, 0.03));

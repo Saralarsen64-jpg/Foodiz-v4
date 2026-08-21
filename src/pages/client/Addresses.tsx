@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { ChevronLeft, MapPin, Plus, Trash2, Home, Briefcase, CheckCircle2, Loader } from "lucide-react";
 import GoldIcon from "../../components/GoldIcon";
 import toast from "react-hot-toast";
+import InfoHint from "../../components/InfoHint";
 
 export default function AddressesPage() {
   const navigate = useNavigate();
@@ -133,7 +134,7 @@ export default function AddressesPage() {
               <input type="text" inputMode="numeric" placeholder="Code postal" required value={newAddress.postalCode} onChange={e => setNewAddress({...newAddress, postalCode: e.target.value})} className="w-full bg-weello-black border border-weello-gold/20 rounded-xl p-3 text-weello-cream text-sm outline-none" />
               <input type="text" placeholder="Ville" required value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="w-full bg-weello-black border border-weello-gold/20 rounded-xl p-3 text-weello-cream text-sm outline-none" />
             </div>
-            <p className="text-[10px] leading-relaxed text-weello-gray">L'adresse est vérifiée côté serveur avant d'être utilisée pour calculer la livraison.</p>
+            <div className="flex items-center justify-between text-[10px] text-weello-gray"><span>Adresse de livraison</span><InfoHint>Votre adresse sert uniquement à calculer la zone et le trajet de livraison.</InfoHint></div>
             <button type="submit" disabled={saving} className="w-full weello-btn py-3 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
               {saving && <Loader size={15} className="animate-spin" />}
               Vérifier et utiliser cette adresse

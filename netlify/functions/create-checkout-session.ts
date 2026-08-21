@@ -167,7 +167,24 @@ const handler: Handler = async (event) => {
         }),
       };
     }
-    const totals = calculateWeelloOrder(calculationItems, distanceKm, safeFulfillmentMethod);
+    const totals = safeFulfillmentMethod === "pickup"
+      ? calculateWeelloOrder(calculationItems, distanceKm, "pickup")
+      : calculateWeelloOrder(calculationItems, distanceKm);
+    const routeSnapshot = route
+      ? {
+          estimated_time_mins: route.durationMinutes,
+          delivery_route_distance_meters: route.distanceMeters,
+          delivery_route_duration_seconds: route.durationSeconds,
+          delivery_route_provider: route.provider,
+          delivery_route_is_fallback: route.isFallback,
+        }
+      : {
+          estimated_time_mins: null,
+          delivery_route_distance_meters: null,
+          delivery_route_duration_seconds: null,
+          delivery_route_provider: null,
+          delivery_route_is_fallback: false,
+        };
     const { data: reservedRows } = await supabase
       .from("order_advantage_redemptions")
       .select("points_cost")
@@ -327,11 +344,7 @@ const handler: Handler = async (event) => {
         points_redeemed_cents: 0,
         advantage_discount_cents: advantageDiscountCents,
         missing_item_preference: safeMissingItemPreference,
-        estimated_time_mins: route?.durationMinutes || null,
-        delivery_route_distance_meters: route?.distanceMeters || null,
-        delivery_route_duration_seconds: route?.durationSeconds || null,
-        delivery_route_provider: route?.provider || null,
-        delivery_route_is_fallback: route?.isFallback || false,
+        ...routeSnapshot,
         delivery_route_calculated_at: new Date().toISOString(),
       })
       .select("id")
