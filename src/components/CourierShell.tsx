@@ -14,7 +14,7 @@ export default function CourierShell({ children, title, back }: { children: Reac
   const navigate = useNavigate();
   const location = useLocation();
   return (
-    <div className="min-h-screen bg-weello-black pb-28 relative overflow-hidden">
+    <div className="weello-app-shell min-h-screen bg-weello-black pb-28 relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_15%_0%,rgba(216,168,79,0.14),transparent_30%),radial-gradient(circle_at_90%_30%,rgba(63,167,109,0.08),transparent_28%)]" />
       <div className="fixed inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-weello-gold/30 to-transparent" />
       <div className="fixed inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-weello-gold/30 to-transparent" />

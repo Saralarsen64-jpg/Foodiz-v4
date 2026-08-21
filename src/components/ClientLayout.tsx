@@ -9,7 +9,7 @@ export default function ClientLayout() {
 
   return (
     <CartProvider>
-      <div className="min-h-screen bg-weello-black pb-20">
+      <div className="weello-app-shell min-h-screen bg-weello-black pb-24">
         {!isHome && <KraftHeader />}
         <main className={`max-w-lg mx-auto px-4 pb-6 ${isHome ? "pt-0" : "pt-4"}`}>
           <Outlet />

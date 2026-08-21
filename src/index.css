@@ -31,6 +31,26 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.weello-app-shell {
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(circle at 50% -12%, rgba(216, 168, 79, 0.08), transparent 34%),
+    linear-gradient(180deg, #080808 0%, #050505 42%);
+}
+
+input,
+select,
+textarea {
+  accent-color: #D8A84F;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(232, 204, 136, 0.92);
+  outline-offset: 2px;
+}
+
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar {
   width: 4px;
@@ -151,6 +171,12 @@ a:focus-visible {
 .weello-card:hover {
   border-color: rgba(216, 168, 79, 0.35);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 640px) {
+  .weello-card {
+    border-radius: 18px;
+  }
 }
 
 .weello-info-trigger {

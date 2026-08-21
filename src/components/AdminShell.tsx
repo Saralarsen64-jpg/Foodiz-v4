@@ -19,6 +19,7 @@ import {
   MessageSquareText,
 } from "lucide-react";
 import AdminBrandMark from "./AdminBrandMark";
+import InfoHint from "./InfoHint";
 import { cn } from "../utils/cn";
 import { supabase } from "../lib/supabase";
 import { clearAdminAccess } from "../utils/adminAccess";
@@ -58,7 +59,7 @@ export default function AdminShell({
   };
 
   return (
-    <div className="min-h-screen bg-weello-black text-weello-cream">
+    <div className="weello-app-shell min-h-screen bg-weello-black text-weello-cream">
       <div className="grid lg:grid-cols-[280px_1fr] min-h-screen">
         <aside className="hidden lg:flex flex-col border-r border-weello-gold/10 bg-[linear-gradient(180deg,rgba(17,17,17,0.98),rgba(5,5,5,1))] p-6 sticky top-0 h-screen">
           <div className="flex items-center gap-3 mb-8">
@@ -69,11 +70,9 @@ export default function AdminShell({
             </div>
           </div>
 
-          <div className="rounded-[1.6rem] border border-weello-gold/10 bg-white/[0.02] p-4 mb-6">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-weello-gold font-bold mb-2">Centre de contrôle</p>
-            <p className="text-sm text-weello-gray leading-relaxed">
-              Pilotage global de l’activité, des validations, des campagnes et des flux financiers.
-            </p>
+          <div className="mb-6 flex items-center justify-between rounded-2xl border border-weello-gold/10 bg-white/[0.02] px-4 py-3">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-weello-gold font-bold">Centre de contrôle</p>
+            <InfoHint label="Informations sur l’administration">Gérez les validations, l’activité, le support, les campagnes et les règlements depuis cet espace.</InfoHint>
           </div>
 
           <nav className="space-y-2">
@@ -99,7 +98,6 @@ export default function AdminShell({
 
           <div className="mt-auto weello-card p-4 bg-white/[0.02] border-weello-gold/10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-weello-gold font-bold mb-2">Admin Weello</p>
-            <p className="text-sm text-weello-cream">Direction & exploitation</p>
             <button
               type="button"
               onClick={() => void signOut()}
