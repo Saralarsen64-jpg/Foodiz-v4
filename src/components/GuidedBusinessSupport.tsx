@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, CircleUserRound, Clock3, Headphones, Landmark, Package, RefreshCw, Send, Store, UtensilsCrossed, Wifi } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
@@ -26,6 +26,7 @@ const CONFIG: Record<Role, { title: string; home: string; intro: string; promise
 
 export default function GuidedBusinessSupport({ role }: { role: Role }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const config = CONFIG[role];
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
@@ -61,6 +62,24 @@ export default function GuidedBusinessSupport({ role }: { role: Role }) {
   };
 
   useEffect(() => { void load(); }, [role]);
+  useEffect(() => {
+    const requestedCategory = searchParams.get("category");
+    const requestedOrder = searchParams.get("order");
+    const incident = searchParams.get("incident");
+    if (requestedCategory && config.categories.some((item) => item.key === requestedCategory)) {
+      setCategory(requestedCategory);
+    }
+    if (requestedOrder) setOrderId(requestedOrder);
+    if (role === "courier" && incident) {
+      const labels: Record<string, string> = {
+        restaurant_closed: "Restaurant fermé ou commande introuvable",
+        client_unreachable: "Client introuvable ou injoignable",
+        gps: "Problème de localisation GPS",
+        delivery_code: "Le client ne peut pas communiquer son code de remise",
+      };
+      setMessage(`Incident de course : ${labels[incident] || "Autre problème"}.`);
+    }
+  }, [config.categories, role, searchParams]);
   const selectedCategory = useMemo(() => config.categories.find((item) => item.key === category), [category, config.categories]);
 
   const runDiagnosis = async () => {
@@ -89,7 +108,7 @@ export default function GuidedBusinessSupport({ role }: { role: Role }) {
     const { error } = await supabase.from("support_tickets").insert({
       user_id: user.id, user_email: user.email, user_role: role, category: role, subcategory: category, order_id: orderId || null,
       subject: `${selectedCategory?.label || "Support"}${orderId ? ` - #${orderId.slice(0, 8)}` : ""}`, message: message.trim(), status: "open",
-      priority: diagnosis?.priority || "normal", source: "guided", diagnostic: { ...(diagnosis?.context || {}), diagnosis: diagnosis?.title, explanation: diagnosis?.explanation }, attempted_actions: diagnosis?.attempted || [],
+      priority: searchParams.get("incident") ? "high" : diagnosis?.priority || "normal", source: "guided", diagnostic: { ...(diagnosis?.context || {}), diagnosis: diagnosis?.title, explanation: diagnosis?.explanation, incident: searchParams.get("incident") }, attempted_actions: diagnosis?.attempted || [],
     });
     if (error) toast.error("Impossible d'envoyer la demande.");
     else { toast.success("Demande envoyée avec son diagnostic."); setMessage(""); setDiagnosis(null); setCategory(null); setOrderId(""); await load(); }

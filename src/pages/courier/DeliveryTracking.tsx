@@ -233,6 +233,31 @@ export default function DeliveryTrackingPage() {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query || "")}`, "_blank", "noopener,noreferrer");
   };
 
+  const resyncLocation = async () => {
+    if (!id) return;
+    setBusy(true);
+    try {
+      const position = await currentPosition();
+      await courierDeliveryAction({
+        orderId: id,
+        action: "location",
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracyMeters: position.coords.accuracy,
+      });
+      setLocationError("");
+      toast.success("Position synchronisée.");
+    } catch (error: any) {
+      setLocationError(error?.message || "La position n’a pas pu être synchronisée.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reportIncident = (incident: "restaurant_closed" | "client_unreachable" | "gps" | "delivery_code") => {
+    navigate(`/courier/support?category=delivery&order=${encodeURIComponent(id || "")}&incident=${incident}`);
+  };
+
   if (!order) return <div className="min-h-screen bg-weello-black flex items-center justify-center text-weello-gray animate-pulse">Chargement de la course...</div>;
 
   return (
@@ -308,7 +333,7 @@ export default function DeliveryTrackingPage() {
           </div>
         </section>
 
-        {locationError && <div className="rounded-2xl border border-weello-red/20 bg-weello-red/10 p-4 text-xs text-weello-red">{locationError}</div>}
+        {locationError && <div className="rounded-2xl border border-weello-red/20 bg-weello-red/10 p-4 text-xs text-weello-red"><p>{locationError}</p><div className="mt-3 flex gap-3"><button disabled={busy} onClick={() => void resyncLocation()} className="font-semibold text-weello-cream underline">Réessayer</button><button onClick={() => reportIncident("gps")} className="font-semibold text-weello-cream underline">Signaler le problème</button></div></div>}
 
         <section className="grid gap-3">
           <div className="weello-card p-5 bg-white/[0.025]">
@@ -318,6 +343,8 @@ export default function DeliveryTrackingPage() {
             <div className="flex items-start gap-4"><div className="gold-glow-icon gold-glow-icon-md"><CircleUserRound size={18} /></div><div className="flex-1 min-w-0"><p className="text-[10px] uppercase tracking-widest text-weello-gold">Livraison</p><h3 className="text-weello-cream font-semibold mt-1">{clientName}</h3><p className="text-xs text-weello-gray mt-1">{order.delivery_address}</p><div className="flex gap-4 mt-3">{order.client?.phone && <><a href={`tel:${order.client.phone}`} className="text-xs text-weello-gold flex items-center gap-1"><Phone size={13} /> Appeler</a><a href={`sms:${order.client.phone}`} className="text-xs text-weello-gold flex items-center gap-1"><MessageCircle size={13} /> Message</a></>}</div></div><button onClick={() => openNavigation("client")} className="w-10 h-10 rounded-xl bg-weello-gold text-weello-black flex items-center justify-center"><MapPin size={17} /></button></div>
           </div>
         </section>
+
+        {step !== "delivered" && <section className="grid grid-cols-2 gap-3"><button onClick={() => reportIncident("restaurant_closed")} className="rounded-2xl border border-weello-gold/15 bg-white/[0.025] p-4 text-left text-xs text-weello-cream">Restaurant fermé<br/><span className="mt-1 block text-[10px] text-weello-gray">ou commande introuvable</span></button><button onClick={() => reportIncident("client_unreachable")} className="rounded-2xl border border-weello-gold/15 bg-white/[0.025] p-4 text-left text-xs text-weello-cream">Client introuvable<br/><span className="mt-1 block text-[10px] text-weello-gray">ou injoignable</span></button></section>}
 
         <section className="weello-card p-5">
           <p className="text-[10px] uppercase tracking-widest text-weello-gold mb-4">Contenu de la commande</p>
@@ -330,6 +357,7 @@ export default function DeliveryTrackingPage() {
             <h3 className="weello-title text-xl">Code de remise</h3><p className="text-xs text-weello-gray mt-2">Demandez au client son code personnel à 6 chiffres.</p>
             <div className="flex justify-center gap-2 mt-6">{enteredCode.map((digit, index) => <input key={index} id={`delivery-code-${index}`} value={digit} onChange={(event) => handleCodeChange(index, event.target.value)} inputMode="numeric" maxLength={1} className={`w-10 h-13 rounded-xl bg-weello-black border text-center text-lg font-bold text-weello-cream outline-none ${codeError ? "border-weello-red" : "border-weello-gold/30 focus:border-weello-gold"}`} />)}</div>
             {codeError && <p className="text-weello-red text-xs mt-4 flex items-center justify-center gap-1"><X size={13} /> {codeError}</p>}
+            <button onClick={() => reportIncident("delivery_code")} className="mt-5 text-xs font-semibold text-weello-gold underline">Le client n’a pas son code</button>
           </section>
         )}
 
