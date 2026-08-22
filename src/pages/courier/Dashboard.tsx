@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Bike, CheckCircle2, Clock3, MapPinned, Navigation, Power, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowUpRight, Bike, CheckCircle2, Clock3, Landmark, MapPinned, Navigation, Power, ShieldCheck, WalletCards } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import CourierShell from "../../components/CourierShell";
 import { updateCourierPresence } from "../../lib/courierPresence";
@@ -74,7 +74,6 @@ export default function CourierDashboard() {
     <WeelloHero
       eyebrow={`Bonjour ${name}`}
       title="Prêt pour la route ?"
-      description="Votre journée, vos courses, votre rythme. Weello privilégie une position précise, des étapes confirmées et une livraison rassurante pour le client."
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <WeelloPill tone={online ? "green" : "muted"}>
@@ -105,16 +104,17 @@ export default function CourierDashboard() {
 
     <section className="mt-4 grid gap-3">
       <WeelloActionCard
-        title="Assurez votre activité avec un partenaire Weello"
-        description="Demandez à être rappelé par un partenaire spécialisé. Vous restez libre de choisir votre assureur."
+        title="Assurance"
+        description="Demande de rappel"
         icon={ShieldCheck}
         badge="Mise en relation"
         onClick={() => navigate("/courier/insurance")}
       />
       {[
-        { label: "Historique", icon: Clock3, path: "/courier/deliveries/history", desc: "Retrouvez les courses terminées et les détails associés." },
-        { label: "Mes gains", icon: WalletCards, path: "/courier/revenues", desc: "Suivez vos revenus, primes et pénalités éventuelles." },
-        { label: "Mon profil", icon: Bike, path: "/courier/profile", desc: "Gérez votre profil, vos justificatifs et vos informations livreur." },
+        { label: "Historique", icon: Clock3, path: "/courier/deliveries/history", desc: "Courses terminées" },
+        { label: "Mes gains", icon: WalletCards, path: "/courier/revenues", desc: "Courses et ajustements" },
+        { label: "Versements", icon: Landmark, path: "/courier/payouts", desc: "Bordereaux disponibles" },
+        { label: "Mon profil", icon: Bike, path: "/courier/profile", desc: "Informations et disponibilités" },
       ].map((item) => (
         <WeelloActionCard
           key={item.path}
