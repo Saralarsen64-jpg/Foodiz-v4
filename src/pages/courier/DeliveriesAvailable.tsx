@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Clock, MapPin, Navigation, ShoppingBag, Sparkles } from "lucide-react";
 import CourierShell from "../../components/CourierShell";
 import { supabase } from "../../lib/supabase";
-import { updateCourierPresence } from "../../lib/courierPresence";
 
 async function courierRequest(method = "GET", body?: unknown) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -25,7 +24,6 @@ export default function DeliveriesAvailable() {
 
   const fetchDeliveries = async () => {
     try {
-      await updateCourierPresence(true);
       const payload = await courierRequest();
       setDeliveries(payload.deliveries || []);
       setError(null);

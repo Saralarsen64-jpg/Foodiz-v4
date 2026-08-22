@@ -12,7 +12,7 @@ export default function CourierPayouts() {
     const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
     const [{ data: orders }, { data: documentRows }] = await Promise.all([
       supabase.from("orders").select("delivery_fee_cents,courier_earnings_cents,courier_prime_fund_cents,courier_delay_penalty_cents").eq("courier_id", user.id).eq("status", "delivered"),
-      supabase.from("financial_documents").select("id,document_number,status,generated_at,payload_snapshot").eq("document_type", "settlement_statement").order("generated_at", { ascending: false }),
+      supabase.from("financial_documents").select("id,document_number,status,generated_at,payload_snapshot").eq("document_type", "settlement_statement").eq("recipient_id", user.id).order("generated_at", { ascending: false }),
     ]);
     setTotal((orders || []).reduce((sum, order) => sum + (order.delivery_fee_cents || 0) + (order.courier_earnings_cents || 0) + (order.courier_prime_fund_cents || 0) - (order.courier_delay_penalty_cents || 0), 0) / 100);
     setDocuments(documentRows || []);

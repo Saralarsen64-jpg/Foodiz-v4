@@ -3,6 +3,7 @@ import { Bike, CalendarDays, CheckCircle2, Clock3, LogOut, Phone, Save, UserRoun
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import CourierShell from "../../components/CourierShell";
+import toast from "react-hot-toast";
 
 const availabilitySlots = [
   { value: "matin", label: "Matin", detail: "7h – 11h" },
@@ -38,6 +39,7 @@ export default function CourierProfile() {
   const [days, setDays] = useState<string[]>([]);
   const [flexible, setFlexible] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -62,22 +64,39 @@ export default function CourierProfile() {
 
   const save = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await Promise.all([
-      supabase.from("profiles").update({ full_name: name.trim(), phone: phone.trim() }).eq("id", user.id),
-      supabase
-        .from("courier_applications")
-        .update({
-          vehicle_type: vehicle,
-          availability_slots: slots,
-          availability_days: days,
-          availability_flexible: flexible,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id),
-    ]);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 1800);
+    if (!user) {
+      toast.error("Votre session a expiré. Reconnectez-vous.");
+      return;
+    }
+    if (!name.trim() || !phone.trim()) {
+      toast.error("Indiquez votre nom et votre téléphone.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const [profileResult, applicationResult] = await Promise.all([
+        supabase.from("profiles").update({ full_name: name.trim(), phone: phone.trim() }).eq("id", user.id),
+        supabase
+          .from("courier_applications")
+          .update({
+            vehicle_type: vehicle,
+            availability_slots: slots,
+            availability_days: days,
+            availability_flexible: flexible,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user.id),
+      ]);
+      if (profileResult.error || applicationResult.error) {
+        throw profileResult.error || applicationResult.error;
+      }
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1800);
+    } catch (error: any) {
+      toast.error(error?.message || "Impossible d’enregistrer les modifications.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const logout = async () => {
@@ -193,8 +212,8 @@ export default function CourierProfile() {
           </div>
         </div>
 
-        <button onClick={save} className="weello-btn flex w-full items-center justify-center gap-2 py-4">
-          {saved ? <><CheckCircle2 size={18} />Enregistré</> : <><Save size={18} />Enregistrer</>}
+        <button disabled={saving} onClick={save} className="weello-btn flex w-full items-center justify-center gap-2 py-4 disabled:opacity-50">
+          {saving ? "Enregistrement…" : saved ? <><CheckCircle2 size={18} />Enregistré</> : <><Save size={18} />Enregistrer</>}
         </button>
       </section>
 
